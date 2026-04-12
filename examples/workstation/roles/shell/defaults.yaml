@@ -1,0 +1,3 @@
+powershell_profile_path: C:\Users\demo\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+starship_config_path: C:\Users\demo\.config\starship.toml
+shell_prompt_symbol: ">"

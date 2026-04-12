@@ -1,0 +1,12 @@
+{
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+  "theme": "${terminal_theme}",
+  "profiles": {
+    "defaults": {
+      "font": {
+        "face": "${terminal_font_face}"
+      },
+      "opacity": ${terminal_opacity}
+    }
+  }
+}

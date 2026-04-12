@@ -1,0 +1,11 @@
+- scoop:
+    name: starship
+    state: present
+
+- dotfile:
+    source: templates\powershell\Microsoft.PowerShell_profile.ps1
+    destination: ${powershell_profile_path}
+
+- dotfile:
+    source: templates\starship\starship.toml
+    destination: ${starship_config_path}

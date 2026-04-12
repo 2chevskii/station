@@ -1,0 +1,8 @@
+- name: Install Windows Terminal
+  winget:
+    id: Microsoft.WindowsTerminal
+    state: present
+
+- dotfile:
+    source: templates/windows-terminal/settings.json
+    destination: ${terminal_settings_path}

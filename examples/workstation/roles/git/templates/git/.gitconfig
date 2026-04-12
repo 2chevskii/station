@@ -1,0 +1,9 @@
+[user]
+    name = ${user_name}
+    email = ${user_email}
+
+[init]
+    defaultBranch = ${git_default_branch}
+
+[core]
+    excludesFile = ${git_ignore_path}

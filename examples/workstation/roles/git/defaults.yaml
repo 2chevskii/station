@@ -1,0 +1,5 @@
+git_package_id: Git.Git
+git_config_path: C:\Users\demo\.gitconfig
+git_ignore_path: C:\Users\demo\.gitignore_global
+git_default_branch: main
+git_signing_enabled: false
