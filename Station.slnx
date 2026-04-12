@@ -16,6 +16,8 @@
     <Project Path="src/Modules/Station.Modules.Builtin.Winget/Station.Modules.Builtin.Winget.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/Station.Tests/Station.Tests.csproj" />
+    <Project Path="tests/Station.IntegrationTests/Station.IntegrationTests.csproj" />
+    <Project Path="tests/Station.Testing/Station.Testing.csproj" />
+    <Project Path="tests/Station.UnitTests/Station.UnitTests.csproj" />
   </Folder>
 </Solution>

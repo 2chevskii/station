@@ -1,23 +1,25 @@
+using FluentAssertions;
 using Spectre.Console.Testing;
+using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
 using Station.Core.Execution.Models;
 using Station.Core.Plugins.Models;
 
-namespace Station.Tests.Cli;
+namespace Station.UnitTests.Core;
 
 public sealed class StationConsoleTests
 {
     [Fact]
-    public void WriteResult_RendersStatusAndTasks()
+    public void WriteResult_renders_status_tasks_stats_and_diagnostics()
     {
         var standard = new TestConsole().Width(160);
         var error = new TestConsole().Width(160);
         var console = new StationConsole(standard, error);
         var result = new EngineRunResult(
-            Station.Abstractions.Enums.ExecutionMode.Check,
+            ExecutionMode.Check,
             true,
             "Check completed. 1 task(s) would change.",
-            [],
+            ["warn"],
             [
                 new EngineTaskRecord(
                     "Install scoop package",
@@ -28,25 +30,20 @@ public sealed class StationConsoleTests
 
         console.WriteResult(result);
 
-        var output = standard.Output;
-        Assert.Contains("Success", output);
-        Assert.Contains("Install scoop package", output);
-        Assert.Contains("builtin.scoop", output);
-        Assert.Contains("changed", output);
-        Assert.Contains("Package would be installed", output);
-        Assert.Equal(string.Empty, error.Output);
+        standard.Output.Should().ContainAll("Success", "Install scoop package", "changed", "Diagnostics", "warn", "Summary");
+        error.Output.Should().BeEmpty();
     }
 
     [Fact]
-    public void WriteRestoreResult_RendersPluginSource()
+    public void WriteRestoreResult_routes_failures_to_error_console()
     {
         var standard = new TestConsole().Width(160);
         var error = new TestConsole().Width(160);
         var console = new StationConsole(standard, error);
         var result = new PluginRestoreResult(
-            true,
-            "Resolved plugins.",
-            [],
+            false,
+            "Plugin restore failed.",
+            ["failure"],
             [
                 new PluginRestoreRecord(
                     "station/example",
@@ -60,17 +57,12 @@ public sealed class StationConsoleTests
 
         console.WriteRestoreResult(result);
 
-        var output = standard.Output;
-        Assert.Contains("Resolved plugins.", output);
-        Assert.Contains("example.tools", output);
-        Assert.Contains("1.2.3", output);
-        Assert.Contains("cache", output);
-        Assert.Contains("C:\\cache\\example", output);
-        Assert.Equal(string.Empty, error.Output);
+        error.Output.Should().ContainAll("Failed", "example.tools", "cache", "failure");
+        standard.Output.Should().BeEmpty();
     }
 
     [Fact]
-    public void WriteExplainResult_RendersPlanAsTree()
+    public void WriteExplainResult_renders_tree()
     {
         var standard = new TestConsole().Width(160);
         var error = new TestConsole().Width(160);
@@ -101,11 +93,7 @@ public sealed class StationConsoleTests
 
         console.WriteExplainResult(result);
 
-        var output = standard.Output;
-        Assert.Contains("station", output);
-        Assert.Contains("tasks", output);
-        Assert.Contains("base.tasks.1 [station.builtin.template]", output);
-        Assert.Contains("template = sample", output);
-        Assert.Equal(string.Empty, error.Output);
+        standard.Output.Should().ContainAll("station", "tasks", "base.tasks.1 [station.builtin.template]", "template = sample");
+        error.Output.Should().BeEmpty();
     }
 }
