@@ -4,38 +4,48 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
-using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 
 namespace Station.Modules.Builtin.Script;
 
-public sealed class ScriptModule : IConfigModule
+[Module("script", "Runs local scripts with a JSON request contract.")]
+public sealed class ScriptModule : ConfigModule
 {
-    public ModuleDescriptor Descriptor { get; } =
-        new("script", "1.0.0", "Runs local scripts with a JSON request contract.");
+    public ScriptModule(ModuleContext context)
+        : base(context)
+    {
+    }
 
-    public ValueTask<ModuleInspectionResult> InspectAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    [Parameter("path", Required = true)]
+    public string ScriptPath { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Runner { get; set; } = "pwsh";
+
+    [Parameter]
+    public bool RequiresAdmin { get; set; }
+
+    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var scriptPath = ResolveScriptPath(request);
+            var scriptPath = ResolveScriptPath();
             if (!File.Exists(scriptPath))
             {
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(new ModuleDiagnostic($"Script '{scriptPath}' does not exist.")));
             }
 
-            var runner = (request.Parameters.GetOptionalString("runner") ?? "pwsh").ToLowerInvariant();
+            var runner = Runner.ToLowerInvariant();
             if (!CommandExists(runner))
             {
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(new ModuleDiagnostic($"Runner '{runner}' is not available on PATH.")));
             }
 
-            var privilege = request.Parameters.GetBoolean("requiresAdmin")
+            var privilege = RequiresAdmin
                 ? PrivilegeRequirement.Administrator
                 : PrivilegeRequirement.User;
 
@@ -47,24 +57,22 @@ public sealed class ScriptModule : IConfigModule
         }
     }
 
-    public async ValueTask<ModuleResult> ExecuteAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
     {
         try
         {
-            var scriptPath = ResolveScriptPath(request);
-            var requestPayload = CreatePayload(request);
+            var scriptPath = ResolveScriptPath();
+            var requestPayload = CreatePayload();
             var requestFilePath = Path.GetTempFileName();
             await File.WriteAllTextAsync(requestFilePath, requestPayload.ToJsonString(), cancellationToken);
 
             try
             {
-                var runner = (request.Parameters.GetOptionalString("runner") ?? "pwsh").ToLowerInvariant();
+                var runner = Runner.ToLowerInvariant();
                 var result = await RunAsync(
                     runner,
                     ["-NoLogo", "-NoProfile", "-File", scriptPath, requestFilePath],
-                    request.TaskRoot,
+                    Context.WorkingDirectory,
                     new Dictionary<string, string?>
                     {
                         ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath,
@@ -115,21 +123,19 @@ public sealed class ScriptModule : IConfigModule
         return new ModuleResult(changed, failed, skipped, message, outputs);
     }
 
-    private static JsonObject CreatePayload(ModuleExecutionRequest request) =>
+    private JsonObject CreatePayload() =>
         new()
         {
-            ["mode"] = request.Mode.ToString().ToLowerInvariant(),
-            ["taskName"] = request.TaskName,
-            ["roleName"] = request.RoleName,
-            ["parameters"] = request.Parameters.DeepClone(),
-            ["variables"] = JsonSerializer.SerializeToNode(request.Variables),
+            ["mode"] = Context.Mode.ToString().ToLowerInvariant(),
+            ["taskName"] = Context.TaskName,
+            ["roleName"] = Context.RoleName,
+            ["variables"] = Context.Variables.Root?.DeepClone() ?? new JsonObject(),
         };
 
-    private static string ResolveScriptPath(ModuleExecutionRequest request)
+    private string ResolveScriptPath()
     {
-        var relativePath = request.Parameters.RequireString("path");
-        var fullPath = Path.GetFullPath(relativePath, request.TaskRoot);
-        var taskRoot = Path.GetFullPath(request.TaskRoot);
+        var fullPath = Path.GetFullPath(ScriptPath, Context.WorkingDirectory);
+        var taskRoot = Path.GetFullPath(Context.WorkingDirectory);
         if (!fullPath.StartsWith(taskRoot, StringComparison.OrdinalIgnoreCase))
         {
             throw new ConfigurationException("Script path must stay within the task root.");

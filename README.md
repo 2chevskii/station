@@ -49,12 +49,14 @@ dotnet publish src/Station.Cli/Station.Cli.csproj `
 
 ```text
 station restore  --config <dir> [--set key=value ...]
+station explain  --config <dir> [--set key=value ...]
 station validate --config <dir> [--set key=value ...]
 station check    --config <dir> [--set key=value ...]
 station apply    --config <dir> [--set key=value ...]
 ```
 
 - `restore` resolves declared plugins and stores non-local ones under `<root>/.station/plugin_cache`
+- `explain` prints an ASCII plan of tasks, bound parameters, and currently visible variables
 - `validate` restores plugins if needed, resolves roles/modules, and runs inspection
 - `check` performs the same validation and runs dry-run execution
 - `apply` mutates the machine in declared order
@@ -65,6 +67,8 @@ Current target layout:
 
 ```text
 station.yaml
+files/
+templates/
 vars/
   00-common.yaml
   10-workstation.yaml
@@ -133,6 +137,8 @@ Supported files/directories today:
 - `role.yaml`
 - `files/`
 - `templates/`
+- root-level `files/`
+- root-level `templates/`
 
 `role.yaml` is currently a root-level list of tasks:
 
@@ -142,9 +148,13 @@ Supported files/directories today:
     id: Git.Git
     state: present
 
-- dotfile:
-    source: templates/git/.gitconfig
+- template:
+    template: git/.gitconfig
     destination: C:\Users\demo\.gitconfig
+
+- copy:
+    file: git/.gitignore_global
+    destination: C:\Users\demo\.gitignore_global
 ```
 
 Rules:
@@ -155,6 +165,11 @@ Rules:
 - each task must declare exactly one module key
 - module parameters are nested under that module key
 - short-form task arguments are intentionally deferred; canonical form is object-based
+- modules are discovered from `[Module]` attributes and instantiated lazily per task execution
+- module parameters are declared with `[Parameter]` attributes and validated before execution
+- string values in config and templates use Scriban syntax such as `{{ user_name }}`
+- templates live under `templates/` and are addressed by logical name; `template: git/.gitconfig` resolves `templates/git/.gitconfig.scriban|.sbn`
+- files and templates in a role override artifacts with the same logical name from the config root
 
 ## Modules
 
@@ -162,8 +177,8 @@ Modules are atomic execution capabilities.
 
 Resolution rules:
 
-- every module has an FQN, for example `station.builtin.dotfile`
-- short names like `dotfile` are allowed only when unambiguous
+- every module has an FQN, for example `station.builtin.template`
+- short names like `template` are allowed only when unambiguous
 
 Sources of modules:
 
@@ -268,4 +283,4 @@ Non-local plugins are restored into:
 
 ## Example root
 
-See [examples/workstation](C:\Users\dvchevskii\source\experiments\station\examples\workstation) for a sample config root that matches the current target structure.
+See [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation) for a sample config root that matches the current target structure.

@@ -3,6 +3,6 @@
 #     id: Microsoft.WindowsTerminal
 #     state: present
 
-- dotfile:
-    source: templates/windows-terminal/settings.json
-    destination: ${terminal_settings_path}
+- template:
+    template: windows-terminal/settings.json
+    destination: "{{ terminal_settings_path }}"

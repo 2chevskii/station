@@ -1,5 +1,7 @@
-using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using SharpYaml;
+using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 using Station.Core.Infrastructure.Json;
 using Station.Core.Infrastructure.Templates;
@@ -21,17 +23,12 @@ public sealed class ConfigLoader
 
     private static readonly string[] ArchiveExtensions = [".zip", ".tar", ".tar.gz", ".tgz", ".7z"];
 
-    private readonly IDeserializer deserializer = new DeserializerBuilder()
-        .WithNamingConvention(CamelCaseNamingConvention.Instance)
-        .IgnoreUnmatchedProperties()
-        .Build();
-
-    private readonly ITemplateRenderer templateRenderer;
+    private readonly ITemplateEngine templateRenderer;
 
     public ConfigLoader()
         : this(new ScribanTemplateRenderer()) { }
 
-    internal ConfigLoader(ITemplateRenderer templateRenderer)
+    internal ConfigLoader(ITemplateEngine templateRenderer)
     {
         this.templateRenderer = templateRenderer;
     }
@@ -56,17 +53,12 @@ public sealed class ConfigLoader
             );
         }
 
-        var rootVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var rootVariables = new JsonObject();
         MergeVariables(rootVariables, LoadVarsDirectory(fullConfigRoot));
-        MergeVariables(
-            rootVariables,
-            ToScalarVariables(manifest.GetOptionalMapping("vars"), manifestPath, "vars")
-        );
+        MergeVariables(rootVariables, ToVariableObject(manifest.GetOptionalMapping("vars"), manifestPath, "vars"));
         MergeVariables(rootVariables, LoadEnvironmentVariables());
-        MergeVariables(
-            rootVariables,
-            cliVariables ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        );
+        MergeVariables(rootVariables, LoadCliVariables(cliVariables));
+        var variableSet = new VariableSet(rootVariables);
 
         var requestedRoles = manifest.GetRequiredStringList("roles", manifestPath);
         var pluginDeclarations = ParsePluginDeclarations(
@@ -78,14 +70,14 @@ public sealed class ConfigLoader
             roleName: null,
             taskRoot: fullConfigRoot,
             roleRoot: null,
-            variables: rootVariables,
+            variables: variableSet,
             sourceName: manifestPath,
             defaultNamePrefix: "station.tasks"
         );
 
         return new LoadedConfiguration(
             fullConfigRoot,
-            new Dictionary<string, string>(rootVariables, StringComparer.OrdinalIgnoreCase),
+            variableSet,
             pluginDeclarations,
             requestedRoles,
             rootTasks
@@ -94,7 +86,7 @@ public sealed class ConfigLoader
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(
         ResolvedRole role,
-        IReadOnlyDictionary<string, string> rootVariables
+        VariableSet rootVariables
     )
     {
         var roleFilePath = Path.Combine(role.RoleRoot, RoleFileName);
@@ -105,9 +97,9 @@ public sealed class ConfigLoader
             );
         }
 
-        var roleVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        MergeVariables(roleVariables, LoadOptionalDefaults(role.RoleRoot));
-        MergeVariables(roleVariables, rootVariables);
+        var roleVariables = LoadOptionalDefaults(role.RoleRoot);
+        MergeVariables(roleVariables, rootVariables.Root);
+        var roleVariableSet = new VariableSet(roleVariables);
 
         var taskNodes = LoadYamlObject(roleFilePath) as IEnumerable<object?>;
         if (taskNodes is null)
@@ -122,7 +114,7 @@ public sealed class ConfigLoader
             role.ShortName,
             role.RoleRoot,
             role.RoleRoot,
-            roleVariables,
+            roleVariableSet,
             roleFilePath,
             $"{role.ShortName}.tasks"
         );
@@ -240,7 +232,7 @@ public sealed class ConfigLoader
         string? roleName,
         string taskRoot,
         string? roleRoot,
-        IReadOnlyDictionary<string, string> variables,
+        VariableSet variables,
         string sourceName,
         string defaultNamePrefix
     )
@@ -275,7 +267,7 @@ public sealed class ConfigLoader
                     taskRoot,
                     roleName,
                     roleRoot,
-                    new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase)
+                    variables
                 )
             );
         }
@@ -285,7 +277,7 @@ public sealed class ConfigLoader
 
     private (string Name, string ModuleName, JsonObject Parameters) RenderTask(
         IDictionary<string, object?> taskMapping,
-        IReadOnlyDictionary<string, string> variables,
+        VariableSet variables,
         string sourceName,
         string defaultNamePrefix,
         int oneBasedIndex
@@ -332,12 +324,7 @@ public sealed class ConfigLoader
             );
         }
 
-        var renderedParameters = JsonNodeHelpers.RenderStringScalars(
-            JsonNodeHelpers.ToJsonObject(rawParameters),
-            variables,
-            templateRenderer,
-            sourceName
-        );
+        var renderedParameters = JsonNodeHelpers.ToJsonObject(rawParameters);
 
         var taskNameTemplate = string.IsNullOrWhiteSpace(explicitName)
             ? $"{defaultNamePrefix}.{oneBasedIndex}"
@@ -507,38 +494,38 @@ public sealed class ConfigLoader
         );
     }
 
-    private Dictionary<string, string> LoadVarsDirectory(string configRoot)
+    private JsonObject LoadVarsDirectory(string configRoot)
     {
         var varsRoot = Path.Combine(configRoot, VarsDirectoryName);
         if (!Directory.Exists(varsRoot))
         {
-            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            return new JsonObject();
         }
 
-        var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var variables = new JsonObject();
         foreach (
             var file in Directory
                 .GetFiles(varsRoot, "*.yaml", SearchOption.TopDirectoryOnly)
                 .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
         )
         {
-            MergeVariables(variables, ToScalarVariables(LoadYamlObject(file), file));
+            MergeVariables(variables, ToVariableObject(LoadYamlObject(file), file));
         }
 
         return variables;
     }
 
-    private Dictionary<string, string> LoadOptionalDefaults(string roleRoot)
+    private JsonObject LoadOptionalDefaults(string roleRoot)
     {
         var defaultsPath = Path.Combine(roleRoot, DefaultsFileName);
         return File.Exists(defaultsPath)
-            ? ToScalarVariables(LoadYamlObject(defaultsPath), defaultsPath)
-            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            ? ToVariableObject(LoadYamlObject(defaultsPath), defaultsPath)
+            : new JsonObject();
     }
 
-    private Dictionary<string, string> LoadEnvironmentVariables()
+    private JsonObject LoadEnvironmentVariables()
     {
-        var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var variables = new JsonObject();
         foreach (var key in Environment.GetEnvironmentVariables().Keys.Cast<object>())
         {
             var keyString = key.ToString();
@@ -550,8 +537,22 @@ public sealed class ConfigLoader
                 continue;
             }
 
-            variables[keyString[EnvironmentPrefix.Length..]] =
-                Environment.GetEnvironmentVariable(keyString) ?? string.Empty;
+            SetVariablePath(
+                variables,
+                keyString[EnvironmentPrefix.Length..],
+                Environment.GetEnvironmentVariable(keyString) ?? string.Empty
+            );
+        }
+
+        return variables;
+    }
+
+    private JsonObject LoadCliVariables(IReadOnlyDictionary<string, string>? cliVariables)
+    {
+        var variables = new JsonObject();
+        foreach (var (key, value) in cliVariables ?? new Dictionary<string, string>())
+        {
+            SetVariablePath(variables, key, value);
         }
 
         return variables;
@@ -560,14 +561,24 @@ public sealed class ConfigLoader
     private object? LoadYamlObject(string path)
     {
         using var reader = File.OpenText(path);
-        return JsonNodeHelpers.NormalizeYamlValue(deserializer.Deserialize<object?>(reader));
+        return JsonNodeHelpers.NormalizeYamlValue(
+            YamlSerializer.Deserialize<object?>(reader, CreateYamlOptions(path))
+        );
     }
 
     private T LoadYaml<T>(string path)
     {
         using var reader = File.OpenText(path);
-        return deserializer.Deserialize<T>(reader);
+        return YamlSerializer.Deserialize<T>(reader, CreateYamlOptions(path))!;
     }
+
+    private static YamlSerializerOptions CreateYamlOptions(string path) =>
+        new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNameCaseInsensitive = true,
+            SourceName = path,
+        };
 
     private static IReadOnlyList<string> NormalizeExportList(
         IEnumerable<string>? values,
@@ -659,18 +670,41 @@ public sealed class ConfigLoader
             value.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
         );
 
-    private static void MergeVariables(
-        IDictionary<string, string> target,
-        IReadOnlyDictionary<string, string> source
-    )
+    private static void MergeVariables(JsonObject target, JsonNode? source)
     {
-        foreach (var (key, value) in source)
+        if (source is null)
         {
-            target[key] = value;
+            return;
+        }
+
+        if (source is not JsonObject sourceObject)
+        {
+            throw new ConfigurationException("Variable scopes must be objects.");
+        }
+
+        foreach (var (key, value) in sourceObject)
+        {
+            target[key] = MergeVariableNode(target[key], value);
         }
     }
 
-    private static Dictionary<string, string> ToScalarVariables(
+    private static JsonNode? MergeVariableNode(JsonNode? current, JsonNode? incoming)
+    {
+        if (current is JsonObject currentObject && incoming is JsonObject incomingObject)
+        {
+            var merged = (JsonObject)currentObject.DeepClone();
+            foreach (var (key, value) in incomingObject)
+            {
+                merged[key] = MergeVariableNode(merged[key], value);
+            }
+
+            return merged;
+        }
+
+        return incoming?.DeepClone();
+    }
+
+    private static JsonObject ToVariableObject(
         object? value,
         string sourceName,
         string? propertyName = null
@@ -678,7 +712,7 @@ public sealed class ConfigLoader
     {
         if (value is null)
         {
-            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            return new JsonObject();
         }
 
         if (value is not IDictionary<string, object?> variables)
@@ -689,25 +723,30 @@ public sealed class ConfigLoader
             );
         }
 
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, rawValue) in variables)
+        return JsonNodeHelpers.ToJsonObject(variables);
+    }
+
+    private static void SetVariablePath(JsonObject variables, string path, string value)
+    {
+        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length == 0)
         {
-            result[key] = rawValue switch
-            {
-                null => string.Empty,
-                string stringValue => stringValue,
-                bool boolValue => boolValue ? "true" : "false",
-                int intValue => intValue.ToString(CultureInfo.InvariantCulture),
-                long longValue => longValue.ToString(CultureInfo.InvariantCulture),
-                double doubleValue => doubleValue.ToString(CultureInfo.InvariantCulture),
-                decimal decimalValue => decimalValue.ToString(CultureInfo.InvariantCulture),
-                _ => throw new ConfigurationException(
-                    $"Variables from '{sourceName}' must be scalar values. '{key}' is not scalar."
-                ),
-            };
+            throw new ConfigurationException("Variable names must not be empty.");
         }
 
-        return result;
+        JsonObject current = variables;
+        foreach (var segment in segments[..^1])
+        {
+            if (current[segment] is not JsonObject child)
+            {
+                child = new JsonObject();
+                current[segment] = child;
+            }
+
+            current = child;
+        }
+
+        current[segments[^1]] = value;
     }
 }
 

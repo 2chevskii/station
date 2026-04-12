@@ -2,20 +2,33 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
+using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
-using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 
 namespace Station.Modules.Builtin.Winget;
 
-public sealed class WingetModule : IConfigModule
+[Module("winget", "Installs packages through winget.")]
+public sealed class WingetModule : ConfigModule
 {
-    public ModuleDescriptor Descriptor { get; } =
-        new("winget", "1.0.0", "Installs packages through winget.");
+    public WingetModule(ModuleContext context)
+        : base(context)
+    {
+    }
 
-    public ValueTask<ModuleInspectionResult> InspectAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    [Parameter("id", Required = true)]
+    public string PackageId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string State { get; set; } = "present";
+
+    [Parameter]
+    public string? Version { get; set; }
+
+    [Parameter]
+    public string? Scope { get; set; }
+
+    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
         if (!CommandExists("winget"))
         {
@@ -23,59 +36,45 @@ public sealed class WingetModule : IConfigModule
                 ModuleInspectionResult.Failure(new ModuleDiagnostic("winget is not available on PATH.")));
         }
 
-        var scope = request.Parameters.GetOptionalString("scope");
-        var privilege = string.Equals(scope, "machine", StringComparison.OrdinalIgnoreCase)
+        var privilege = string.Equals(Scope, "machine", StringComparison.OrdinalIgnoreCase)
             ? PrivilegeRequirement.Administrator
             : PrivilegeRequirement.User;
 
         return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
     }
 
-    public async ValueTask<ModuleResult> ExecuteAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            var packageId = request.Parameters.RequireString("id");
-            var state = NormalizeState(request.Parameters.GetOptionalString("state"));
-            var version = request.Parameters.GetOptionalString("version");
-            var scope = request.Parameters.GetOptionalString("scope");
-
-            var installed = await GetInstalledStateAsync(packageId, version, cancellationToken);
+        var state = NormalizeState(State);
+        var installed = await GetInstalledStateAsync(PackageId, Version, cancellationToken);
             var shouldExist = state == "present";
             var needsVersionChange = shouldExist &&
-                !string.IsNullOrWhiteSpace(version) &&
-                !string.Equals(installed.Version, version, StringComparison.OrdinalIgnoreCase);
+                !string.IsNullOrWhiteSpace(Version) &&
+                !string.Equals(installed.Version, Version, StringComparison.OrdinalIgnoreCase);
 
             var changed = shouldExist != installed.IsInstalled || needsVersionChange;
-            if (request.Mode == ExecutionMode.Check)
+            if (Context.Mode == ExecutionMode.Check)
             {
                 return changed
-                    ? ModuleResult.ChangedResult($"winget package '{packageId}' would change.")
-                    : ModuleResult.NoChange($"winget package '{packageId}' is already in the desired state.");
+                    ? ModuleResult.ChangedResult($"winget package '{PackageId}' would change.")
+                    : ModuleResult.NoChange($"winget package '{PackageId}' is already in the desired state.");
             }
 
             if (!changed)
             {
-                return ModuleResult.NoChange($"winget package '{packageId}' is already in the desired state.");
+                return ModuleResult.NoChange($"winget package '{PackageId}' is already in the desired state.");
             }
 
             var arguments = state == "present"
-                ? CreateInstallArguments(packageId, version, scope)
-                : CreateUninstallArguments(packageId);
+                ? CreateInstallArguments(PackageId, Version, Scope)
+                : CreateUninstallArguments(PackageId);
             var result = await RunAsync("winget", arguments, cancellationToken);
             if (result.ExitCode != 0)
             {
                 return ModuleResult.Failure(SelectProcessError(result));
             }
 
-            return ModuleResult.ChangedResult($"winget package '{packageId}' was updated.");
-        }
-        catch (ConfigurationException exception)
-        {
-            return ModuleResult.Failure(exception.Message);
-        }
+            return ModuleResult.ChangedResult($"winget package '{PackageId}' was updated.");
     }
 
     private async Task<(bool IsInstalled, string? Version)> GetInstalledStateAsync(

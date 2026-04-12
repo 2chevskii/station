@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Station.Abstractions.Models;
 
 namespace Station.Core.Configuration;
 
@@ -9,4 +10,4 @@ public sealed record LoadedTask(
     string TaskRoot,
     string? RoleName,
     string? RoleRoot,
-    IReadOnlyDictionary<string, string> Variables);
+    VariableSet Variables);

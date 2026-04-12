@@ -1,6 +1,5 @@
 using System.Runtime.Loader;
 
-using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 using Station.Core.Configuration;
 using Station.Modules.Builtin.Apt;
@@ -33,18 +32,14 @@ internal sealed class ModuleCatalog
 
         foreach (var registration in CreateDefaultBuiltIns().Concat(additionalBuiltInModules ?? []))
         {
-            ValidateShortName(registration.ShortName, $"built-in module '{registration.ShortName}'");
-            if (!string.Equals(registration.Module.Descriptor.Name, registration.ShortName, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ConfigurationException(
-                    $"Built-in module registration '{registration.ProviderName}.{registration.ShortName}' does not match descriptor name '{registration.Module.Descriptor.Name}'.");
-            }
+            var schema = ModuleSchemaRegistry.Get(registration.ModuleType);
+            ValidateShortName(schema.Name, $"built-in module '{schema.Name}'");
 
             resolvedModules.Add(new ResolvedModule(
                 registration.ProviderName,
-                registration.ShortName,
-                $"{registration.ProviderName}.{registration.ShortName}",
-                registration.Module));
+                schema.Name,
+                $"{registration.ProviderName}.{schema.Name}",
+                schema));
         }
 
         foreach (var modulePath in localModulePaths)
@@ -77,11 +72,12 @@ internal sealed class ModuleCatalog
 
     private static IReadOnlyList<ModuleRegistration> CreateDefaultBuiltIns() =>
     [
-        new("station.builtin", "apt", new AptModule()),
-        new("station.builtin", "dotfile", new DotfileModule(TimeProvider.System)),
-        new("station.builtin", "script", new ScriptModule()),
-        new("station.builtin", "scoop", new ScoopModule()),
-        new("station.builtin", "winget", new WingetModule()),
+        new("station.builtin", typeof(AptModule)),
+        new("station.builtin", typeof(CopyModule)),
+        new("station.builtin", typeof(TemplateModule)),
+        new("station.builtin", typeof(ScriptModule)),
+        new("station.builtin", typeof(ScoopModule)),
+        new("station.builtin", typeof(WingetModule)),
     ];
 
     public ResolvedModule Resolve(string name)
@@ -118,28 +114,24 @@ internal sealed class ModuleCatalog
         var discoveredModules = assembly
             .GetExportedTypes()
             .Where(static type => type is { IsAbstract: false, IsInterface: false } &&
-                typeof(IConfigModule).IsAssignableFrom(type))
+                typeof(ConfigModule).IsAssignableFrom(type))
             .ToArray();
 
         if (discoveredModules.Length != 1)
         {
             throw new ConfigurationException(
-                $"Module assembly '{assemblyPath}' must contain exactly one public {nameof(IConfigModule)} implementation.");
+                $"Module assembly '{assemblyPath}' must contain exactly one public {nameof(ConfigModule)} implementation.");
         }
 
-        if (Activator.CreateInstance(discoveredModules[0]) is not IConfigModule module)
+        var schema = ModuleSchemaRegistry.Get(discoveredModules[0]);
+
+        if (!string.Equals(schema.Name, shortName, StringComparison.OrdinalIgnoreCase))
         {
             throw new ConfigurationException(
-                $"Module '{discoveredModules[0].FullName}' in '{assemblyPath}' must expose a public parameterless constructor.");
+                $"Module assembly '{assemblyPath}' is expected to export '{shortName}', but its descriptor name is '{schema.Name}'.");
         }
 
-        if (!string.Equals(module.Descriptor.Name, shortName, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ConfigurationException(
-                $"Module assembly '{assemblyPath}' is expected to export '{shortName}', but its descriptor name is '{module.Descriptor.Name}'.");
-        }
-
-        return new ResolvedModule(providerName, shortName, $"{providerName}.{shortName}", module);
+        return new ResolvedModule(providerName, shortName, $"{providerName}.{shortName}", schema);
     }
 
     private static void ValidateShortName(string shortName, string owner)

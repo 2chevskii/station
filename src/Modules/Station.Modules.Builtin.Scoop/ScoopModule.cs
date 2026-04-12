@@ -2,20 +2,30 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
+using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
-using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 
 namespace Station.Modules.Builtin.Scoop;
 
-public sealed class ScoopModule : IConfigModule
+[Module("scoop", "Installs packages through Scoop.")]
+public sealed class ScoopModule : ConfigModule
 {
-    public ModuleDescriptor Descriptor { get; } =
-        new("scoop", "1.0.0", "Installs packages through Scoop.");
+    public ScoopModule(ModuleContext context)
+        : base(context)
+    {
+    }
 
-    public ValueTask<ModuleInspectionResult> InspectAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    [Parameter("name", Required = true)]
+    public string PackageName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string State { get; set; } = "present";
+
+    [Parameter("global")]
+    public bool IsGlobal { get; set; }
+
+    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
         if (!CommandExists("scoop"))
         {
@@ -23,48 +33,41 @@ public sealed class ScoopModule : IConfigModule
                 ModuleInspectionResult.Failure(new ModuleDiagnostic("scoop is not available on PATH.")));
         }
 
-        var privilege = request.Parameters.GetBoolean("global")
+        var privilege = IsGlobal
             ? PrivilegeRequirement.Administrator
             : PrivilegeRequirement.User;
 
         return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
     }
 
-    public async ValueTask<ModuleResult> ExecuteAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            var packageName = request.Parameters.RequireString("name");
-            var state = NormalizeState(request.Parameters.GetOptionalString("state"));
-            var isGlobal = request.Parameters.GetBoolean("global");
-
-            var listResult = await RunAsync("scoop", ["list"], cancellationToken);
-            var installed = listResult.ExitCode == 0 &&
-                            listResult.StandardOutput.Contains(packageName, StringComparison.OrdinalIgnoreCase);
+        var state = NormalizeState(State);
+        var listResult = await RunAsync("scoop", ["list"], cancellationToken);
+        var installed = listResult.ExitCode == 0 &&
+                        listResult.StandardOutput.Contains(PackageName, StringComparison.OrdinalIgnoreCase);
             var shouldExist = state == "present";
             var changed = shouldExist != installed;
 
-            if (request.Mode == ExecutionMode.Check)
+            if (Context.Mode == ExecutionMode.Check)
             {
                 return changed
-                    ? ModuleResult.ChangedResult($"scoop package '{packageName}' would change.")
-                    : ModuleResult.NoChange($"scoop package '{packageName}' is already in the desired state.");
+                    ? ModuleResult.ChangedResult($"scoop package '{PackageName}' would change.")
+                    : ModuleResult.NoChange($"scoop package '{PackageName}' is already in the desired state.");
             }
 
             if (!changed)
             {
-                return ModuleResult.NoChange($"scoop package '{packageName}' is already in the desired state.");
+                return ModuleResult.NoChange($"scoop package '{PackageName}' is already in the desired state.");
             }
 
             var arguments = new List<string> { shouldExist ? "install" : "uninstall" };
-            if (isGlobal)
+            if (IsGlobal)
             {
                 arguments.Add("--global");
             }
 
-            arguments.Add(packageName);
+            arguments.Add(PackageName);
 
             var result = await RunAsync("scoop", arguments, cancellationToken);
             if (result.ExitCode != 0)
@@ -72,12 +75,7 @@ public sealed class ScoopModule : IConfigModule
                 return ModuleResult.Failure(SelectProcessError(result));
             }
 
-            return ModuleResult.ChangedResult($"scoop package '{packageName}' was updated.");
-        }
-        catch (ConfigurationException exception)
-        {
-            return ModuleResult.Failure(exception.Message);
-        }
+            return ModuleResult.ChangedResult($"scoop package '{PackageName}' was updated.");
     }
 
     private static string NormalizeState(string? state) =>

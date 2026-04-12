@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Station.Abstractions.Interfaces;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
@@ -6,7 +7,7 @@ using Station.Abstractions.Models;
 
 namespace Station.Core.Infrastructure.Templates;
 
-internal sealed class ScribanTemplateRenderer : ITemplateRenderer
+internal sealed class ScribanTemplateRenderer : ITemplateEngine
 {
     private readonly LexerOptions lexerOptions = new LexerOptions { KeepTrivia = true };
     private readonly ConcurrentDictionary<string, Template> cache = new ConcurrentDictionary<
@@ -16,14 +17,25 @@ internal sealed class ScribanTemplateRenderer : ITemplateRenderer
 
     public string Render(
         string template,
-        IReadOnlyDictionary<string, string> variables,
+        VariableSet variables,
         string? sourceName = null
     )
     {
         var compiledTemplate = cache.GetOrAdd(template, ParseTemplate);
-        var context = new TemplateContext(ScriptObject.From(variables));
+        var context = new TemplateContext();
+        context.PushGlobal(ScriptObject.From(variables.ToObjectGraph()));
+        context.StrictVariables = true;
 
-        return compiledTemplate.Render(context);
+        try
+        {
+            return compiledTemplate.Render(context);
+        }
+        catch (Exception exception)
+        {
+            throw new ConfigurationException(
+                $"Failed to render template{FormatSourceName(sourceName)}: {exception.Message}"
+            );
+        }
 
         Template ParseTemplate(string templateText)
         {

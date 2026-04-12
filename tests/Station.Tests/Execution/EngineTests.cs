@@ -4,6 +4,7 @@ using Station.Core.Execution;
 using Station.Core.Infrastructure.Templates;
 using Station.Core.Plugins;
 using Station.Modules.Builtin.Dotfile;
+using Station.Modules.Builtin.Script;
 using Station.Tests.Helpers;
 
 namespace Station.Tests.Execution;
@@ -68,17 +69,44 @@ public sealed class EngineTests
               destination_path: OUTPUT.txt
             """);
         WriteFile(directory.Path, "roles/base/role.yaml", """
-            - dotfile:
-                source: templates/test.txt
-                destination: ${destination_path}
+            - script:
+                path: scripts/test.ps1
+                destination: "{{ destination_path }}"
             """);
-        WriteFile(directory.Path, "roles/base/templates/test.txt", "content");
+        WriteFile(directory.Path, "roles/base/scripts/test.ps1", "Write-Output '{\"changed\":false}'");
 
         var engine = CreateEngine();
         var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
 
         Assert.False(result.Succeeded);
         Assert.Contains("ambiguous", result.Diagnostics.Single(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Explain_lists_tasks_parameters_and_variables()
+    {
+        using var directory = new TemporaryDirectory();
+        WriteFile(directory.Path, "station.yaml", """
+            roles:
+              - base
+            plugins: []
+            vars:
+              greeting: hello
+            """);
+        WriteFile(directory.Path, "roles/base/role.yaml", """
+            - template:
+                template: sample
+                destination: out/{{ greeting }}.txt
+            """);
+        WriteFile(directory.Path, "roles/base/templates/sample.scriban", "{{ greeting }}");
+
+        var engine = CreateEngine();
+        var result = await engine.ExplainAsync(directory.Path);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("base.tasks.1 [station.builtin.template]", result.Diagram);
+        Assert.Contains("template = sample", result.Diagram);
+        Assert.Contains("greeting = hello", result.Diagram);
     }
 
     private static ConfigEngine CreateEngine()
@@ -104,7 +132,7 @@ public sealed class EngineTests
         var pluginRoot = Path.Combine(root, "plugins", declarationName);
         Directory.CreateDirectory(pluginRoot);
 
-        var moduleList = includeModule ? "  - dotfile" : string.Empty;
+        var moduleList = includeModule ? "  - script" : string.Empty;
         WriteFile(pluginRoot, "plugin-manifest.yaml", $$"""
             name: {{pluginName}}
             version: 1.0.0
@@ -113,17 +141,20 @@ public sealed class EngineTests
             modules:
             {{moduleList}}
             """);
-        WriteFile(pluginRoot, $"roles/{roleName}/role.yaml", $$"""
-            - {{pluginName}}.dotfile:
-                source: templates/sample.txt
-                destination: ${destination_path}
-            """);
-        WriteFile(pluginRoot, $"roles/{roleName}/templates/sample.txt", "plugin content");
+        WriteFile(
+            pluginRoot,
+            $"roles/{roleName}/role.yaml",
+            """
+            - __PLUGIN_NAME__.script:
+                path: scripts/sample.ps1
+            """.Replace("__PLUGIN_NAME__", pluginName, StringComparison.Ordinal)
+        );
+        WriteFile(pluginRoot, $"roles/{roleName}/scripts/sample.ps1", "Write-Output '{\"changed\":false}'");
 
         if (includeModule)
         {
-            var modulePath = typeof(DotfileModule).Assembly.Location;
-            var destinationPath = Path.Combine(pluginRoot, "modules", "dotfile", "dotfile.dll");
+            var modulePath = typeof(ScriptModule).Assembly.Location;
+            var destinationPath = Path.Combine(pluginRoot, "modules", "script", "script.dll");
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             File.Copy(modulePath, destinationPath, overwrite: true);
         }

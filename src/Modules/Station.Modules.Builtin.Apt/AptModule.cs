@@ -2,20 +2,36 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
+using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
-using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 
 namespace Station.Modules.Builtin.Apt;
 
-public sealed class AptModule : IConfigModule
+[Module("apt", "Installs packages through apt locally or inside a WSL distribution.")]
+public sealed class AptModule : ConfigModule
 {
-    public ModuleDescriptor Descriptor { get; } =
-        new("apt", "1.0.0", "Installs packages through apt locally or inside a WSL distribution.");
+    public AptModule(ModuleContext context)
+        : base(context)
+    {
+    }
 
-    public async ValueTask<ModuleInspectionResult> InspectAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    [Parameter("name", Required = true)]
+    public string PackageName { get; set; } = string.Empty;
+
+    [Parameter]
+    public string State { get; set; } = "present";
+
+    [Parameter]
+    public string? Version { get; set; }
+
+    [Parameter]
+    public string? Distribution { get; set; }
+
+    [Parameter]
+    public bool Sudo { get; set; } = true;
+
+    public override async ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
         if (OperatingSystem.IsWindows())
         {
@@ -24,8 +40,7 @@ public sealed class AptModule : IConfigModule
                 return ModuleInspectionResult.Failure(new ModuleDiagnostic("wsl.exe is not available on PATH."));
             }
 
-            var distribution = request.Parameters.GetOptionalString("distribution");
-            if (string.IsNullOrWhiteSpace(distribution))
+            if (string.IsNullOrWhiteSpace(Distribution))
             {
                 return ModuleInspectionResult.Failure(
                     new ModuleDiagnostic("apt on Windows requires a 'distribution' parameter."));
@@ -35,10 +50,10 @@ public sealed class AptModule : IConfigModule
             if (distrosResult.ExitCode != 0 ||
                 !distrosResult.StandardOutput
                     .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Contains(distribution, StringComparer.OrdinalIgnoreCase))
+                    .Contains(Distribution, StringComparer.OrdinalIgnoreCase))
             {
                 return ModuleInspectionResult.Failure(
-                    new ModuleDiagnostic($"WSL distribution '{distribution}' was not found."));
+                    new ModuleDiagnostic($"WSL distribution '{Distribution}' was not found."));
             }
         }
         else if (!CommandExists("apt-get"))
@@ -49,56 +64,42 @@ public sealed class AptModule : IConfigModule
         return ModuleInspectionResult.Success();
     }
 
-    public async ValueTask<ModuleResult> ExecuteAsync(
-        ModuleExecutionRequest request,
-        CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            var packageName = request.Parameters.RequireString("name");
-            var state = NormalizeState(request.Parameters.GetOptionalString("state"));
-            var version = request.Parameters.GetOptionalString("version");
-            var distribution = request.Parameters.GetOptionalString("distribution");
-            var useSudo = request.Parameters.GetBoolean("sudo", true);
-
-            var installed = await GetInstalledStateAsync(packageName, distribution, cancellationToken);
-            var shouldExist = state == "present";
+        var state = NormalizeState(State);
+        var installed = await GetInstalledStateAsync(PackageName, Distribution, cancellationToken);
+        var shouldExist = state == "present";
             var needsVersionChange = shouldExist &&
-                !string.IsNullOrWhiteSpace(version) &&
-                !string.Equals(installed.Version, version, StringComparison.OrdinalIgnoreCase);
+                !string.IsNullOrWhiteSpace(Version) &&
+                !string.Equals(installed.Version, Version, StringComparison.OrdinalIgnoreCase);
 
             var changed = shouldExist != installed.IsInstalled || needsVersionChange;
-            if (request.Mode == ExecutionMode.Check)
+            if (Context.Mode == ExecutionMode.Check)
             {
                 return changed
-                    ? ModuleResult.ChangedResult($"apt package '{packageName}' would change.")
-                    : ModuleResult.NoChange($"apt package '{packageName}' is already in the desired state.");
+                    ? ModuleResult.ChangedResult($"apt package '{PackageName}' would change.")
+                    : ModuleResult.NoChange($"apt package '{PackageName}' is already in the desired state.");
             }
 
             if (!changed)
             {
-                return ModuleResult.NoChange($"apt package '{packageName}' is already in the desired state.");
+                return ModuleResult.NoChange($"apt package '{PackageName}' is already in the desired state.");
             }
 
-            var packageId = string.IsNullOrWhiteSpace(version)
-                ? packageName
-                : $"{packageName}={version}";
+            var packageId = string.IsNullOrWhiteSpace(Version)
+                ? PackageName
+                : $"{PackageName}={Version}";
             var command = shouldExist
-                ? BuildAptCommand("install", packageId, useSudo)
-                : BuildAptCommand("remove", packageName, useSudo);
+                ? BuildAptCommand("install", packageId, Sudo)
+                : BuildAptCommand("remove", PackageName, Sudo);
 
-            var result = await RunAptCommandAsync(command, distribution, cancellationToken);
+            var result = await RunAptCommandAsync(command, Distribution, cancellationToken);
             if (result.ExitCode != 0)
             {
                 return ModuleResult.Failure(SelectProcessError(result));
             }
 
-            return ModuleResult.ChangedResult($"apt package '{packageName}' was updated.");
-        }
-        catch (ConfigurationException exception)
-        {
-            return ModuleResult.Failure(exception.Message);
-        }
+            return ModuleResult.ChangedResult($"apt package '{PackageName}' was updated.");
     }
 
     private async Task<(bool IsInstalled, string? Version)> GetInstalledStateAsync(

@@ -21,6 +21,7 @@ var setOption = new Option<string[]>("--set")
 
 var rootCommand = new RootCommand("Manage local workstation configuration.");
 rootCommand.Subcommands.Add(CreateRestoreCommand());
+rootCommand.Subcommands.Add(CreateExplainCommand());
 rootCommand.Subcommands.Add(CreateCommand("validate", "Validate config and plugins.", ExecutionMode.Validate));
 rootCommand.Subcommands.Add(CreateCommand("check", "Dry-run the selected configuration.", ExecutionMode.Check));
 rootCommand.Subcommands.Add(CreateCommand("apply", "Apply the selected configuration.", ExecutionMode.Apply));
@@ -44,6 +45,28 @@ Command CreateRestoreCommand()
             cancellationToken);
 
         WriteRestoreResult(result);
+        return result.Succeeded ? 0 : 1;
+    });
+    return command;
+}
+
+Command CreateExplainCommand()
+{
+    var command = new Command("explain", "Show the static task plan, bound parameters, and visible variables.");
+    command.Options.Add(configOption);
+    command.Options.Add(setOption);
+    command.SetAction(async (parseResult, cancellationToken) =>
+    {
+        var configRoot = parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+        var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
+        var engine = new ConfigEngine();
+        var result = await engine.ExplainAsync(
+            configRoot,
+            cliVariables,
+            static message => Console.WriteLine($"[station] {message}"),
+            cancellationToken);
+
+        WriteExplainResult(result);
         return result.Succeeded ? 0 : 1;
     });
     return command;
@@ -145,5 +168,21 @@ static void WriteRestoreResult(PluginRestoreResult result)
         var sourceKind = plugin.IsLocal ? "local" : plugin.CacheHit ? "cache" : "downloaded";
         output.WriteLine(
             $"  * {plugin.PluginName ?? plugin.Declaration} {plugin.Version ?? "unknown"} [{sourceKind}] => {plugin.PluginRoot}");
+    }
+}
+
+static void WriteExplainResult(ExplainResult result)
+{
+    var output = result.Succeeded ? Console.Out : Console.Error;
+    output.WriteLine(result.Message);
+
+    foreach (var diagnostic in result.Diagnostics)
+    {
+        output.WriteLine($"  - {diagnostic}");
+    }
+
+    if (!string.IsNullOrWhiteSpace(result.Diagram))
+    {
+        output.WriteLine(result.Diagram);
     }
 }

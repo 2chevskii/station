@@ -1,16 +1,20 @@
 using Station.Abstractions.Enums;
-using Station.Abstractions.Interfaces;
+using Station.Abstractions.Attributes;
 using Station.Abstractions.Models;
 
 namespace Station.Tests.Plugins;
 
-public sealed class AdminPluginModule : IConfigModule
+[Module("admin", "Admin-only test module.")]
+public sealed class AdminPluginModule : ConfigModule
 {
-    public ModuleDescriptor Descriptor { get; } = new("plugin.admin", "1.0.0", "Admin-only test module.");
+    public AdminPluginModule(ModuleContext context)
+        : base(context)
+    {
+    }
 
-    public ValueTask<ModuleInspectionResult> InspectAsync(ModuleExecutionRequest request, CancellationToken cancellationToken) =>
+    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult(ModuleInspectionResult.Success(PrivilegeRequirement.Administrator));
 
-    public ValueTask<ModuleResult> ExecuteAsync(ModuleExecutionRequest request, CancellationToken cancellationToken) =>
+    public override ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken) =>
         ValueTask.FromResult(ModuleResult.ChangedResult("unexpected execution"));
 }

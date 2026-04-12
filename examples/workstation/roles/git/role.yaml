@@ -1,12 +1,7 @@
-# - name: Ensure Git is installed from WinGet
-#   winget:
-#     id: ${git_package_id}
-#     state: present
+- template:
+    template: git/.gitconfig
+    destination: "{{ git_config_path }}"
 
-- station.builtin.dotfile:
-    source: templates/git/.gitconfig
-    destination: ${git_config_path}
-
-- dotfile:
-    source: files/git/.gitignore_global
-    destination: ${git_ignore_path}
+- copy:
+    file: git/.gitignore_global
+    destination: "{{ git_ignore_path }}"

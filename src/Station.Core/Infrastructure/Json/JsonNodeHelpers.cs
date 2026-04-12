@@ -2,8 +2,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
+using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
-using Station.Core.Infrastructure.Templates;
 
 namespace Station.Core.Infrastructure.Json;
 
@@ -44,8 +44,8 @@ public static class JsonNodeHelpers
 
     public static JsonObject RenderStringScalars(
         JsonObject value,
-        IReadOnlyDictionary<string, string> variables,
-        ITemplateRenderer templateRenderer,
+        VariableSet variables,
+        ITemplateEngine templateRenderer,
         string? sourceName = null)
     {
         return (JsonObject)RenderNode(value, variables, templateRenderer, sourceName)!;
@@ -53,8 +53,8 @@ public static class JsonNodeHelpers
 
     public static JsonNode? RenderNode(
         JsonNode? node,
-        IReadOnlyDictionary<string, string> variables,
-        ITemplateRenderer templateRenderer,
+        VariableSet variables,
+        ITemplateEngine templateRenderer,
         string? sourceName = null) =>
         node switch
         {

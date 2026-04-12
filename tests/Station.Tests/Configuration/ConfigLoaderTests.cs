@@ -23,9 +23,9 @@ public sealed class ConfigLoaderTests
                 vars:
                   greeting: root
                 tasks:
-                  - dotfile:
-                      source: templates/root.txt
-                      destination: output/${greeting}.txt
+                  - template:
+                      template: root
+                      destination: output/{{ greeting }}.txt
                 """);
             WriteFile(directory.Path, "vars/00-common.yaml", """
                 greeting: vars
@@ -34,9 +34,9 @@ public sealed class ConfigLoaderTests
                 greeting: default
                 """);
             WriteFile(directory.Path, "roles/base/role.yaml", """
-                - dotfile:
-                    source: templates/test.txt
-                    destination: role/${greeting}.txt
+                - template:
+                    template: test
+                    destination: role/{{ greeting }}.txt
                 """);
 
             var cliVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -47,7 +47,7 @@ public sealed class ConfigLoaderTests
             var loader = new ConfigLoader();
             var configuration = loader.Load(directory.Path, cliVariables);
 
-            Assert.Equal("cli", configuration.RootVariables["greeting"]);
+            Assert.Equal("cli", configuration.RootVariables.Get<string>("greeting"));
             Assert.Equal(["base"], configuration.RequestedRoles);
 
             var plugin = Assert.Single(configuration.PluginDeclarations);
@@ -56,12 +56,13 @@ public sealed class ConfigLoaderTests
 
             var rootTask = Assert.Single(configuration.RootTasks);
             Assert.Equal("station.tasks.1", rootTask.Name);
-            Assert.Equal("output/cli.txt", rootTask.Parameters["destination"]?.GetValue<string>());
+            Assert.Equal("output/{{ greeting }}.txt", rootTask.Parameters["destination"]?.GetValue<string>());
 
             var role = Assert.Single(loader.DiscoverLocalRoles(directory.Path));
             var roleTask = Assert.Single(loader.LoadRoleTasks(role, configuration.RootVariables));
             Assert.Equal("base.tasks.1", roleTask.Name);
-            Assert.Equal("role/cli.txt", roleTask.Parameters["destination"]?.GetValue<string>());
+            Assert.Equal("role/{{ greeting }}.txt", roleTask.Parameters["destination"]?.GetValue<string>());
+            Assert.Equal("cli", roleTask.Variables.Get<string>("greeting"));
         }
         finally
         {
