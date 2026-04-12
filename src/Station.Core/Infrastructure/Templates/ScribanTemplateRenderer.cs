@@ -23,7 +23,7 @@ internal sealed class ScribanTemplateRenderer : ITemplateEngine
     {
         var compiledTemplate = cache.GetOrAdd(template, ParseTemplate);
         var context = new TemplateContext();
-        context.PushGlobal(ScriptObject.From(variables.ToObjectGraph()));
+        context.PushGlobal(ScriptObject.From(variables.ToObjectGraph(this, sourceName)));
         context.StrictVariables = true;
 
         try

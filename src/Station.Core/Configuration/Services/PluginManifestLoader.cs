@@ -7,19 +7,35 @@ internal sealed class PluginManifestLoader
     private const string ModulesDirectoryName = "modules";
     private const string PluginManifestYamlFileName = "plugin-manifest.yaml";
     private const string PluginManifestYmlFileName = "plugin-manifest.yml";
-    private const string RoleFileName = "role.yaml";
-    private const string RolesDirectoryName = "roles";
 
+    private readonly ConfigArtifactResolver artifactResolver;
+    private readonly ConfigTreeDiscovery treeDiscovery;
     private readonly YamlConfigurationReader yamlReader;
 
     public PluginManifestLoader(YamlConfigurationReader yamlReader)
+        : this(
+            yamlReader,
+            new ConfigArtifactResolver(
+                [new YamlRoleDocumentLoader(yamlReader), new JavaScriptRoleDocumentLoader(new JavaScriptConfigRuntime())],
+                [new YamlVariableDocumentLoader(yamlReader), new JavaScriptVariableDocumentLoader(new JavaScriptConfigRuntime())]),
+            new ConfigTreeDiscovery())
+    {
+    }
+
+    public PluginManifestLoader(
+        YamlConfigurationReader yamlReader,
+        ConfigArtifactResolver artifactResolver,
+        ConfigTreeDiscovery treeDiscovery)
     {
         this.yamlReader = yamlReader;
+        this.artifactResolver = artifactResolver;
+        this.treeDiscovery = treeDiscovery;
     }
 
     public ResolvedPluginManifest Load(string pluginRoot)
     {
         var fullPluginRoot = Path.GetFullPath(pluginRoot);
+        var tree = treeDiscovery.Discover(fullPluginRoot);
         var yamlPath = Path.Combine(fullPluginRoot, PluginManifestYamlFileName);
         var ymlPath = Path.Combine(fullPluginRoot, PluginManifestYmlFileName);
 
@@ -59,13 +75,16 @@ internal sealed class PluginManifestLoader
 
         foreach (var role in roles)
         {
-            var roleFilePath = Path.Combine(fullPluginRoot, RolesDirectoryName, role, RoleFileName);
-            if (!File.Exists(roleFilePath))
+            var roleDirectory = tree.RolesRoot?.Directories.FirstOrDefault(directory =>
+                string.Equals(directory.Name, role, StringComparison.OrdinalIgnoreCase));
+            if (roleDirectory is null)
             {
                 throw new ConfigurationException(
-                    $"Plugin '{name}' exports role '{role}', but '{roleFilePath}' does not exist."
+                    $"Plugin '{name}' exports role '{role}', but its role directory does not exist."
                 );
             }
+
+            _ = artifactResolver.ResolveRoleTaskArtifact(roleDirectory, $"{name}.{role}");
         }
 
         foreach (var module in modules)
@@ -79,7 +98,7 @@ internal sealed class PluginManifestLoader
             }
         }
 
-        return new ResolvedPluginManifest(name, version, fullPluginRoot, roles, modules);
+        return new ResolvedPluginManifest(name, version, fullPluginRoot, tree, roles, modules);
     }
 
     private static IReadOnlyList<string> NormalizeExportList(

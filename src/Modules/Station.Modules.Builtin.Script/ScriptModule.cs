@@ -129,7 +129,10 @@ public sealed class ScriptModule : ConfigModule
             ["mode"] = Context.Mode.ToString().ToLowerInvariant(),
             ["taskName"] = Context.TaskName,
             ["roleName"] = Context.RoleName,
-            ["variables"] = Context.Variables.Root?.DeepClone() ?? new JsonObject(),
+            ["variables"] = ConfigValueUtilities.ToJsonNode(
+                Context.Variables.Root,
+                Context.Variables,
+                Context.TemplateEngine) ?? new JsonObject(),
         };
 
     private string ResolveScriptPath()

@@ -1,3 +1,4 @@
+using Station.Abstractions.Models;
 using Station.Core.Configuration;
 using Station.Core.Configuration.Services;
 using Station.Tests.Helpers;
@@ -57,18 +58,68 @@ public sealed class ConfigLoaderTests
 
             var rootTask = Assert.Single(configuration.RootTasks);
             Assert.Equal("station.tasks.1", rootTask.Name);
-            Assert.Equal("output/{{ greeting }}.txt", rootTask.Parameters["destination"]?.GetValue<string>());
+            Assert.Equal("output/{{ greeting }}.txt", rootTask.Parameters["destination"].GetValue<string>());
 
             var role = Assert.Single(loader.DiscoverLocalRoles(directory.Path));
             var roleTask = Assert.Single(loader.LoadRoleTasks(role, configuration.RootVariables));
             Assert.Equal("base.tasks.1", roleTask.Name);
-            Assert.Equal("role/{{ greeting }}.txt", roleTask.Parameters["destination"]?.GetValue<string>());
+            Assert.Equal("role/{{ greeting }}.txt", roleTask.Parameters["destination"].GetValue<string>());
             Assert.Equal("cli", roleTask.Variables.Get<string>("greeting"));
         }
         finally
         {
             Environment.SetEnvironmentVariable("CONFIG_TOOL_VAR_GREETING", originalValue);
         }
+    }
+
+    [Fact]
+    public void Load_supports_javascript_vars_defaults_and_roles()
+    {
+        using var directory = new TemporaryDirectory();
+        WriteFile(directory.Path, "station.yaml", """
+            roles:
+              - base
+            plugins: []
+            vars:
+              greeting: root
+              destination_path: root-output.txt
+            """);
+        WriteFile(directory.Path, "vars/00-common.yaml", """
+            greeting: yaml
+            """);
+        WriteFile(directory.Path, "vars/10-derived.js", """
+            import { greeting } from 'station:vars';
+
+            export default {
+              chosen_greeting: greeting
+            };
+            """);
+        WriteFile(directory.Path, "roles/base/defaults.js", """
+            export default {
+              destination_path: 'defaults-output.txt'
+            };
+            """);
+        WriteFile(directory.Path, "roles/base/role.js", """
+            import { copy } from 'station:modules/builtin';
+            import { destination_path } from 'station:vars';
+
+            task('Copy from JS role', copy, {
+              file: 'sample.txt',
+              destination: destination_path
+            });
+            """);
+
+        var loader = new ConfigLoader();
+        var configuration = loader.Load(directory.Path);
+
+        Assert.Equal("root", configuration.RootVariables.Get<string>("greeting"));
+        Assert.Equal("root", configuration.RootVariables.Get<string>("chosen_greeting"));
+
+        var role = Assert.Single(loader.DiscoverLocalRoles(directory.Path));
+        var roleTask = Assert.Single(loader.LoadRoleTasks(role, configuration.RootVariables));
+        Assert.Equal("Copy from JS role", roleTask.Name);
+        var destination = Assert.IsType<VariableReference>(roleTask.Parameters["destination"]);
+        Assert.Equal("destination_path", destination.Path);
     }
 
     private static void WriteFile(string root, string relativePath, string contents)

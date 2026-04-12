@@ -1,22 +1,22 @@
-using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Nodes;
+
+using Station.Abstractions.Interfaces;
 
 namespace Station.Abstractions.Models;
 
 public sealed class VariableSet
 {
-    public VariableSet(JsonNode? root)
+    public VariableSet(ConfigObject? root)
     {
-        Root = root?.DeepClone();
+        Root = root ?? new ConfigObject();
     }
 
-    public JsonNode? Root { get; }
+    public ConfigObject Root { get; }
 
-    public VariableSet CreateOverlay(JsonNode? overlay) =>
-        new(MergeNodes(Root, overlay));
+    public VariableSet CreateOverlay(ConfigObject? overlay) =>
+        overlay is null ? new VariableSet(Root) : new((ConfigObject)ConfigValueUtilities.Merge(Root, overlay));
 
-    public bool Contains(string path) => TryGetNode(path, out _);
+    public bool Contains(string path) => TryGetRaw(path, out _);
 
     public T? Get<T>(string path)
     {
@@ -30,20 +30,16 @@ public sealed class VariableSet
 
     public bool TryGetValue<T>(string path, out T? value)
     {
-        if (!TryGetNode(path, out var node) || node is null)
+        if (!TryGetRaw(path, out var rawValue))
         {
             value = default;
             return false;
         }
 
+        var resolved = ConfigValueUtilities.ResolveValue(rawValue, this);
         try
         {
-            value = node.Deserialize<T>();
-            return true;
-        }
-        catch (Exception) when (typeof(T) == typeof(string))
-        {
-            value = (T?)(object?)node.ToJsonString();
+            value = ConvertTo<T>(resolved);
             return true;
         }
         catch (JsonException)
@@ -53,127 +49,48 @@ public sealed class VariableSet
         }
     }
 
-    public bool TryGetNode(string path, out JsonNode? node)
+    public bool TryGetRaw(string path, out ConfigValue value)
     {
-        node = Root;
-        foreach (var segment in SplitPath(path))
+        ConfigValue current = Root;
+        foreach (var segment in ConfigValueUtilities.SplitPath(path))
         {
-            if (node is not JsonObject jsonObject)
+            if (current is not ConfigObject configObject || !configObject.TryGetValue(segment, out current))
             {
-                node = null;
+                value = ConfigNull.Instance;
                 return false;
             }
-
-            if (!jsonObject.TryGetPropertyValue(segment, out node))
-            {
-                var match = jsonObject.FirstOrDefault(pair =>
-                    string.Equals(pair.Key, segment, StringComparison.OrdinalIgnoreCase));
-                if (string.IsNullOrWhiteSpace(match.Key))
-                {
-                    node = null;
-                    return false;
-                }
-
-                node = match.Value;
-            }
         }
 
-        return node is not null;
+        value = current;
+        return true;
     }
 
-    public object? ToObjectGraph() => ConvertNodeToObject(Root);
+    public object? ToObjectGraph(ITemplateEngine? templateEngine = null, string? sourceName = null) =>
+        ConfigValueUtilities.ToObjectGraph(Root, this, templateEngine, sourceName);
 
-    public IEnumerable<(string Path, JsonNode? Value)> EnumeratePaths()
+    public IEnumerable<(string Path, ConfigValue Value)> EnumeratePaths() =>
+        ConfigValueUtilities.EnumeratePaths(Root)
+            .Where(static item => !string.IsNullOrWhiteSpace(item.Path));
+
+    private static T? ConvertTo<T>(ConfigValue value)
     {
-        if (Root is null)
+        if (value is ConfigNull)
         {
-            yield break;
+            return default;
         }
 
-        foreach (var item in EnumeratePaths(Root, string.Empty))
+        var objectGraph = ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()));
+        if (objectGraph is null)
         {
-            yield return item;
-        }
-    }
-
-    private static IEnumerable<(string Path, JsonNode? Value)> EnumeratePaths(JsonNode node, string path)
-    {
-        if (node is JsonObject jsonObject)
-        {
-            foreach (var (key, value) in jsonObject)
-            {
-                var childPath = string.IsNullOrEmpty(path) ? key : $"{path}.{key}";
-                if (value is null)
-                {
-                    yield return (childPath, null);
-                    continue;
-                }
-
-                foreach (var item in EnumeratePaths(value, childPath))
-                {
-                    yield return item;
-                }
-            }
-
-            yield break;
+            return default;
         }
 
-        yield return (path, node);
-    }
-
-    private static IEnumerable<string> SplitPath(string path) =>
-        path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-    private static JsonNode? MergeNodes(JsonNode? baseNode, JsonNode? overlayNode)
-    {
-        if (baseNode is null)
+        if (objectGraph is T typedValue)
         {
-            return overlayNode?.DeepClone();
+            return typedValue;
         }
 
-        if (overlayNode is null)
-        {
-            return baseNode.DeepClone();
-        }
-
-        if (baseNode is JsonObject baseObject && overlayNode is JsonObject overlayObject)
-        {
-            var merged = (JsonObject)baseObject.DeepClone();
-            foreach (var (key, value) in overlayObject)
-            {
-                merged[key] = MergeNodes(merged[key], value);
-            }
-
-            return merged;
-        }
-
-        return overlayNode.DeepClone();
-    }
-
-    private static object? ConvertNodeToObject(JsonNode? node) =>
-        node switch
-        {
-            null => null,
-            JsonObject jsonObject => ConvertObject(jsonObject),
-            JsonArray jsonArray => jsonArray.Select(ConvertNodeToObject).ToArray(),
-            JsonValue jsonValue when jsonValue.TryGetValue<bool>(out var boolValue) => boolValue,
-            JsonValue jsonValue when jsonValue.TryGetValue<int>(out var intValue) => intValue,
-            JsonValue jsonValue when jsonValue.TryGetValue<long>(out var longValue) => longValue,
-            JsonValue jsonValue when jsonValue.TryGetValue<decimal>(out var decimalValue) => decimalValue,
-            JsonValue jsonValue when jsonValue.TryGetValue<double>(out var doubleValue) => doubleValue,
-            JsonValue jsonValue when jsonValue.TryGetValue<string>(out var stringValue) => stringValue,
-            JsonValue jsonValue => jsonValue.ToJsonString(),
-            _ => node.ToJsonString(),
-        };
-
-    private static IReadOnlyDictionary<string, object?> ConvertObject(JsonObject jsonObject)
-    {
-        var result = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        foreach (var (key, value) in jsonObject)
-        {
-            result[key] = ConvertNodeToObject(value);
-        }
-
-        return result;
+        var json = JsonSerializer.Serialize(objectGraph);
+        return JsonSerializer.Deserialize<T>(json);
     }
 }

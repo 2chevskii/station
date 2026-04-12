@@ -27,7 +27,11 @@ internal sealed class RoleCatalog
                 plugin.Name,
                 shortName,
                 $"{plugin.Name}.{shortName}",
-                Path.Combine(plugin.PluginRoot, "roles", shortName))));
+                Path.Combine(plugin.PluginRoot, "roles", shortName),
+                plugin.Tree.RolesRoot?.Directories.First(directory =>
+                    string.Equals(directory.Name, shortName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ConfigurationException(
+                    $"Plugin '{plugin.Name}' exports role '{shortName}', but its role directory is missing."))));
         }
 
         return new RoleCatalog(

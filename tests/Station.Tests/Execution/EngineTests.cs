@@ -119,6 +119,66 @@ public sealed class EngineTests
         Assert.Contains(variableSection.Children, static child => child.Text == "greeting = hello");
     }
 
+    [Fact]
+    public async Task Validate_supports_javascript_roles_and_defaults()
+    {
+        using var directory = new TemporaryDirectory();
+        WriteFile(directory.Path, "station.yaml", """
+            roles:
+              - base
+            plugins: []
+            vars:
+              destination_path: OUTPUT.txt
+            """);
+        WriteFile(directory.Path, "vars/00-common.js", """
+            export default {
+              source_name: 'sample.txt'
+            };
+            """);
+        WriteFile(directory.Path, "roles/base/defaults.js", """
+            export default {
+              destination_path: 'DEFAULT.txt'
+            };
+            """);
+        WriteFile(directory.Path, "roles/base/role.js", """
+            import { copy } from 'station:modules/builtin';
+            import { destination_path, source_name } from 'station:vars';
+
+            task('Copy using JS role', copy, {
+              file: source_name,
+              destination: destination_path
+            });
+            """);
+        WriteFile(directory.Path, "roles/base/files/sample.txt", "hello");
+
+        var engine = CreateEngine();
+        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("Validated", result.Message);
+    }
+
+    [Fact]
+    public async Task Validate_resolves_plugin_roles_from_local_plugins_authored_in_javascript()
+    {
+        using var directory = new TemporaryDirectory();
+        CreateLocalPlugin(directory.Path, "demo_plugin", "example.plugin", "plugin-role", includeModule: true, useJavaScriptRole: true);
+        WriteFile(directory.Path, "station.yaml", """
+            roles:
+              - plugin-role
+            plugins:
+              - demo_plugin
+            vars:
+              destination_path: OUTPUT.txt
+            """);
+
+        var engine = CreateEngine();
+        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+
+        Assert.True(result.Succeeded);
+        Assert.Contains("Validated", result.Message);
+    }
+
     private static ConfigEngine CreateEngine()
     {
         var processRunner = new StubProcessRunner();
@@ -141,7 +201,8 @@ public sealed class EngineTests
         string declarationName,
         string pluginName,
         string roleName,
-        bool includeModule)
+        bool includeModule,
+        bool useJavaScriptRole = false)
     {
         var pluginRoot = Path.Combine(root, "plugins", declarationName);
         Directory.CreateDirectory(pluginRoot);
@@ -155,13 +216,22 @@ public sealed class EngineTests
             modules:
             {{moduleList}}
             """);
-        WriteFile(
-            pluginRoot,
-            $"roles/{roleName}/role.yaml",
-            """
+        var roleContents = useJavaScriptRole
+            ? """
+            import { script } from 'station:modules/builtin';
+
+            task('__PLUGIN_NAME__.script', {
+              path: 'scripts/sample.ps1'
+            });
+            """.Replace("__PLUGIN_NAME__", pluginName, StringComparison.Ordinal)
+            : """
             - __PLUGIN_NAME__.script:
                 path: scripts/sample.ps1
-            """.Replace("__PLUGIN_NAME__", pluginName, StringComparison.Ordinal)
+            """.Replace("__PLUGIN_NAME__", pluginName, StringComparison.Ordinal);
+        WriteFile(
+            pluginRoot,
+            $"roles/{roleName}/{(useJavaScriptRole ? "role.js" : "role.yaml")}",
+            roleContents
         );
         WriteFile(pluginRoot, $"roles/{roleName}/scripts/sample.ps1", "Write-Output '{\"changed\":false}'");
 

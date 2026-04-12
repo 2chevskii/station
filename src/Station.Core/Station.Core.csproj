@@ -16,6 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Jint" />
     <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="Scriban" />
     <PackageReference Include="SharpCompress" />

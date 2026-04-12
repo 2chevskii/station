@@ -1,4 +1,3 @@
-using System.Text.Json.Nodes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
 using Station.Core.Execution;
@@ -21,7 +20,10 @@ public sealed class TemplateModuleTests
         await File.WriteAllTextAsync(templatePath, "hello {{ name }}");
 
         var destinationPath = Path.Combine(directory.Path, "out.txt");
-        var variables = new VariableSet(new JsonObject { ["name"] = "Alice" });
+        var variables = new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
+        {
+            ["name"] = ConfigScalar.String("Alice"),
+        }));
         var templateEngine = new ScribanTemplateRenderer();
 
         var checkContext = new ModuleContext(

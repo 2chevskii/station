@@ -1,10 +1,9 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
-
 using Station.Abstractions.Enums;
+using Station.Abstractions.Models;
 using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
 using Station.Core.Execution.Models;
+using Station.Core.Infrastructure.Configuration;
 using Station.Core.Infrastructure.Privileges;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Infrastructure.Templates;
@@ -157,7 +156,7 @@ public sealed class ConfigEngine
             var binding = moduleBinder.Bind(
                 resolvedModule.Schema,
                 context,
-                (JsonObject)task.Parameters.DeepClone(),
+                task.Parameters,
                 allowDeferred: mode == ExecutionMode.Validate
             );
 
@@ -363,7 +362,7 @@ public sealed class ConfigEngine
                 var binding = moduleBinder.Bind(
                     resolvedModule.Schema,
                     context,
-                    (JsonObject)task.Parameters.DeepClone(),
+                    task.Parameters,
                     allowDeferred: true
                 );
 
@@ -407,7 +406,7 @@ public sealed class ConfigEngine
                     foreach (var variable in variablePaths)
                     {
                         variableNodes.Add(new ExplainNode(
-                            $"{variable.Path} = {FormatNode(variable.Value)}",
+                            $"{variable.Path} = {ConfigValueDisplay.Format(variable.Value)}",
                             ExplainNodeKind.Value,
                             []));
                     }
@@ -458,17 +457,9 @@ public sealed class ConfigEngine
             ExplainNodeKind.Section,
             values.Select(static value =>
                     new ExplainNode(
-                        $"{value.Path} = {FormatNode(value.Value)}",
+                        $"{value.Path} = {ConfigValueDisplay.Format(value.Value)}",
                         ExplainNodeKind.Value,
                         []))
                 .ToArray());
     }
-
-    private static string FormatNode(JsonNode? node) =>
-        node switch
-        {
-            null => "<null>",
-            JsonValue jsonValue when jsonValue.TryGetValue<string>(out var stringValue) => stringValue,
-            _ => node.ToJsonString(new JsonSerializerOptions { WriteIndented = false })
-        };
 }

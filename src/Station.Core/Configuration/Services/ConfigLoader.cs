@@ -6,12 +6,14 @@ namespace Station.Core.Configuration.Services;
 
 public sealed class ConfigLoader
 {
-    private const string RootManifestFileName = "station.yaml";
-
+    private readonly IConfigArtifactResolver artifactResolver;
+    private readonly ConfigTreeDiscovery configTreeDiscovery;
     private readonly LocalConfigurationDiscovery localDiscovery;
     private readonly PluginDeclarationParser pluginDeclarationParser;
     private readonly PluginManifestLoader pluginManifestLoader;
+    private readonly IReadOnlyList<IRoleDocumentLoader> roleLoaders;
     private readonly TaskLoader taskLoader;
+    private readonly IReadOnlyList<IVariableDocumentLoader> variableLoaders;
     private readonly VariableScopeLoader variableScopeLoader;
     private readonly YamlConfigurationReader yamlReader;
 
@@ -22,11 +24,24 @@ public sealed class ConfigLoader
 
     internal ConfigLoader(ITemplateEngine templateEngine)
     {
+        configTreeDiscovery = new ConfigTreeDiscovery();
         yamlReader = new YamlConfigurationReader();
-        variableScopeLoader = new VariableScopeLoader(yamlReader);
-        taskLoader = new TaskLoader(templateEngine, yamlReader);
+        var javaScriptRuntime = new JavaScriptConfigRuntime();
+        roleLoaders =
+        [
+            new YamlRoleDocumentLoader(yamlReader),
+            new JavaScriptRoleDocumentLoader(javaScriptRuntime),
+        ];
+        variableLoaders =
+        [
+            new YamlVariableDocumentLoader(yamlReader),
+            new JavaScriptVariableDocumentLoader(javaScriptRuntime),
+        ];
+        artifactResolver = new ConfigArtifactResolver(roleLoaders, variableLoaders);
+        variableScopeLoader = new VariableScopeLoader(artifactResolver, variableLoaders);
+        taskLoader = new TaskLoader(templateEngine, artifactResolver, roleLoaders);
         pluginDeclarationParser = new PluginDeclarationParser();
-        pluginManifestLoader = new PluginManifestLoader(yamlReader);
+        pluginManifestLoader = new PluginManifestLoader(yamlReader, (ConfigArtifactResolver)artifactResolver, configTreeDiscovery);
         localDiscovery = new LocalConfigurationDiscovery();
     }
 
@@ -34,13 +49,13 @@ public sealed class ConfigLoader
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null)
     {
-        var fullConfigRoot = Path.GetFullPath(configRoot);
-        var manifestPath = Path.Combine(fullConfigRoot, RootManifestFileName);
-        if (!File.Exists(manifestPath))
+        var tree = configTreeDiscovery.Discover(configRoot);
+        if (tree.RootManifest is null)
         {
-            throw new ConfigurationException($"Missing root manifest '{manifestPath}'.");
+            throw new ConfigurationException($"Missing root manifest '{Path.Combine(Path.GetFullPath(configRoot), "station.yaml")}'.");
         }
 
+        var manifestPath = tree.RootManifest.FullPath;
         var rootNode = yamlReader.LoadObject(manifestPath);
         if (rootNode is not IDictionary<string, object?> manifest)
         {
@@ -50,18 +65,19 @@ public sealed class ConfigLoader
         }
 
         var variables = variableScopeLoader.LoadRootVariables(
-            fullConfigRoot,
+            tree.RootPath,
+            tree,
             manifest,
             manifestPath,
             cliVariables
         );
 
         return new LoadedConfiguration(
-            fullConfigRoot,
+            tree.RootPath,
             variables,
             pluginDeclarationParser.Parse(manifest.GetOptionalList("plugins"), manifestPath),
             manifest.GetRequiredStringList("roles", manifestPath),
-            taskLoader.LoadRootTasks(fullConfigRoot, manifest, variables, manifestPath)
+            taskLoader.LoadRootTasks(tree.RootPath, manifest, variables, manifestPath)
         );
     }
 
@@ -71,7 +87,7 @@ public sealed class ConfigLoader
     {
         return taskLoader.LoadRoleTasks(
             role,
-            variableScopeLoader.CreateRoleVariables(role.RoleRoot, rootVariables)
+            variableScopeLoader.CreateRoleVariables(role, rootVariables)
         );
     }
 

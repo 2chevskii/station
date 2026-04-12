@@ -1,10 +1,10 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 using Station.Abstractions.Enums;
+using Station.Abstractions.Models;
 using Station.Core.Execution.Models;
-using Station.Core.Infrastructure.Json;
+using Station.Core.Infrastructure.Configuration;
 
 namespace Station.Core.Execution.Services;
 
@@ -18,7 +18,7 @@ internal sealed class ModuleBinder
     public ModuleBindingResult Bind(
         ModuleSchema schema,
         ModuleContext context,
-        JsonObject rawParameters,
+        ConfigObject rawParameters,
         bool allowDeferred)
     {
         var diagnostics = new List<ModuleDiagnostic>();
@@ -116,9 +116,14 @@ internal sealed class ModuleBinder
         );
     }
 
-    private static (bool Success, object? Value, bool IsDeferred, string DisplayValue, ModuleDiagnostic? Diagnostic) BindValue(
+    private static (
+        bool Success,
+        object? Value,
+        bool IsDeferred,
+        string DisplayValue,
+        ModuleDiagnostic? Diagnostic) BindValue(
         Type targetType,
-        JsonNode? rawValue,
+        ConfigValue rawValue,
         VariableSet variables,
         Station.Abstractions.Interfaces.ITemplateEngine templateEngine,
         string parameterName,
@@ -126,8 +131,8 @@ internal sealed class ModuleBinder
     {
         try
         {
-            var renderedNode = JsonNodeHelpers.RenderNode(rawValue, variables, templateEngine, parameterName);
-            var convertedValue = ConvertValue(renderedNode, targetType);
+            var resolvedValue = ConfigValueUtilities.ResolveValue(rawValue, variables, templateEngine, parameterName);
+            var convertedValue = ConvertValue(resolvedValue, targetType);
             return (true, convertedValue, false, FormatValue(convertedValue), null);
         }
         catch (ConfigurationException exception) when (allowDeferred && exception.Message.Contains("render template", StringComparison.OrdinalIgnoreCase))
@@ -157,14 +162,19 @@ internal sealed class ModuleBinder
         }
     }
 
-    private static object? ConvertValue(JsonNode? value, Type targetType)
+    private static object? ConvertValue(ConfigValue value, Type targetType)
     {
-        if (targetType == typeof(JsonNode) || targetType.IsAssignableFrom(typeof(JsonNode)))
+        if (targetType == typeof(ConfigValue) || targetType.IsAssignableFrom(typeof(ConfigValue)))
         {
-            return value?.DeepClone();
+            return value;
         }
 
-        if (value is null)
+        if (targetType.FullName == "System.Text.Json.Nodes.JsonNode" || targetType.IsAssignableTo(typeof(System.Text.Json.Nodes.JsonNode)))
+        {
+            return ConfigValueUtilities.ToJsonNode(value, new VariableSet(new ConfigObject()));
+        }
+
+        if (value is ConfigNull)
         {
             if (!targetType.IsValueType || Nullable.GetUnderlyingType(targetType) is not null)
             {
@@ -177,7 +187,7 @@ internal sealed class ModuleBinder
         var nonNullableType = Nullable.GetUnderlyingType(targetType) ?? targetType;
         if (nonNullableType == typeof(string))
         {
-            if (value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var stringValue))
+            if (value is ConfigScalar { Kind: ConfigScalarKind.String, Value: string stringValue })
             {
                 return stringValue;
             }
@@ -185,54 +195,60 @@ internal sealed class ModuleBinder
             throw new ConfigurationException($"Expected a string but received '{value.GetType().Name}'.");
         }
 
-        if (value is JsonValue scalarValue && scalarValue.TryGetValue<string>(out var renderedString))
+        if (value is ConfigScalar scalar)
         {
-            return ConvertScalarString(renderedString, targetType);
+            return ConvertScalarValue(scalar, targetType);
         }
 
-        return JsonSerializer.Deserialize(value.ToJsonString(), targetType, JsonSerializerOptions)
+        return JsonSerializer.Deserialize(
+            JsonSerializer.Serialize(ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()))),
+            targetType,
+            JsonSerializerOptions)
             ?? throw new ConfigurationException($"Failed to deserialize value for type '{targetType.Name}'.");
     }
 
-    private static object? ConvertScalarString(string value, Type targetType)
+    private static object? ConvertScalarValue(ConfigScalar value, Type targetType)
     {
         var nonNullableType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-        if (nonNullableType == typeof(string))
+        if (value.Kind == ConfigScalarKind.String && value.Value is string stringValue)
         {
-            return value;
-        }
+            if (nonNullableType == typeof(string))
+            {
+                return stringValue;
+            }
 
-        if (nonNullableType.IsEnum)
-        {
-            return Enum.Parse(nonNullableType, value, ignoreCase: true);
-        }
+            if (nonNullableType.IsEnum)
+            {
+                return Enum.Parse(nonNullableType, stringValue, ignoreCase: true);
+            }
 
-        if (nonNullableType == typeof(Guid))
-        {
-            return Guid.Parse(value);
-        }
+            if (nonNullableType == typeof(Guid))
+            {
+                return Guid.Parse(stringValue);
+            }
 
-        if (nonNullableType == typeof(DateTime))
-        {
-            return DateTime.Parse(value, CultureInfo.InvariantCulture);
-        }
+            if (nonNullableType == typeof(DateTime))
+            {
+                return DateTime.Parse(stringValue, CultureInfo.InvariantCulture);
+            }
 
-        if (nonNullableType == typeof(DateTimeOffset))
-        {
-            return DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
-        }
+            if (nonNullableType == typeof(DateTimeOffset))
+            {
+                return DateTimeOffset.Parse(stringValue, CultureInfo.InvariantCulture);
+            }
 
-        if (nonNullableType == typeof(TimeSpan))
-        {
-            return TimeSpan.Parse(value, CultureInfo.InvariantCulture);
+            if (nonNullableType == typeof(TimeSpan))
+            {
+                return TimeSpan.Parse(stringValue, CultureInfo.InvariantCulture);
+            }
         }
 
         if (typeof(IConvertible).IsAssignableFrom(nonNullableType))
         {
-            return Convert.ChangeType(value, nonNullableType, CultureInfo.InvariantCulture);
+            return Convert.ChangeType(value.Value, nonNullableType, CultureInfo.InvariantCulture);
         }
 
-        return JsonSerializer.Deserialize(JsonSerializer.Serialize(value), targetType, JsonSerializerOptions)
+        return JsonSerializer.Deserialize(JsonSerializer.Serialize(value.Value), targetType, JsonSerializerOptions)
             ?? throw new ConfigurationException($"Failed to deserialize scalar value for type '{targetType.Name}'.");
     }
 
@@ -241,7 +257,7 @@ internal sealed class ModuleBinder
         {
             null => "<null>",
             string stringValue => stringValue,
-            JsonNode jsonNode => jsonNode.ToJsonString(),
+            ConfigValue configValue => ConfigValueDisplay.Format(configValue),
             _ => JsonSerializer.Serialize(value, JsonSerializerOptions)
         };
 }

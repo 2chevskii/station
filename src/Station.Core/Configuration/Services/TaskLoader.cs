@@ -1,22 +1,29 @@
-using System.Text.Json.Nodes;
-using Station.Abstractions.Models;
+using System.Globalization;
+
 using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
 using Station.Core.Configuration.Models;
-using Station.Core.Infrastructure.Json;
+using Station.Core.Infrastructure.Configuration;
 
 namespace Station.Core.Configuration.Services;
 
 internal sealed class TaskLoader
 {
-    private const string RoleFileName = "role.yaml";
-
+    private readonly IConfigArtifactResolver artifactResolver;
+    private readonly IReadOnlyDictionary<string, IRoleDocumentLoader> roleLoaders;
     private readonly ITemplateEngine templateEngine;
-    private readonly YamlConfigurationReader yamlReader;
 
-    public TaskLoader(ITemplateEngine templateEngine, YamlConfigurationReader yamlReader)
+    public TaskLoader(
+        ITemplateEngine templateEngine,
+        IConfigArtifactResolver artifactResolver,
+        IEnumerable<IRoleDocumentLoader> roleLoaders)
     {
         this.templateEngine = templateEngine;
-        this.yamlReader = yamlReader;
+        this.artifactResolver = artifactResolver;
+        this.roleLoaders = roleLoaders.ToDictionary(
+            static loader => loader.Id,
+            static loader => loader,
+            StringComparer.OrdinalIgnoreCase);
     }
 
     public IReadOnlyList<LoadedTask> LoadRootTasks(
@@ -25,48 +32,47 @@ internal sealed class TaskLoader
         VariableSet variables,
         string manifestPath)
     {
+        var taskValues = manifest.GetOptionalList("tasks") ?? [];
         return ParseTasks(
-            manifest.GetOptionalList("tasks"),
+            new ConfigArray(taskValues.Select(static value =>
+                Infrastructure.Configuration.ConfigValueFactory.FromClrValue(value))),
             roleName: null,
             taskRoot: configRoot,
             roleRoot: null,
             variables,
             manifestPath,
-            "station.tasks"
-        );
+            "station.tasks");
     }
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(ResolvedRole role, VariableSet variables)
     {
-        var roleFilePath = Path.Combine(role.RoleRoot, RoleFileName);
-        if (!File.Exists(roleFilePath))
-        {
-            throw new ConfigurationException(
-                $"Role '{role.FullName}' is missing '{RoleFileName}'."
-            );
-        }
+        var artifact = artifactResolver.ResolveRoleTaskArtifact(role.RoleDirectory, role.FullName);
+        var loader = roleLoaders.TryGetValue(artifact.LoaderId, out var resolvedLoader)
+            ? resolvedLoader
+            : throw new ConfigurationException(
+                $"No role loader is registered for '{artifact.DisplayName}'.");
 
-        var taskNodes = yamlReader.LoadObject(roleFilePath) as IEnumerable<object?>;
-        if (taskNodes is null)
-        {
-            throw new ConfigurationException(
-                $"Role file '{roleFilePath}' must contain a top-level task list."
-            );
-        }
+        var tasks = loader.LoadRoleTasks(
+            artifact,
+            new ConfigEvaluationContext(
+                role.RoleRoot,
+                artifact,
+                variables,
+                role.ShortName,
+                role.RoleRoot));
 
         return ParseTasks(
-            taskNodes.ToList(),
+            tasks,
             role.ShortName,
             role.RoleRoot,
             role.RoleRoot,
             variables,
-            roleFilePath,
-            $"{role.ShortName}.tasks"
-        );
+            artifact.FullPath,
+            $"{role.ShortName}.tasks");
     }
 
     private List<LoadedTask> ParseTasks(
-        IReadOnlyList<object?>? taskNodes,
+        ConfigArray taskNodes,
         string? roleName,
         string taskRoot,
         string? roleRoot,
@@ -75,66 +81,50 @@ internal sealed class TaskLoader
         string defaultNamePrefix)
     {
         var tasks = new List<LoadedTask>();
-        if (taskNodes is null)
-        {
-            return tasks;
-        }
-
         for (var index = 0; index < taskNodes.Count; index++)
         {
-            if (taskNodes[index] is not IDictionary<string, object?> taskMapping)
+            if (taskNodes[index] is not ConfigObject taskMapping)
             {
                 throw new ConfigurationException(
-                    $"Task #{index + 1} in '{sourceName}' must be a mapping."
-                );
+                    $"Task #{index + 1} in '{sourceName}' must be a mapping.");
             }
 
-            var renderedTask = ParseTask(
-                taskMapping,
-                variables,
-                sourceName,
-                defaultNamePrefix,
-                index + 1
-            );
-            tasks.Add(
-                new LoadedTask(
-                    renderedTask.Name,
-                    renderedTask.ModuleName,
-                    renderedTask.Parameters,
-                    taskRoot,
-                    roleName,
-                    roleRoot,
-                    variables
-                )
-            );
+            var renderedTask = ParseTask(taskMapping, variables, sourceName, defaultNamePrefix, index + 1);
+            tasks.Add(new LoadedTask(
+                renderedTask.Name,
+                renderedTask.ModuleName,
+                renderedTask.Parameters,
+                taskRoot,
+                roleName,
+                roleRoot,
+                variables));
         }
 
         return tasks;
     }
 
-    private (string Name, string ModuleName, JsonObject Parameters) ParseTask(
-        IDictionary<string, object?> taskMapping,
+    private (string Name, string ModuleName, ConfigObject Parameters) ParseTask(
+        ConfigObject taskMapping,
         VariableSet variables,
         string sourceName,
         string defaultNamePrefix,
         int oneBasedIndex)
     {
-        string? explicitName = null;
-        KeyValuePair<string, object?>? moduleEntry = null;
+        ConfigValue? explicitName = null;
+        KeyValuePair<string, ConfigValue>? moduleEntry = null;
 
         foreach (var (key, value) in taskMapping)
         {
             if (string.Equals(key, "name", StringComparison.OrdinalIgnoreCase))
             {
-                explicitName = value?.ToString();
+                explicitName = value;
                 continue;
             }
 
             if (moduleEntry is not null)
             {
                 throw new ConfigurationException(
-                    $"Task in '{sourceName}' must declare exactly one module key besides 'name'."
-                );
+                    $"Task in '{sourceName}' must declare exactly one module key besides 'name'.");
             }
 
             moduleEntry = KeyValuePair.Create(key, value);
@@ -149,25 +139,33 @@ internal sealed class TaskLoader
         if (string.IsNullOrWhiteSpace(moduleName))
         {
             throw new ConfigurationException(
-                $"Task in '{sourceName}' declares an empty module name."
-            );
+                $"Task in '{sourceName}' declares an empty module name.");
         }
 
-        if (moduleEntry.Value.Value is not IDictionary<string, object?> rawParameters)
+        if (moduleEntry.Value.Value is not ConfigObject rawParameters)
         {
             throw new ConfigurationException(
-                $"Task module '{moduleName}' in '{sourceName}' must map to an object for now."
-            );
+                $"Task module '{moduleName}' in '{sourceName}' must map to an object for now.");
         }
 
-        var taskNameTemplate = string.IsNullOrWhiteSpace(explicitName)
-            ? $"{defaultNamePrefix}.{oneBasedIndex}"
-            : explicitName;
+        var taskName = explicitName is null
+            ? templateEngine.Render($"{defaultNamePrefix}.{oneBasedIndex}", variables, sourceName)
+            : RenderTaskName(explicitName, variables, sourceName);
 
-        return (
-            templateEngine.Render(taskNameTemplate, variables, sourceName),
-            moduleName,
-            JsonNodeHelpers.ToJsonObject(rawParameters)
-        );
+        return (taskName, moduleName, rawParameters);
+    }
+
+    private string RenderTaskName(ConfigValue nameValue, VariableSet variables, string sourceName)
+    {
+        var resolvedName = ConfigValueUtilities.ResolveValue(nameValue, variables, templateEngine, sourceName);
+        return resolvedName switch
+        {
+            ConfigScalar { Kind: ConfigScalarKind.String, Value: string stringValue } => stringValue,
+            ConfigScalar scalar => Convert.ToString(scalar.Value, CultureInfo.InvariantCulture)
+                ?? throw new ConfigurationException(
+                    $"Task name in '{sourceName}' must resolve to a non-empty scalar."),
+            _ => throw new ConfigurationException(
+                $"Task name in '{sourceName}' must resolve to a scalar.")
+        };
     }
 }
