@@ -2,8 +2,10 @@ using Station.Abstractions.Enums;
 using Station.Core.Configuration;
 using Station.Core.Configuration.Services;
 using Station.Core.Execution;
+using Station.Core.Execution.Services;
 using Station.Core.Infrastructure.Templates;
 using Station.Core.Plugins;
+using Station.Core.Plugins.Services;
 using Station.Modules.Builtin.Dotfile;
 using Station.Modules.Builtin.Script;
 using Station.Tests.Helpers;
@@ -105,9 +107,16 @@ public sealed class EngineTests
         var result = await engine.ExplainAsync(directory.Path);
 
         Assert.True(result.Succeeded);
-        Assert.Contains("base.tasks.1 [station.builtin.template]", result.Diagram);
-        Assert.Contains("template = sample", result.Diagram);
-        Assert.Contains("greeting = hello", result.Diagram);
+        Assert.NotNull(result.Plan);
+        var plan = result.Plan!;
+        var tasksSection = Assert.Single(plan.Children, static child => child.Text == "tasks");
+        var taskNode = Assert.Single(tasksSection.Children);
+        Assert.Equal("base.tasks.1 [station.builtin.template]", taskNode.Text);
+        Assert.Contains(taskNode.Children, static child => child.Text == "role: base");
+        var parameterSection = Assert.Single(taskNode.Children, static child => child.Text == "parameters");
+        Assert.Contains(parameterSection.Children, static child => child.Text == "template = sample");
+        var variableSection = Assert.Single(taskNode.Children, static child => child.Text == "variables");
+        Assert.Contains(variableSection.Children, static child => child.Text == "greeting = hello");
     }
 
     private static ConfigEngine CreateEngine()

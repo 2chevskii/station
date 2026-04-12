@@ -1,16 +1,17 @@
-using System.Text.Json.Nodes;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 using Station.Abstractions.Enums;
-using Station.Abstractions.Models;
-using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
+using Station.Core.Execution.Models;
 using Station.Core.Infrastructure.Privileges;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Infrastructure.Templates;
-using Station.Core.Plugins;
+using Station.Core.Plugins.Models;
+using Station.Core.Plugins.Services;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Services;
 
 public sealed class ConfigEngine
 {
@@ -286,7 +287,7 @@ public sealed class ConfigEngine
 
             if (!restoreResult.Succeeded)
             {
-                return new ExplainResult(false, restoreResult.Message, restoreResult.Diagnostics, string.Empty);
+                return new ExplainResult(false, restoreResult.Message, restoreResult.Diagnostics, null);
             }
 
             moduleCatalog = ModuleCatalog.Create(
@@ -309,25 +310,28 @@ public sealed class ConfigEngine
         }
         catch (Exception exception) when (exception is ConfigurationException or IOException)
         {
-            return new ExplainResult(false, exception.Message, [exception.Message], string.Empty);
+            return new ExplainResult(false, exception.Message, [exception.Message], null);
         }
 
         var diagnostics = new List<string>();
-        var lines = new List<string> { "station" };
-        AppendSection(lines, "variables", configuration.RootVariables);
+        var rootChildren = new List<ExplainNode>
+        {
+            CreateVariableSection("variables", configuration.RootVariables)
+        };
 
         if (tasks.Count == 0)
         {
-            lines.Add("+- tasks");
-            lines.Add("|  \\- <none>");
+            rootChildren.Add(new ExplainNode(
+                "tasks",
+                ExplainNodeKind.Section,
+                [new ExplainNode("<none>", ExplainNodeKind.Value, [])]));
         }
         else
         {
-            lines.Add("+- tasks");
+            var taskNodes = new List<ExplainNode>();
             for (var index = 0; index < tasks.Count; index++)
             {
                 var task = tasks[index];
-                var taskPrefix = index == tasks.Count - 1 ? "   " : "|  ";
                 ResolvedModule? resolvedModule = null;
                 try
                 {
@@ -336,8 +340,10 @@ public sealed class ConfigEngine
                 catch (ConfigurationException exception)
                 {
                     diagnostics.Add($"{task.Name}: error: {exception.Message}");
-                    lines.Add($"{taskPrefix}+- {task.Name} [{task.ModuleName}]");
-                    lines.Add($"{taskPrefix}|  +- error: {exception.Message}");
+                    taskNodes.Add(new ExplainNode(
+                        $"{task.Name} [{task.ModuleName}]",
+                        ExplainNodeKind.Task,
+                        [new ExplainNode($"error: {exception.Message}", ExplainNodeKind.Error, [])]));
                     continue;
                 }
 
@@ -366,38 +372,55 @@ public sealed class ConfigEngine
                     diagnostics.Add($"{task.Name}: {FormatDiagnostic(diagnostic)}");
                 }
 
-                lines.Add($"{taskPrefix}+- {task.Name} [{resolvedModule.FullName}]");
-                lines.Add($"{taskPrefix}|  +- role: {task.RoleName ?? "root"}");
-                lines.Add($"{taskPrefix}|  +- parameters");
+                var taskChildren = new List<ExplainNode>
+                {
+                    new($"role: {task.RoleName ?? "root"}", ExplainNodeKind.Detail, [])
+                };
+
+                var parameterNodes = new List<ExplainNode>();
                 if (binding.Parameters.Count == 0)
                 {
-                    lines.Add($"{taskPrefix}|  |  \\- <none>");
+                    parameterNodes.Add(new ExplainNode("<none>", ExplainNodeKind.Value, []));
                 }
                 else
                 {
                     foreach (var parameter in binding.Parameters)
                     {
                         var suffix = parameter.IsDeferred ? " (deferred)" : parameter.IsDefaultValue ? " (default)" : string.Empty;
-                        lines.Add(
-                            $"{taskPrefix}|  |  +- {parameter.Name} = {parameter.DisplayValue}{suffix}"
-                        );
+                        parameterNodes.Add(new ExplainNode(
+                            $"{parameter.Name} = {parameter.DisplayValue}{suffix}",
+                            ExplainNodeKind.Value,
+                            []));
                     }
                 }
 
-                lines.Add($"{taskPrefix}|  +- variables");
+                taskChildren.Add(new ExplainNode("parameters", ExplainNodeKind.Section, parameterNodes));
+
+                var variableNodes = new List<ExplainNode>();
                 var variablePaths = task.Variables.EnumeratePaths().OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase).ToArray();
                 if (variablePaths.Length == 0)
                 {
-                    lines.Add($"{taskPrefix}|  |  \\- <none>");
+                    variableNodes.Add(new ExplainNode("<none>", ExplainNodeKind.Value, []));
                 }
                 else
                 {
                     foreach (var variable in variablePaths)
                     {
-                        lines.Add($"{taskPrefix}|  |  +- {variable.Path} = {FormatNode(variable.Value)}");
+                        variableNodes.Add(new ExplainNode(
+                            $"{variable.Path} = {FormatNode(variable.Value)}",
+                            ExplainNodeKind.Value,
+                            []));
                     }
                 }
+
+                taskChildren.Add(new ExplainNode("variables", ExplainNodeKind.Section, variableNodes));
+                taskNodes.Add(new ExplainNode(
+                    $"{task.Name} [{resolvedModule.FullName}]",
+                    ExplainNodeKind.Task,
+                    taskChildren));
             }
+
+            rootChildren.Add(new ExplainNode("tasks", ExplainNodeKind.Section, taskNodes));
         }
 
         var succeeded = diagnostics.All(static diagnostic =>
@@ -406,7 +429,7 @@ public sealed class ConfigEngine
             succeeded,
             $"Explained {tasks.Count} task(s).",
             diagnostics,
-            string.Join(Environment.NewLine, lines)
+            new ExplainNode("station", ExplainNodeKind.Root, rootChildren)
         );
     }
 
@@ -422,20 +445,23 @@ public sealed class ConfigEngine
         return $"{prefix}: {diagnostic.Message}";
     }
 
-    private static void AppendSection(List<string> lines, string title, VariableSet variables)
+    private static ExplainNode CreateVariableSection(string title, VariableSet variables)
     {
-        lines.Add($"+- {title}");
         var values = variables.EnumeratePaths().OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase).ToArray();
         if (values.Length == 0)
         {
-            lines.Add("|  \\- <none>");
-            return;
+            return new ExplainNode(title, ExplainNodeKind.Section, [new ExplainNode("<none>", ExplainNodeKind.Value, [])]);
         }
 
-        foreach (var value in values)
-        {
-            lines.Add($"|  +- {value.Path} = {FormatNode(value.Value)}");
-        }
+        return new ExplainNode(
+            title,
+            ExplainNodeKind.Section,
+            values.Select(static value =>
+                    new ExplainNode(
+                        $"{value.Path} = {FormatNode(value.Value)}",
+                        ExplainNodeKind.Value,
+                        []))
+                .ToArray());
     }
 
     private static string FormatNode(JsonNode? node) =>

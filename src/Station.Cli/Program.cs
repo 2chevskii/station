@@ -3,9 +3,15 @@ using Station.Core;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
+using Spectre.Console;
 using Station.Abstractions.Enums;
 using Station.Core.Execution;
+using Station.Core.Execution.Models;
+using Station.Core.Execution.Services;
 using Station.Core.Plugins;
+using Station.Core.Plugins.Models;
+
+var stationConsole = StationConsole.CreateStandard();
 
 var configOption = new Option<DirectoryInfo?>("--config")
 {
@@ -41,10 +47,10 @@ Command CreateRestoreCommand()
         var result = await engine.RestoreAsync(
             configRoot,
             cliVariables,
-            static message => Console.WriteLine($"[station] {message}"),
+            stationConsole.WriteLogMessage,
             cancellationToken);
 
-        WriteRestoreResult(result);
+        stationConsole.WriteRestoreResult(result);
         return result.Succeeded ? 0 : 1;
     });
     return command;
@@ -63,10 +69,10 @@ Command CreateExplainCommand()
         var result = await engine.ExplainAsync(
             configRoot,
             cliVariables,
-            static message => Console.WriteLine($"[station] {message}"),
+            stationConsole.WriteLogMessage,
             cancellationToken);
 
-        WriteExplainResult(result);
+        stationConsole.WriteExplainResult(result);
         return result.Succeeded ? 0 : 1;
     });
     return command;
@@ -92,10 +98,10 @@ async Task<int> ExecuteCommandAsync(ParseResult parseResult, ExecutionMode mode,
         configRoot,
         mode,
         cliVariables,
-        static message => Console.WriteLine($"[station] {message}"),
+        stationConsole.WriteLogMessage,
         cancellationToken);
 
-    WriteResult(result);
+    stationConsole.WriteResult(result);
     return result.Succeeded ? 0 : 1;
 }
 
@@ -123,66 +129,4 @@ static IReadOnlyDictionary<string, string> ParseCliVariables(string[]? values)
     }
 
     return variables;
-}
-
-static void WriteResult(EngineRunResult result)
-{
-    var output = result.Succeeded ? Console.Out : Console.Error;
-    output.WriteLine(result.Message);
-
-    foreach (var diagnostic in result.Diagnostics)
-    {
-        output.WriteLine($"  - {diagnostic}");
-    }
-
-    foreach (var task in result.Tasks)
-    {
-        var status = task.Result.Failed
-            ? "failed"
-            : task.Result.Changed
-                ? "changed"
-                : task.Result.Skipped
-                    ? "skipped"
-                    : "ok";
-        var roleLabel = string.IsNullOrWhiteSpace(task.RoleName) ? "root" : task.RoleName;
-        output.WriteLine($"  * {task.TaskName} [{task.ModuleName}] ({roleLabel}): {status}");
-        if (!string.IsNullOrWhiteSpace(task.Result.Message))
-        {
-            output.WriteLine($"    {task.Result.Message}");
-        }
-    }
-}
-
-static void WriteRestoreResult(PluginRestoreResult result)
-{
-    var output = result.Succeeded ? Console.Out : Console.Error;
-    output.WriteLine(result.Message);
-
-    foreach (var diagnostic in result.Diagnostics)
-    {
-        output.WriteLine($"  - {diagnostic}");
-    }
-
-    foreach (var plugin in result.Plugins)
-    {
-        var sourceKind = plugin.IsLocal ? "local" : plugin.CacheHit ? "cache" : "downloaded";
-        output.WriteLine(
-            $"  * {plugin.PluginName ?? plugin.Declaration} {plugin.Version ?? "unknown"} [{sourceKind}] => {plugin.PluginRoot}");
-    }
-}
-
-static void WriteExplainResult(ExplainResult result)
-{
-    var output = result.Succeeded ? Console.Out : Console.Error;
-    output.WriteLine(result.Message);
-
-    foreach (var diagnostic in result.Diagnostics)
-    {
-        output.WriteLine($"  - {diagnostic}");
-    }
-
-    if (!string.IsNullOrWhiteSpace(result.Diagram))
-    {
-        output.WriteLine(result.Diagram);
-    }
 }
