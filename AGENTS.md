@@ -21,6 +21,9 @@ This repository contains `Station`, a local desired-state workstation configurat
 - Do not run modifying git operations in parallel.
   This includes commands such as `git add`, `git commit`, `git mv`, `git rm`, `git checkout`, `git switch`, and similar index- or ref-mutating operations.
   Run those sequentially to avoid `index.lock` races.
+- Do not run `dotnet build`, `dotnet test`, or `dotnet restore` in parallel on overlapping or transitively related projects.
+  Build/test/restore commands may race on shared `obj/` and `bin/` outputs or on restore state.
+  Run them sequentially whenever the target projects share dependencies, outputs, or a common solution graph.
 - Keep the task model Ansible-like:
   - optional `name`
   - exactly one module key at task root
