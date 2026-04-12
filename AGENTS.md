@@ -104,7 +104,8 @@ Before closing substantive changes, prefer to run:
 
 ```powershell
 dotnet build Station.slnx -v minimal
-dotnet test tests/Station.Tests/Station.Tests.csproj -v minimal
+dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
+dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal
 ```
 
 If CLI behavior changed, also smoke-test:

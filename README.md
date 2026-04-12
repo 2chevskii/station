@@ -37,6 +37,9 @@ src/
     Station.Modules.Builtin.Scoop/
     Station.Modules.Builtin.Winget/
 tests/
+  Station.UnitTests/
+  Station.IntegrationTests/
+  Station.Testing/
 examples/
   workstation/
 ```
@@ -45,7 +48,27 @@ examples/
 
 ```powershell
 dotnet build Station.slnx -v minimal
-dotnet test tests/Station.Tests/Station.Tests.csproj -v minimal
+dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
+dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal
+```
+
+Generate MTP v2 coverage and TRX artifacts locally:
+
+```powershell
+$root = (Get-Location).Path
+dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -v minimal -- `
+  --coverage `
+  --coverage-output-format cobertura `
+  --coverage-output (Join-Path $root "artifacts/test-results/unit/coverage.xml") `
+  --report-trx `
+  --report-trx-filename results.trx
+
+dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal -- `
+  --coverage `
+  --coverage-output-format cobertura `
+  --coverage-output (Join-Path $root "artifacts/test-results/integration/coverage.xml") `
+  --report-trx `
+  --report-trx-filename results.trx
 ```
 
 To publish a self-contained executable:
@@ -298,6 +321,15 @@ Non-local plugins are restored into:
 ```text
 <root>/.station/plugin_cache
 ```
+
+## Test architecture
+
+- `tests/Station.UnitTests` contains fast public-surface unit tests on xUnit v3 + MTP v2
+- `tests/Station.IntegrationTests` exercises the CLI, engine, plugin restore, modules, and process integration
+- `tests/Station.Testing` contains shared helpers and isolation fixtures
+- assertions use FluentAssertions
+- integration tests use temporary directories, local HTTP fixtures, and explicit command shims so they do not depend on the real workstation filesystem or real `winget`/`scoop`/`wsl` executables
+- GitHub Actions publishes Cobertura coverage, HTML coverage output, TRX, and CTRF JSON artifacts
 
 ## Example root
 

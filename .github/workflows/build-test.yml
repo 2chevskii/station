@@ -1,0 +1,110 @@
+name: Build And Test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - "codex/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        shell: pwsh
+        run: dotnet build Station.slnx -c Release -v minimal
+
+      - name: Unit Tests
+        shell: pwsh
+        run: |
+          $root = $env:GITHUB_WORKSPACE
+          $resultsRoot = Join-Path $root 'artifacts/test-results/unit'
+          New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+          $coveragePath = Join-Path $resultsRoot 'coverage.xml'
+          dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -c Release --no-build -v minimal -- `
+            --coverage `
+            --coverage-output-format cobertura `
+            --coverage-output $coveragePath `
+            --report-trx `
+            --report-trx-filename results.trx
+          Copy-Item tests/Station.UnitTests/bin/Release/net10.0/TestResults/results.trx (Join-Path $resultsRoot 'results.trx') -Force
+
+      - name: Integration Tests
+        shell: pwsh
+        run: |
+          $root = $env:GITHUB_WORKSPACE
+          $resultsRoot = Join-Path $root 'artifacts/test-results/integration'
+          New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
+          $coveragePath = Join-Path $resultsRoot 'coverage.xml'
+          dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -c Release --no-build -v minimal -- `
+            --coverage `
+            --coverage-output-format cobertura `
+            --coverage-output $coveragePath `
+            --report-trx `
+            --report-trx-filename results.trx
+          Copy-Item tests/Station.IntegrationTests/bin/Release/net10.0/TestResults/results.trx (Join-Path $resultsRoot 'results.trx') -Force
+
+      - name: CLI Smoke Tests
+        shell: pwsh
+        run: |
+          dotnet src/Station.Cli/bin/Release/net10.0/Station.Cli.dll --help
+          dotnet src/Station.Cli/bin/Release/net10.0/Station.Cli.dll explain --config examples/workstation
+
+      - name: CTRF Reports
+        shell: pwsh
+        run: |
+          $root = $env:GITHUB_WORKSPACE
+          $unitResults = Join-Path $root 'artifacts/test-results/unit/results.trx'
+          $integrationResults = Join-Path $root 'artifacts/test-results/integration/results.trx'
+          $ctrfRoot = Join-Path $root 'artifacts/ctrf'
+          New-Item -ItemType Directory -Force -Path $ctrfRoot | Out-Null
+
+          ./eng/Convert-TrxToCtrf.ps1 -InputPath $unitResults -OutputPath (Join-Path $ctrfRoot 'unit.ctrf.json')
+          ./eng/Convert-TrxToCtrf.ps1 -InputPath $integrationResults -OutputPath (Join-Path $ctrfRoot 'integration.ctrf.json')
+          ./eng/Merge-Ctrf.ps1 -InputPaths @(
+            (Join-Path $ctrfRoot 'unit.ctrf.json'),
+            (Join-Path $ctrfRoot 'integration.ctrf.json')
+          ) -OutputPath (Join-Path $ctrfRoot 'results.ctrf.json')
+
+      - name: HTML Coverage Report
+        shell: pwsh
+        run: |
+          dotnet tool update --tool-path ./.tools dotnet-reportgenerator-globaltool
+          ./.tools/reportgenerator `
+            "-reports:artifacts/test-results/unit/coverage.xml;artifacts/test-results/integration/coverage.xml" `
+            "-targetdir:artifacts/coverage-report" `
+            "-reporttypes:HtmlInline;Cobertura"
+
+      - name: Coverage Summary
+        shell: pwsh
+        run: |
+          $root = $env:GITHUB_WORKSPACE
+          $summaryMarkdown = ./eng/Write-CoverageSummary.ps1 `
+            -CoverageFiles @((Join-Path $root 'artifacts/coverage-report/Cobertura.xml')) `
+            -MarkdownPath (Join-Path $root 'artifacts/coverage-summary.md') `
+            -JsonPath (Join-Path $root 'artifacts/coverage-summary.json') `
+            -TargetLineCoverage 100
+          $summaryMarkdown | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: station-test-artifacts
+          path: |
+            artifacts/test-results/**
+            artifacts/coverage-report/**
+            artifacts/coverage-summary.*
+            artifacts/ctrf/**
