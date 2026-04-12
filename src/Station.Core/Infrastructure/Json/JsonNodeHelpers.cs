@@ -2,7 +2,10 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Station.Core;
+using Station.Abstractions.Models;
+using Station.Core.Infrastructure.Templates;
+
+namespace Station.Core.Infrastructure.Json;
 
 public static class JsonNodeHelpers
 {

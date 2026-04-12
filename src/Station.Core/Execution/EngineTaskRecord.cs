@@ -1,6 +1,6 @@
-using Station.Abstractions;
+using Station.Abstractions.Models;
 
-namespace Station.Core;
+namespace Station.Core.Execution;
 
 public sealed record EngineTaskRecord(
     string TaskName,

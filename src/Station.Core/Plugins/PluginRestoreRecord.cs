@@ -1,4 +1,4 @@
-namespace Station.Core;
+namespace Station.Core.Plugins;
 
 public sealed record PluginRestoreRecord(
     string Declaration,

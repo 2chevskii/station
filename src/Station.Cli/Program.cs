@@ -3,6 +3,10 @@ using Station.Core;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 
+using Station.Abstractions.Enums;
+using Station.Core.Execution;
+using Station.Core.Plugins;
+
 var configOption = new Option<DirectoryInfo?>("--config")
 {
     Description = "Path to the config directory",

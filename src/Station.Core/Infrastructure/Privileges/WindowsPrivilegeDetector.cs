@@ -1,6 +1,6 @@
 using System.Security.Principal;
 
-namespace Station.Core;
+namespace Station.Core.Infrastructure.Privileges;
 
 internal sealed class WindowsPrivilegeDetector : IPrivilegeDetector
 {

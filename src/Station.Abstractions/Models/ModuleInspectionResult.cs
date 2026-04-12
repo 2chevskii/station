@@ -1,4 +1,6 @@
-namespace Station.Abstractions;
+using Station.Abstractions.Enums;
+
+namespace Station.Abstractions.Models;
 
 public sealed record ModuleInspectionResult(PrivilegeRequirement RequiredPrivilege, IReadOnlyList<ModuleDiagnostic> Diagnostics)
 {

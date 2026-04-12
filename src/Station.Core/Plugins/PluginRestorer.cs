@@ -2,11 +2,17 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+
 using NuGet.Versioning;
+
 using SharpCompress.Archives;
 using SharpCompress.Common;
 
-namespace Station.Core;
+using Station.Abstractions.Models;
+using Station.Core.Configuration;
+using Station.Core.Infrastructure.Processes;
+
+namespace Station.Core.Plugins;
 
 internal sealed class PluginRestorer
 {

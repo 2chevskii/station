@@ -1,4 +1,4 @@
-namespace Station.Core;
+namespace Station.Core.Configuration;
 
 public sealed record LoadedConfiguration(
     string ConfigRoot,

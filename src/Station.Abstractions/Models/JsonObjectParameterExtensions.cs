@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Station.Abstractions;
+namespace Station.Abstractions.Models;
 
 public static class JsonObjectParameterExtensions
 {

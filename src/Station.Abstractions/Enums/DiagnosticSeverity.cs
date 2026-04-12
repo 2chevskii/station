@@ -1,4 +1,4 @@
-namespace Station.Abstractions;
+namespace Station.Abstractions.Enums;
 
 public enum DiagnosticSeverity
 {

@@ -1,7 +1,9 @@
 using System.Text.Json.Nodes;
-using Station.Abstractions;
 
-namespace Station.Tests;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
+
+namespace Station.Tests.Plugins;
 
 public sealed class EchoPluginModule : IConfigModule
 {

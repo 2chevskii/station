@@ -1,11 +1,14 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using Station.Abstractions;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
-namespace Station.Modules.Script;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
+
+namespace Station.Modules.Builtin.Script;
 
 public sealed class ScriptModule : IConfigModule
 {

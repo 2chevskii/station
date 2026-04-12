@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 
-namespace Station.Abstractions;
+namespace Station.Abstractions.Models;
 
 public sealed record ModuleResult(
     bool Changed,

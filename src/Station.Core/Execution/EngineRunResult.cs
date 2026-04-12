@@ -1,6 +1,6 @@
-using Station.Abstractions;
+using Station.Abstractions.Enums;
 
-namespace Station.Core;
+namespace Station.Core.Execution;
 
 public sealed record EngineRunResult(
     ExecutionMode Mode,

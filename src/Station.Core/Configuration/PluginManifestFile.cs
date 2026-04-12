@@ -1,4 +1,4 @@
-namespace Station.Core;
+namespace Station.Core.Configuration;
 
 internal sealed class PluginManifestFile
 {

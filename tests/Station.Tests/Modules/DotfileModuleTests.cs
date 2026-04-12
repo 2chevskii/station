@@ -1,9 +1,11 @@
 using System.Text.Json.Nodes;
-using Station.Abstractions;
-using Station.Core;
-using Station.Modules.Dotfile;
 
-namespace Station.Tests;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Models;
+using Station.Modules.Builtin.Dotfile;
+using Station.Tests.Helpers;
+
+namespace Station.Tests.Modules;
 
 public sealed class DotfileModuleTests
 {

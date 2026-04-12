@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Station.Abstractions\Station.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluid.Core" />
   </ItemGroup>
 
   <PropertyGroup>

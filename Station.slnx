@@ -1,14 +1,19 @@
 <Solution>
+  <Folder Name="/common/">
+    <File Path="Directory.Packages.props" />
+  </Folder>
   <Folder Name="/misc/" />
   <Folder Name="/src/">
     <Project Path="src/Station.Abstractions/Station.Abstractions.csproj" />
     <Project Path="src/Station.Cli/Station.Cli.csproj" />
     <Project Path="src/Station.Core/Station.Core.csproj" />
-    <Project Path="src/Station.Modules.Apt/Station.Modules.Apt.csproj" />
-    <Project Path="src/Station.Modules.Dotfile/Station.Modules.Dotfile.csproj" />
-    <Project Path="src/Station.Modules.Script/Station.Modules.Script.csproj" />
-    <Project Path="src/Station.Modules.Scoop/Station.Modules.Scoop.csproj" />
-    <Project Path="src/Station.Modules.Winget/Station.Modules.Winget.csproj" />
+  </Folder>
+  <Folder Name="/src/Modules/">
+    <Project Path="src/Modules/Station.Modules.Builtin.Apt/Station.Modules.Builtin.Apt.csproj" />
+    <Project Path="src/Modules/Station.Modules.Builtin.Dotfile/Station.Modules.Builtin.Dotfile.csproj" />
+    <Project Path="src/Modules/Station.Modules.Builtin.Scoop/Station.Modules.Builtin.Scoop.csproj" />
+    <Project Path="src/Modules/Station.Modules.Builtin.Script/Station.Modules.Builtin.Script.csproj" />
+    <Project Path="src/Modules/Station.Modules.Builtin.Winget/Station.Modules.Builtin.Winget.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Station.Tests/Station.Tests.csproj" />

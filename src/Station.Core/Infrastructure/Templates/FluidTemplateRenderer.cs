@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
+
 using Fluid;
 
-namespace Station.Core;
+using Station.Abstractions.Models;
+
+namespace Station.Core.Infrastructure.Templates;
 
 public sealed class FluidTemplateRenderer : ITemplateRenderer
 {

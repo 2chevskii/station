@@ -1,4 +1,6 @@
-namespace Station.Abstractions;
+using Station.Abstractions.Models;
+
+namespace Station.Abstractions.Interfaces;
 
 public interface IConfigModule
 {

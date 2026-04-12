@@ -1,11 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
-    <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Fluid.Core" />
+    <ProjectReference Include="..\..\Station.Abstractions\Station.Abstractions.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -13,5 +8,4 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
 </Project>

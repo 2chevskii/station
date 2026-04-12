@@ -1,8 +1,12 @@
-using Station.Abstractions;
-using Station.Core;
-using Station.Modules.Dotfile;
+using Station.Abstractions.Enums;
+using Station.Core.Configuration;
+using Station.Core.Execution;
+using Station.Core.Infrastructure.Templates;
+using Station.Core.Plugins;
+using Station.Modules.Builtin.Dotfile;
+using Station.Tests.Helpers;
 
-namespace Station.Tests;
+namespace Station.Tests.Execution;
 
 public sealed class EngineTests
 {

@@ -1,6 +1,7 @@
-using Station.Core;
+using Station.Core.Configuration;
+using Station.Tests.Helpers;
 
-namespace Station.Tests;
+namespace Station.Tests.Configuration;
 
 public sealed class ConfigLoaderTests
 {

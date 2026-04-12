@@ -1,9 +1,12 @@
-using Station.Abstractions;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
-namespace Station.Modules.Winget;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
+
+namespace Station.Modules.Builtin.Winget;
 
 public sealed class WingetModule : IConfigModule
 {

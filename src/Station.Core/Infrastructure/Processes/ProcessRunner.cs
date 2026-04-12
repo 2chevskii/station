@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
-namespace Station.Core;
+namespace Station.Core.Infrastructure.Processes;
 
 public sealed class ProcessRunner : IProcessRunner
 {

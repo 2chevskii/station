@@ -1,4 +1,4 @@
-namespace Station.Tests;
+namespace Station.Tests.Helpers;
 
 internal sealed class TemporaryDirectory : IDisposable
 {

@@ -1,6 +1,8 @@
 using System.Text.Json.Nodes;
 
-namespace Station.Abstractions;
+using Station.Abstractions.Enums;
+
+namespace Station.Abstractions.Models;
 
 public sealed record ModuleExecutionRequest(
     ExecutionMode Mode,

@@ -29,11 +29,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Station.Abstractions\Station.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Station.Core\Station.Core.csproj" />
-    <ProjectReference Include="..\..\src\Station.Modules.Apt\Station.Modules.Apt.csproj" />
-    <ProjectReference Include="..\..\src\Station.Modules.Dotfile\Station.Modules.Dotfile.csproj" />
-    <ProjectReference Include="..\..\src\Station.Modules.Script\Station.Modules.Script.csproj" />
-    <ProjectReference Include="..\..\src\Station.Modules.Scoop\Station.Modules.Scoop.csproj" />
-    <ProjectReference Include="..\..\src\Station.Modules.Winget\Station.Modules.Winget.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj" />
   </ItemGroup>
 
 </Project>

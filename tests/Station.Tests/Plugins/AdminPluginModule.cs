@@ -1,6 +1,8 @@
-using Station.Abstractions;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
 
-namespace Station.Tests;
+namespace Station.Tests.Plugins;
 
 public sealed class AdminPluginModule : IConfigModule
 {

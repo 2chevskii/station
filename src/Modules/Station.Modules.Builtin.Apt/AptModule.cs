@@ -1,9 +1,12 @@
-using Station.Abstractions;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 
-namespace Station.Modules.Apt;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
+
+namespace Station.Modules.Builtin.Apt;
 
 public sealed class AptModule : IConfigModule
 {

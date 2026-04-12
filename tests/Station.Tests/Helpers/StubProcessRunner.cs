@@ -1,6 +1,6 @@
-using Station.Core;
+using Station.Core.Infrastructure.Processes;
 
-namespace Station.Tests;
+namespace Station.Tests.Helpers;
 
 internal sealed class StubProcessRunner : IProcessRunner
 {

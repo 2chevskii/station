@@ -1,9 +1,13 @@
 using System.Text;
 using System.Text.RegularExpressions;
-using Station.Abstractions;
+
 using Fluid;
 
-namespace Station.Modules.Dotfile;
+using Station.Abstractions.Enums;
+using Station.Abstractions.Interfaces;
+using Station.Abstractions.Models;
+
+namespace Station.Modules.Builtin.Dotfile;
 
 public sealed class DotfileModule : IConfigModule
 {

@@ -18,6 +18,9 @@ This repository contains `Station`, a local desired-state workstation configurat
 - Do not reintroduce `profile`-based config loading.
 - Do not reintroduce task-level `target` into core execution.
 - Do not move builtin modules back into `Core`.
+- Do not run modifying git operations in parallel.
+  This includes commands such as `git add`, `git commit`, `git mv`, `git rm`, `git checkout`, `git switch`, and similar index- or ref-mutating operations.
+  Run those sequentially to avoid `index.lock` races.
 - Keep the task model Ansible-like:
   - optional `name`
   - exactly one module key at task root

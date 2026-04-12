@@ -1,6 +1,6 @@
-using Station.Abstractions;
+using Station.Abstractions.Interfaces;
 
-namespace Station.Core;
+namespace Station.Core.Execution;
 
 public sealed record ModuleRegistration(
     string ProviderName,

@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
-namespace Station.Core;
+
+namespace Station.Core.Configuration;
 
 public sealed record LoadedTask(
     string Name,
