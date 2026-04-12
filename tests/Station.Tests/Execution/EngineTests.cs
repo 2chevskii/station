@@ -84,7 +84,7 @@ public sealed class EngineTests
     private static ConfigEngine CreateEngine()
     {
         var processRunner = new StubProcessRunner();
-        var configLoader = new ConfigLoader(new FluidTemplateRenderer());
+        var configLoader = new ConfigLoader(new ScribanTemplateRenderer());
         var pluginRestorer = new PluginRestorer(configLoader, processRunner);
 
         return new ConfigEngine(

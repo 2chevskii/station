@@ -16,10 +16,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Fluid.Core" />
     <PackageReference Include="NuGet.Versioning" />
+    <PackageReference Include="Scriban" />
     <PackageReference Include="SharpCompress" />
-    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="SharpYaml" />
   </ItemGroup>
 
   <ItemGroup>

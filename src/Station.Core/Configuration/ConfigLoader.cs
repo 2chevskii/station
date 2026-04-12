@@ -1,12 +1,8 @@
 using System.Globalization;
 using System.Text.Json.Nodes;
-
 using Station.Abstractions.Models;
 using Station.Core.Infrastructure.Json;
 using Station.Core.Infrastructure.Templates;
-
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Station.Core.Configuration;
 
@@ -33,9 +29,7 @@ public sealed class ConfigLoader
     private readonly ITemplateRenderer templateRenderer;
 
     public ConfigLoader()
-        : this(new FluidTemplateRenderer())
-    {
-    }
+        : this(new ScribanTemplateRenderer()) { }
 
     internal ConfigLoader(ITemplateRenderer templateRenderer)
     {
@@ -44,7 +38,8 @@ public sealed class ConfigLoader
 
     public LoadedConfiguration Load(
         string configRoot,
-        IReadOnlyDictionary<string, string>? cliVariables = null)
+        IReadOnlyDictionary<string, string>? cliVariables = null
+    )
     {
         var fullConfigRoot = Path.GetFullPath(configRoot);
         var manifestPath = Path.Combine(fullConfigRoot, RootManifestFileName);
@@ -56,17 +51,28 @@ public sealed class ConfigLoader
         var rootNode = LoadYamlObject(manifestPath);
         if (rootNode is not IDictionary<string, object?> manifest)
         {
-            throw new ConfigurationException($"Root manifest '{manifestPath}' must contain a top-level mapping.");
+            throw new ConfigurationException(
+                $"Root manifest '{manifestPath}' must contain a top-level mapping."
+            );
         }
 
         var rootVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         MergeVariables(rootVariables, LoadVarsDirectory(fullConfigRoot));
-        MergeVariables(rootVariables, ToScalarVariables(manifest.GetOptionalMapping("vars"), manifestPath, "vars"));
+        MergeVariables(
+            rootVariables,
+            ToScalarVariables(manifest.GetOptionalMapping("vars"), manifestPath, "vars")
+        );
         MergeVariables(rootVariables, LoadEnvironmentVariables());
-        MergeVariables(rootVariables, cliVariables ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        MergeVariables(
+            rootVariables,
+            cliVariables ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        );
 
         var requestedRoles = manifest.GetRequiredStringList("roles", manifestPath);
-        var pluginDeclarations = ParsePluginDeclarations(manifest.GetOptionalList("plugins"), manifestPath);
+        var pluginDeclarations = ParsePluginDeclarations(
+            manifest.GetOptionalList("plugins"),
+            manifestPath
+        );
         var rootTasks = ParseTasks(
             manifest.GetOptionalList("tasks"),
             roleName: null,
@@ -74,24 +80,29 @@ public sealed class ConfigLoader
             roleRoot: null,
             variables: rootVariables,
             sourceName: manifestPath,
-            defaultNamePrefix: "station.tasks");
+            defaultNamePrefix: "station.tasks"
+        );
 
         return new LoadedConfiguration(
             fullConfigRoot,
             new Dictionary<string, string>(rootVariables, StringComparer.OrdinalIgnoreCase),
             pluginDeclarations,
             requestedRoles,
-            rootTasks);
+            rootTasks
+        );
     }
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(
         ResolvedRole role,
-        IReadOnlyDictionary<string, string> rootVariables)
+        IReadOnlyDictionary<string, string> rootVariables
+    )
     {
         var roleFilePath = Path.Combine(role.RoleRoot, RoleFileName);
         if (!File.Exists(roleFilePath))
         {
-            throw new ConfigurationException($"Role '{role.FullName}' is missing '{RoleFileName}'.");
+            throw new ConfigurationException(
+                $"Role '{role.FullName}' is missing '{RoleFileName}'."
+            );
         }
 
         var roleVariables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -101,7 +112,9 @@ public sealed class ConfigLoader
         var taskNodes = LoadYamlObject(roleFilePath) as IEnumerable<object?>;
         if (taskNodes is null)
         {
-            throw new ConfigurationException($"Role file '{roleFilePath}' must contain a top-level task list.");
+            throw new ConfigurationException(
+                $"Role file '{roleFilePath}' must contain a top-level task list."
+            );
         }
 
         return ParseTasks(
@@ -111,7 +124,8 @@ public sealed class ConfigLoader
             role.RoleRoot,
             roleVariables,
             roleFilePath,
-            $"{role.ShortName}.tasks");
+            $"{role.ShortName}.tasks"
+        );
     }
 
     public ResolvedPluginManifest LoadPluginManifest(string pluginRoot)
@@ -123,27 +137,32 @@ public sealed class ConfigLoader
         if (File.Exists(yamlPath) && File.Exists(ymlPath))
         {
             throw new ConfigurationException(
-                $"Plugin root '{fullPluginRoot}' contains both '{PluginManifestYamlFileName}' and '{PluginManifestYmlFileName}'.");
+                $"Plugin root '{fullPluginRoot}' contains both '{PluginManifestYamlFileName}' and '{PluginManifestYmlFileName}'."
+            );
         }
 
-        var manifestPath = File.Exists(yamlPath)
-            ? yamlPath
-            : File.Exists(ymlPath)
-                ? ymlPath
-                : throw new ConfigurationException(
-                    $"Plugin root '{fullPluginRoot}' is missing '{PluginManifestYamlFileName}' or '{PluginManifestYmlFileName}'.");
+        var manifestPath =
+            File.Exists(yamlPath) ? yamlPath
+            : File.Exists(ymlPath) ? ymlPath
+            : throw new ConfigurationException(
+                $"Plugin root '{fullPluginRoot}' is missing '{PluginManifestYamlFileName}' or '{PluginManifestYmlFileName}'."
+            );
 
         var manifest = LoadYaml<PluginManifestFile>(manifestPath);
         var name = manifest.Name?.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            throw new ConfigurationException($"Plugin manifest '{manifestPath}' must declare a non-empty 'name'.");
+            throw new ConfigurationException(
+                $"Plugin manifest '{manifestPath}' must declare a non-empty 'name'."
+            );
         }
 
         var version = manifest.Version?.Trim();
         if (string.IsNullOrWhiteSpace(version))
         {
-            throw new ConfigurationException($"Plugin manifest '{manifestPath}' must declare a non-empty 'version'.");
+            throw new ConfigurationException(
+                $"Plugin manifest '{manifestPath}' must declare a non-empty 'version'."
+            );
         }
 
         var roles = NormalizeExportList(manifest.Roles, "roles", manifestPath);
@@ -155,17 +174,24 @@ public sealed class ConfigLoader
             if (!File.Exists(roleFilePath))
             {
                 throw new ConfigurationException(
-                    $"Plugin '{name}' exports role '{role}', but '{roleFilePath}' does not exist.");
+                    $"Plugin '{name}' exports role '{role}', but '{roleFilePath}' does not exist."
+                );
             }
         }
 
         foreach (var module in modules)
         {
-            var modulePath = Path.Combine(fullPluginRoot, ModulesDirectoryName, module, $"{module}.dll");
+            var modulePath = Path.Combine(
+                fullPluginRoot,
+                ModulesDirectoryName,
+                module,
+                $"{module}.dll"
+            );
             if (!File.Exists(modulePath))
             {
                 throw new ConfigurationException(
-                    $"Plugin '{name}' exports module '{module}', but '{modulePath}' does not exist.");
+                    $"Plugin '{name}' exports module '{module}', but '{modulePath}' does not exist."
+                );
             }
         }
 
@@ -180,12 +206,14 @@ public sealed class ConfigLoader
             return [];
         }
 
-        return Directory.GetDirectories(rolesRoot)
+        return Directory
+            .GetDirectories(rolesRoot)
             .Select(roleRoot => new ResolvedRole(
                 "station.local",
                 Path.GetFileName(roleRoot),
                 $"station.local.{Path.GetFileName(roleRoot)}",
-                roleRoot))
+                roleRoot
+            ))
             .ToArray();
     }
 
@@ -197,7 +225,8 @@ public sealed class ConfigLoader
             return [];
         }
 
-        return Directory.GetDirectories(modulesRoot)
+        return Directory
+            .GetDirectories(modulesRoot)
             .Select(moduleRoot => Path.Combine(moduleRoot, $"{Path.GetFileName(moduleRoot)}.dll"))
             .Where(File.Exists)
             .ToArray();
@@ -213,7 +242,8 @@ public sealed class ConfigLoader
         string? roleRoot,
         IReadOnlyDictionary<string, string> variables,
         string sourceName,
-        string defaultNamePrefix)
+        string defaultNamePrefix
+    )
     {
         var tasks = new List<LoadedTask>();
         if (taskNodes is null)
@@ -226,18 +256,28 @@ public sealed class ConfigLoader
             if (taskNodes[index] is not IDictionary<string, object?> taskMapping)
             {
                 throw new ConfigurationException(
-                    $"Task #{index + 1} in '{sourceName}' must be a mapping.");
+                    $"Task #{index + 1} in '{sourceName}' must be a mapping."
+                );
             }
 
-            var renderedTask = RenderTask(taskMapping, variables, sourceName, defaultNamePrefix, index + 1);
-            tasks.Add(new LoadedTask(
-                renderedTask.Name,
-                renderedTask.ModuleName,
-                renderedTask.Parameters,
-                taskRoot,
-                roleName,
-                roleRoot,
-                new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase)));
+            var renderedTask = RenderTask(
+                taskMapping,
+                variables,
+                sourceName,
+                defaultNamePrefix,
+                index + 1
+            );
+            tasks.Add(
+                new LoadedTask(
+                    renderedTask.Name,
+                    renderedTask.ModuleName,
+                    renderedTask.Parameters,
+                    taskRoot,
+                    roleName,
+                    roleRoot,
+                    new Dictionary<string, string>(variables, StringComparer.OrdinalIgnoreCase)
+                )
+            );
         }
 
         return tasks;
@@ -248,7 +288,8 @@ public sealed class ConfigLoader
         IReadOnlyDictionary<string, string> variables,
         string sourceName,
         string defaultNamePrefix,
-        int oneBasedIndex)
+        int oneBasedIndex
+    )
     {
         string? explicitName = null;
         KeyValuePair<string, object?>? moduleEntry = null;
@@ -264,7 +305,8 @@ public sealed class ConfigLoader
             if (moduleEntry is not null)
             {
                 throw new ConfigurationException(
-                    $"Task in '{sourceName}' must declare exactly one module key besides 'name'.");
+                    $"Task in '{sourceName}' must declare exactly one module key besides 'name'."
+                );
             }
 
             moduleEntry = KeyValuePair.Create(key, value);
@@ -278,20 +320,24 @@ public sealed class ConfigLoader
         var moduleName = moduleEntry.Value.Key.Trim();
         if (string.IsNullOrWhiteSpace(moduleName))
         {
-            throw new ConfigurationException($"Task in '{sourceName}' declares an empty module name.");
+            throw new ConfigurationException(
+                $"Task in '{sourceName}' declares an empty module name."
+            );
         }
 
         if (moduleEntry.Value.Value is not IDictionary<string, object?> rawParameters)
         {
             throw new ConfigurationException(
-                $"Task module '{moduleName}' in '{sourceName}' must map to an object for now.");
+                $"Task module '{moduleName}' in '{sourceName}' must map to an object for now."
+            );
         }
 
         var renderedParameters = JsonNodeHelpers.RenderStringScalars(
             JsonNodeHelpers.ToJsonObject(rawParameters),
             variables,
             templateRenderer,
-            sourceName);
+            sourceName
+        );
 
         var taskNameTemplate = string.IsNullOrWhiteSpace(explicitName)
             ? $"{defaultNamePrefix}.{oneBasedIndex}"
@@ -301,18 +347,27 @@ public sealed class ConfigLoader
         return (taskName, moduleName, renderedParameters);
     }
 
-    private IReadOnlyList<PluginDeclaration> ParsePluginDeclarations(IReadOnlyList<object?>? nodes, string sourceName)
+    private IReadOnlyList<PluginDeclaration> ParsePluginDeclarations(
+        IReadOnlyList<object?>? nodes,
+        string sourceName
+    )
     {
         var declarations = new List<PluginDeclaration>();
         foreach (var node in nodes ?? [])
         {
-            declarations.Add(node switch
-            {
-                string shortForm => ParsePluginShortForm(shortForm),
-                IDictionary<string, object?> mapping => ParsePluginLongForm(mapping, sourceName),
-                _ => throw new ConfigurationException(
-                    $"Plugins in '{sourceName}' must be declared as strings or mappings."),
-            });
+            declarations.Add(
+                node switch
+                {
+                    string shortForm => ParsePluginShortForm(shortForm),
+                    IDictionary<string, object?> mapping => ParsePluginLongForm(
+                        mapping,
+                        sourceName
+                    ),
+                    _ => throw new ConfigurationException(
+                        $"Plugins in '{sourceName}' must be declared as strings or mappings."
+                    ),
+                }
+            );
         }
 
         return declarations;
@@ -330,7 +385,12 @@ public sealed class ConfigLoader
         {
             var idAndVersion = trimmed["nuget://".Length..];
             var (id, version) = SplitPackageCoordinate(idAndVersion);
-            return new PluginDeclaration(PluginProviderKind.NuGet, trimmed, Id: id, Version: version);
+            return new PluginDeclaration(
+                PluginProviderKind.NuGet,
+                trimmed,
+                Id: id,
+                Version: version
+            );
         }
 
         if (trimmed.StartsWith("npm://", StringComparison.OrdinalIgnoreCase))
@@ -354,20 +414,32 @@ public sealed class ConfigLoader
                 return new PluginDeclaration(PluginProviderKind.Url, trimmed, Url: normalized);
             }
 
-            if (normalized.EndsWith(".git", StringComparison.OrdinalIgnoreCase) || UrlLooksLikeGitRepository(absoluteUri))
+            if (
+                normalized.EndsWith(".git", StringComparison.OrdinalIgnoreCase)
+                || UrlLooksLikeGitRepository(absoluteUri)
+            )
             {
                 var (url, gitRef) = SplitGitReference(normalized);
-                return new PluginDeclaration(PluginProviderKind.Git, trimmed, Url: url, Ref: gitRef);
+                return new PluginDeclaration(
+                    PluginProviderKind.Git,
+                    trimmed,
+                    Url: url,
+                    Ref: gitRef
+                );
             }
 
             throw new ConfigurationException(
-                $"Remote plugin source '{trimmed}' requires either an archive extension or an explicit provider.");
+                $"Remote plugin source '{trimmed}' requires either an archive extension or an explicit provider."
+            );
         }
 
         return new PluginDeclaration(PluginProviderKind.Local, trimmed, Name: trimmed);
     }
 
-    private static PluginDeclaration ParsePluginLongForm(IDictionary<string, object?> mapping, string sourceName)
+    private static PluginDeclaration ParsePluginLongForm(
+        IDictionary<string, object?> mapping,
+        string sourceName
+    )
     {
         var providerName = mapping.TryGetValue("provider", out var providerValue)
             ? providerValue?.ToString()
@@ -383,7 +455,8 @@ public sealed class ConfigLoader
                 "nuget" => PluginProviderKind.NuGet,
                 "npm" => PluginProviderKind.Npm,
                 _ => throw new ConfigurationException(
-                    $"Unsupported plugin provider '{providerName}' in '{sourceName}'."),
+                    $"Unsupported plugin provider '{providerName}' in '{sourceName}'."
+                ),
             };
 
         return provider switch
@@ -391,28 +464,33 @@ public sealed class ConfigLoader
             PluginProviderKind.Local => new PluginDeclaration(
                 provider,
                 mapping.RequireString("name", sourceName),
-                Name: mapping.RequireString("name", sourceName)),
+                Name: mapping.RequireString("name", sourceName)
+            ),
             PluginProviderKind.Git => new PluginDeclaration(
                 provider,
                 mapping.RequireString("url", sourceName),
                 Url: mapping.RequireString("url", sourceName),
-                Ref: mapping.GetOptionalString("ref")),
+                Ref: mapping.GetOptionalString("ref")
+            ),
             PluginProviderKind.Url => new PluginDeclaration(
                 provider,
                 mapping.RequireString("url", sourceName),
-                Url: mapping.RequireString("url", sourceName)),
+                Url: mapping.RequireString("url", sourceName)
+            ),
             PluginProviderKind.NuGet => new PluginDeclaration(
                 provider,
                 mapping.RequireString("id", sourceName),
                 Id: mapping.RequireString("id", sourceName),
                 Version: mapping.GetOptionalString("version"),
-                Feed: mapping.GetOptionalString("feed")),
+                Feed: mapping.GetOptionalString("feed")
+            ),
             PluginProviderKind.Npm => new PluginDeclaration(
                 provider,
                 mapping.RequireString("id", sourceName),
                 Id: mapping.RequireString("id", sourceName),
                 Version: mapping.GetOptionalString("version"),
-                Registry: mapping.GetOptionalString("registry")),
+                Registry: mapping.GetOptionalString("registry")
+            ),
             _ => throw new ConfigurationException($"Unsupported plugin provider '{provider}'."),
         };
     }
@@ -424,7 +502,9 @@ public sealed class ConfigLoader
             return PluginProviderKind.Local;
         }
 
-        throw new ConfigurationException("Plugin object declarations without 'provider' currently require a 'name'.");
+        throw new ConfigurationException(
+            "Plugin object declarations without 'provider' currently require a 'name'."
+        );
     }
 
     private Dictionary<string, string> LoadVarsDirectory(string configRoot)
@@ -436,8 +516,11 @@ public sealed class ConfigLoader
         }
 
         var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var file in Directory.GetFiles(varsRoot, "*.yaml", SearchOption.TopDirectoryOnly)
-                     .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase))
+        foreach (
+            var file in Directory
+                .GetFiles(varsRoot, "*.yaml", SearchOption.TopDirectoryOnly)
+                .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
+        )
         {
             MergeVariables(variables, ToScalarVariables(LoadYamlObject(file), file));
         }
@@ -459,7 +542,10 @@ public sealed class ConfigLoader
         foreach (var key in Environment.GetEnvironmentVariables().Keys.Cast<object>())
         {
             var keyString = key.ToString();
-            if (keyString is null || !keyString.StartsWith(EnvironmentPrefix, StringComparison.OrdinalIgnoreCase))
+            if (
+                keyString is null
+                || !keyString.StartsWith(EnvironmentPrefix, StringComparison.OrdinalIgnoreCase)
+            )
             {
                 continue;
             }
@@ -483,7 +569,11 @@ public sealed class ConfigLoader
         return deserializer.Deserialize<T>(reader);
     }
 
-    private static IReadOnlyList<string> NormalizeExportList(IEnumerable<string>? values, string propertyName, string sourceName)
+    private static IReadOnlyList<string> NormalizeExportList(
+        IEnumerable<string>? values,
+        string propertyName,
+        string sourceName
+    )
     {
         var exports = (values ?? [])
             .Select(value => value?.Trim())
@@ -499,10 +589,15 @@ public sealed class ConfigLoader
 
         foreach (var export in exports)
         {
-            if (export.Contains('.') || export.Contains(Path.DirectorySeparatorChar) || export.Contains(Path.AltDirectorySeparatorChar))
+            if (
+                export.Contains('.')
+                || export.Contains(Path.DirectorySeparatorChar)
+                || export.Contains(Path.AltDirectorySeparatorChar)
+            )
             {
                 throw new ConfigurationException(
-                    $"Plugin manifest '{sourceName}' contains invalid {propertyName} export '{export}'. Exports must be short names.");
+                    $"Plugin manifest '{sourceName}' contains invalid {propertyName} export '{export}'. Exports must be short names."
+                );
             }
         }
 
@@ -560,9 +655,14 @@ public sealed class ConfigLoader
     }
 
     private static bool HasArchiveExtension(string value) =>
-        ArchiveExtensions.Any(extension => value.EndsWith(extension, StringComparison.OrdinalIgnoreCase));
+        ArchiveExtensions.Any(extension =>
+            value.EndsWith(extension, StringComparison.OrdinalIgnoreCase)
+        );
 
-    private static void MergeVariables(IDictionary<string, string> target, IReadOnlyDictionary<string, string> source)
+    private static void MergeVariables(
+        IDictionary<string, string> target,
+        IReadOnlyDictionary<string, string> source
+    )
     {
         foreach (var (key, value) in source)
         {
@@ -570,7 +670,11 @@ public sealed class ConfigLoader
         }
     }
 
-    private static Dictionary<string, string> ToScalarVariables(object? value, string sourceName, string? propertyName = null)
+    private static Dictionary<string, string> ToScalarVariables(
+        object? value,
+        string sourceName,
+        string? propertyName = null
+    )
     {
         if (value is null)
         {
@@ -580,7 +684,9 @@ public sealed class ConfigLoader
         if (value is not IDictionary<string, object?> variables)
         {
             var name = propertyName is null ? sourceName : $"{sourceName}:{propertyName}";
-            throw new ConfigurationException($"Variables from '{name}' must contain a top-level mapping.");
+            throw new ConfigurationException(
+                $"Variables from '{name}' must contain a top-level mapping."
+            );
         }
 
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -596,7 +702,8 @@ public sealed class ConfigLoader
                 double doubleValue => doubleValue.ToString(CultureInfo.InvariantCulture),
                 decimal decimalValue => decimalValue.ToString(CultureInfo.InvariantCulture),
                 _ => throw new ConfigurationException(
-                    $"Variables from '{sourceName}' must be scalar values. '{key}' is not scalar."),
+                    $"Variables from '{sourceName}' must be scalar values. '{key}' is not scalar."
+                ),
             };
         }
 
@@ -609,56 +716,80 @@ internal static class ConfigLoaderValueHelpers
     public static IReadOnlyList<string> GetRequiredStringList(
         this IDictionary<string, object?> mapping,
         string propertyName,
-        string sourceName)
+        string sourceName
+    )
     {
         var values = mapping.GetOptionalList(propertyName);
         if (values is null || values.Count == 0)
         {
-            throw new ConfigurationException($"'{sourceName}' must declare a non-empty '{propertyName}' list.");
+            throw new ConfigurationException(
+                $"'{sourceName}' must declare a non-empty '{propertyName}' list."
+            );
         }
 
-        return values.Select(value => value?.ToString()?.Trim())
+        return values
+            .Select(value => value?.ToString()?.Trim())
             .Where(static value => !string.IsNullOrWhiteSpace(value))
             .Cast<string>()
             .ToArray();
     }
 
-    public static IReadOnlyList<object?>? GetOptionalList(this IDictionary<string, object?> mapping, string propertyName)
+    public static IReadOnlyList<object?>? GetOptionalList(
+        this IDictionary<string, object?> mapping,
+        string propertyName
+    )
     {
         if (!mapping.TryGetValue(propertyName, out var value) || value is null)
         {
             return null;
         }
 
-        return value as IReadOnlyList<object?> ??
-               (value as IEnumerable<object?>)?.ToArray() ??
-               throw new ConfigurationException($"Property '{propertyName}' must be a list.");
+        return value as IReadOnlyList<object?>
+            ?? (value as IEnumerable<object?>)?.ToArray()
+            ?? throw new ConfigurationException($"Property '{propertyName}' must be a list.");
     }
 
-    public static IDictionary<string, object?>? GetOptionalMapping(this IDictionary<string, object?> mapping, string propertyName)
+    public static IDictionary<string, object?>? GetOptionalMapping(
+        this IDictionary<string, object?> mapping,
+        string propertyName
+    )
     {
         if (!mapping.TryGetValue(propertyName, out var value) || value is null)
         {
             return null;
         }
 
-        return value as IDictionary<string, object?> ??
-               throw new ConfigurationException($"Property '{propertyName}' must be a mapping.");
+        return value as IDictionary<string, object?>
+            ?? throw new ConfigurationException($"Property '{propertyName}' must be a mapping.");
     }
 
-    public static string RequireString(this IDictionary<string, object?> mapping, string propertyName, string sourceName)
+    public static string RequireString(
+        this IDictionary<string, object?> mapping,
+        string propertyName,
+        string sourceName
+    )
     {
-        if (!mapping.TryGetValue(propertyName, out var value) || string.IsNullOrWhiteSpace(value?.ToString()))
+        if (
+            !mapping.TryGetValue(propertyName, out var value)
+            || string.IsNullOrWhiteSpace(value?.ToString())
+        )
         {
-            throw new ConfigurationException($"Property '{propertyName}' is required in '{sourceName}'.");
+            throw new ConfigurationException(
+                $"Property '{propertyName}' is required in '{sourceName}'."
+            );
         }
 
         return value!.ToString()!;
     }
 
-    public static string? GetOptionalString(this IDictionary<string, object?> mapping, string propertyName)
+    public static string? GetOptionalString(
+        this IDictionary<string, object?> mapping,
+        string propertyName
+    )
     {
-        return mapping.TryGetValue(propertyName, out var value) && !string.IsNullOrWhiteSpace(value?.ToString())
+        return
+            mapping.TryGetValue(propertyName, out var value)
+            && !string.IsNullOrWhiteSpace(value?.ToString())
             ? value!.ToString()
             : null;
     }
