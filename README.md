@@ -7,8 +7,10 @@ The current codebase already implements the new architecture we planned:
 - root config with `roles`, `plugins`, `vars`, and root-level `tasks`
 - roles as declarative task lists in `role.yaml`
 - modules as atomic execution units
+- modules discovered from `[Module]` metadata and instantiated lazily per task
+- declarative module parameters via `[Parameter]` with engine-level binding/validation
 - local modules from `modules/<Name>/<Name>.dll`
-- plugin restore/cache with multiple providers
+- plugin restore/cache with provider strategies
 - builtin modules extracted into separate projects and loaded by core by default
 
 ## Repository structure
@@ -17,12 +19,23 @@ The current codebase already implements the new architecture we planned:
 src/
   Station.Abstractions/
   Station.Core/
+    Configuration/
+      Models/
+      Services/
+    Execution/
+      Models/
+      Services/
+    Plugins/
+      Models/
+      Providers/
+      Services/
   Station.Cli/
-  Station.Modules.Apt/
-  Station.Modules.Dotfile/
-  Station.Modules.Script/
-  Station.Modules.Scoop/
-  Station.Modules.Winget/
+  Modules/
+    Station.Modules.Builtin.Apt/
+    Station.Modules.Builtin.Dotfile/
+    Station.Modules.Builtin.Script/
+    Station.Modules.Builtin.Scoop/
+    Station.Modules.Builtin.Winget/
 tests/
 examples/
   workstation/
@@ -60,6 +73,8 @@ station apply    --config <dir> [--set key=value ...]
 - `validate` restores plugins if needed, resolves roles/modules, and runs inspection
 - `check` performs the same validation and runs dry-run execution
 - `apply` mutates the machine in declared order
+
+`Station.Core` is intentionally split so domain records live under `*/Models`, orchestration and loaders under `*/Services`, and plugin restore strategies under `Plugins/Providers`.
 
 ## Config root
 
@@ -167,6 +182,7 @@ Rules:
 - short-form task arguments are intentionally deferred; canonical form is object-based
 - modules are discovered from `[Module]` attributes and instantiated lazily per task execution
 - module parameters are declared with `[Parameter]` attributes and validated before execution
+- variable scopes remain typed in memory; environment and CLI overrides are added as string overlays
 - string values in config and templates use Scriban syntax such as `{{ user_name }}`
 - templates live under `templates/` and are addressed by logical name; `template: git/.gitconfig` resolves `templates/git/.gitconfig.scriban|.sbn`
 - files and templates in a role override artifacts with the same logical name from the config root
@@ -185,6 +201,7 @@ Sources of modules:
 - builtin modules under the synthetic provider `station.builtin`
 - local modules under the synthetic provider `station.local`
 - plugin-provided modules under the provider declared by `plugin-manifest`
+- builtin file-oriented modules currently follow the Ansible-like split into `copy` and `template`
 
 Local modules use:
 
@@ -223,7 +240,8 @@ Rules:
 
 ### Plugin providers
 
-Supported declaration styles:
+Supported declaration styles.
+Internally, plugin restore is implemented through provider strategies rather than a central provider enum switch:
 
 Local:
 
