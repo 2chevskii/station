@@ -1,7 +1,7 @@
-- name: Ensure Git is installed from WinGet
-  winget:
-    id: ${git_package_id}
-    state: present
+# - name: Ensure Git is installed from WinGet
+#   winget:
+#     id: ${git_package_id}
+#     state: present
 
 - station.builtin.dotfile:
     source: templates/git/.gitconfig

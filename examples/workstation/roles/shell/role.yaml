@@ -1,6 +1,6 @@
-- scoop:
-    name: starship
-    state: present
+# - scoop:
+#     name: starship
+#     state: present
 
 - dotfile:
     source: templates\powershell\Microsoft.PowerShell_profile.ps1

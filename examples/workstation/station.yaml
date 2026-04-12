@@ -7,17 +7,17 @@ plugins: []
 
 vars:
   user_name: Demo Operator
-  user_email: demo.operator@example.com
+#  user_email: demo.operator@example.com
   git_default_branch: trunk
   shell_prompt_symbol: "PS>"
   terminal_theme: Campbell
 
 tasks:
-  - winget:
-      id: Git.Git
-      state: present
+  # - winget:
+  #     id: Git.Git
+  #     state: present
 
-  - name: Prepare Scoop before role execution
-    scoop:
-      name: ripgrep
-      state: present
+  # - name: Prepare Scoop before role execution
+  #   scoop:
+  #     name: ripgrep
+  #     state: present
