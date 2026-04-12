@@ -1,6 +1,6 @@
 ```mermaid
 flowchart TD
-    A["CLI start<br/>config-tool {restore|validate|check|apply} --config ... [--set ...]"] --> B["Load root config<br/>config-tool.yaml"]
+    A["CLI start<br/>station {restore|validate|check|apply} --config ... [--set ...]"] --> B["Load root config<br/>station.yaml"]
     B --> C["Merge vars<br/>vars/*.yaml -> root vars -> env -> CLI"]
     C --> D["Parse plugin declarations"]
     D --> E["restore command or implicit restore"]
@@ -19,10 +19,10 @@ flowchart TD
     E6 --> F
 
     F --> G["Build capability catalogs"]
-    G --> G1["Builtin modules<br/>configtool.builtin.*"]
-    G --> G2["Local modules<br/>configtool.local.*"]
+    G --> G1["Builtin modules<br/>station.builtin.*"]
+    G --> G2["Local modules<br/>station.local.*"]
     G --> G3["Plugin modules<br/><plugin-name>.*"]
-    G --> G4["Local roles<br/>configtool.local.*"]
+    G --> G4["Local roles<br/>station.local.*"]
     G --> G5["Plugin roles<br/><plugin-name>.*"]
 
     G --> H["Resolve requested roles"]

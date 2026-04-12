@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="YamlDotNet" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Station.Abstractions\Station.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Station.Core\Station.Core.csproj" />
+    <ProjectReference Include="..\..\src\Station.Modules.Apt\Station.Modules.Apt.csproj" />
+    <ProjectReference Include="..\..\src\Station.Modules.Dotfile\Station.Modules.Dotfile.csproj" />
+    <ProjectReference Include="..\..\src\Station.Modules.Script\Station.Modules.Script.csproj" />
+    <ProjectReference Include="..\..\src\Station.Modules.Scoop\Station.Modules.Scoop.csproj" />
+    <ProjectReference Include="..\..\src\Station.Modules.Winget\Station.Modules.Winget.csproj" />
+  </ItemGroup>
+
+</Project>

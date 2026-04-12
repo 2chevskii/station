@@ -142,13 +142,13 @@ The current prototype already has:
 - baseline modules such as dotfiles, package-manager integrations, and script execution should live in a separate project or package outside core
 - core should depend only on abstractions and module discovery/loading mechanisms, not on a built-in module catalog
 - the baseline module set should follow the rule `1 project = 1 module`
-- module project naming should be explicit, for example `ConfigTool.Modules.Scoop`
+- module project naming should be explicit, for example `Station.Modules.Scoop`
 - `schemaVersion` should be removed from the root config model
 - root-level `varFiles` should be removed from the config model
 - `profiles/` should be removed from the config model for now
-- `config-tool.yaml` should become the current YAML serialization of the root configuration object, but the long-term source model should remain format-agnostic
+- `station.yaml` should become the current YAML serialization of the root configuration object, but the long-term source model should remain format-agnostic
 - the in-memory .NET object model should be the source of truth, and future config formats may include YAML, JSON, TOML, Lua, Python, or JavaScript
-- `config-tool.yaml` should directly contain the ordered list of roles to execute
+- `station.yaml` should directly contain the ordered list of roles to execute
 - the role entrypoint file should be `role.yaml` instead of `tasks.yaml`
 - the conventional role subdirectories should currently be limited to `files/` and `templates/`
 - explicit variable import mechanisms are out of scope for now
@@ -157,19 +157,19 @@ The current prototype already has:
 - variable precedence from lower to higher should be:
   - `roles/<role>/defaults.yaml`
   - `vars/*.yaml`
-  - `config-tool.yaml` `vars`
+  - `station.yaml` `vars`
   - environment variables with `CONFIG_TOOL_VAR_`
   - CLI `--set key=value`
 - `vars/*.yaml` should be loaded non-recursively in deterministic alphabetical order
 - if the plugin source configured by the future design is absent or empty, the tool should simply behave as if no plugins are installed, without warnings by default
-- the base local config layout should be `config-tool.yaml` + `vars/*` + `roles/*`
+- the base local config layout should be `station.yaml` + `vars/*` + `roles/*`
 - the root manifest should define the ordered list of roles executed by the tool
 - the root manifest top-level schema should currently include:
   - `roles`
   - `plugins`
   - `vars`
   - `tasks`
-- `vars` in `config-tool.yaml` should be a mapping/dictionary, not a list
+- `vars` in `station.yaml` should be a mapping/dictionary, not a list
 - a local role should define only behavior through an ordered task list
 - root-level `tasks` should be supported and must execute before any role tasks
 - each task should invoke exactly one module
@@ -189,12 +189,12 @@ The current prototype already has:
 - roles should not directly depend on plugins
 - if a role requires a module that is not available from loaded local or plugin-provided modules, execution should fail before any work starts
 - modules and roles should have fully qualified names derived from the providing plugin namespace plus the short artifact name
-- local modules and roles should belong to the synthetic plugin namespace `configtool.local`
-- built-in baseline modules and roles should belong to the synthetic plugin namespace `configtool.builtin`
+- local modules and roles should belong to the synthetic plugin namespace `station.local`
+- built-in baseline modules and roles should belong to the synthetic plugin namespace `station.builtin`
 - examples of fully qualified module names:
-  - `configtool.builtin.apt`
+  - `station.builtin.apt`
   - `dvchevskii.plugins.chocolatey`
-  - `configtool.local.node`
+  - `station.local.node`
 - short names such as `apt`, `chocolatey`, or `node` should be allowed only when they are unambiguous
 - if multiple providers export the same short module or role name, users must reference the fully qualified name
 - role names and module names may overlap because they live in separate namespaces by artifact kind
@@ -218,7 +218,7 @@ The current prototype already has:
 - plugin version should be treated as a semantic version string for now
 - plugin-provided roles should be supported in v1
 - plugin roles should be referenceable by short name when unambiguous or by fully qualified name otherwise
-- non-local plugins should be restorable into a cache under `<root>/.configtool/plugin_cache`
+- non-local plugins should be restorable into a cache under `<root>/.station/plugin_cache`
 - the CLI should provide a `restore` command that resolves and stores declared plugins in the cache
 - `validate`, `check`, and `apply` should perform an implicit restore before continuing
 - future cache-cleanup commands are expected, but not part of the initial design
@@ -231,20 +231,20 @@ The current prototype already has:
   - module parameters nested under that module key
 - task `name` should be optional
 - default task names for role tasks should be `<role_name>.tasks.<one-based index>`
-- default task names for root-level tasks should be `config-tool.tasks.<one-based index>`
+- default task names for root-level tasks should be `station.tasks.<one-based index>`
 - canonical module invocation syntax should be the object form where the module key maps to a parameter object
 - future sugar forms for module invocation should be allowed as alternative serializations of the same in-memory parameter object, similar to Ansible-style short forms
 
 ## Current Architecture Picture
 
 - Local configuration is intentionally small:
-  - `config-tool.yaml`
+  - `station.yaml`
   - `vars/*.yaml`
   - `roles/*`
 - local extension points also exist beside configuration:
   - `modules/*`
-- `config-tool.yaml` is the local root entrypoint and orchestrates execution by listing roles in order
-- `config-tool.yaml` may also define root-level tasks that run before roles
+- `station.yaml` is the local root entrypoint and orchestrates execution by listing roles in order
+- `station.yaml` may also define root-level tasks that run before roles
 - local roles are declarative behavior units:
   - they define ordered tasks
   - they consume resolved variables
@@ -295,7 +295,7 @@ The current prototype already has:
 - Do we want to stay close to Ansible semantics, or intentionally diverge where Windows ergonomics demand it?
 - Should modules be purely declarative where possible, with scripts used only as escape hatches?
 - How strongly should module naming and semantics mirror existing Ansible modules versus being Windows-native first?
-- Should roles remain a flat ordered list in `config-tool.yaml`, or do we eventually want role parameters or conditional inclusion?
+- Should roles remain a flat ordered list in `station.yaml`, or do we eventually want role parameters or conditional inclusion?
 
 ### Configuration Model
 
@@ -317,7 +317,7 @@ The current prototype already has:
 - Should plugin resolution be fully explicit in config, or should there also be conventional discovery locations?
 - How should plugin version pinning and updates work?
 - Should plugins be allowed to provide reusable roles in addition to modules?
-- If plugins can provide roles, how are those roles referenced from `config-tool.yaml` and how do their variables surface to users?
+- If plugins can provide roles, how are those roles referenced from `station.yaml` and how do their variables surface to users?
 - What is the trust and review model for plugin-provided roles, given that they package executable behavior at a higher abstraction level than modules?
 - How should plugin-to-plugin dependencies be versioned, resolved, and locked?
 - How should locally supplied modules and plugin-provided modules coexist in discovery, resolution, and diagnostics?
@@ -408,11 +408,11 @@ The current prototype already has:
 - Decide how the CLI composes with the baseline module pack while keeping core decoupled
 - Define conventions for module project structure, naming, and packaging
 - Finalize the simplified config layout after removing profiles and root varFiles
-- Define the exact schema for `config-tool.yaml` and `role.yaml`
+- Define the exact schema for `station.yaml` and `role.yaml`
 - Design plugin sourcing, installation, discovery, and manifesting
 - Evaluate whether plugins should be able to ship reusable roles as well as modules
 - Finalize the exact schema and validation rules for `plugin-manifest.yaml`
-- Finalize the plugin declaration schema and provider inference rules in `config-tool.yaml`
+- Finalize the plugin declaration schema and provider inference rules in `station.yaml`
 - Finalize the root and role task schemas, including default task naming
 
 ## Explored Ideas
@@ -437,17 +437,17 @@ The current prototype already has:
 - 2026-04-11: Decided that the running OS is the implicit host and removed engine-level task targeting from the desired architecture; secondary contexts like WSL should be handled by modules.
 - 2026-04-11: Decided that core remains strictly local-only, secondary or remote execution is not part of the current architecture, and package managers should become separate modules rather than one generic package module.
 - 2026-04-11: Decided that core should not include concrete modules; baseline modules should be extracted into a separate project or package and composed by the CLI or another outer layer.
-- 2026-04-11: Decided that the baseline module set should use one project per module, with explicit names such as `ConfigTool.Modules.Scoop`.
-- 2026-04-11: Simplified the desired config layout by removing `schemaVersion`, root `varFiles`, and profiles; moving role selection into `config-tool.yaml`; renaming the role entrypoint to `role.yaml`; switching plugins to automatic discovery from `<root>/plugins`; and defining a new variable precedence that ends with CLI `--set`.
+- 2026-04-11: Decided that the baseline module set should use one project per module, with explicit names such as `Station.Modules.Scoop`.
+- 2026-04-11: Simplified the desired config layout by removing `schemaVersion`, root `varFiles`, and profiles; moving role selection into `station.yaml`; renaming the role entrypoint to `role.yaml`; switching plugins to automatic discovery from `<root>/plugins`; and defining a new variable precedence that ends with CLI `--set`.
 - 2026-04-11: Confirmed that `vars/*.yaml` should load non-recursively in alphabetical order, missing plugin sources should be treated as "no plugins" without warnings, and `role.yaml` should stay minimal for now with the former `tasks.yaml` shape.
 - 2026-04-11: Reopened the plugin-loading design for broader discussion instead of locking the architecture to `<root>/plugins` discovery only.
 - 2026-04-11: Added plugin-provided roles as an explicit design topic for evaluation alongside plugin-provided modules.
 - 2026-04-11: Consolidated the current architecture picture: local config stays small, roles remain declarative only, tasks bind one-to-one to modules, modules stay self-contained, and plugins become reuse/distribution units that can provide modules and roles with plugin-to-plugin dependencies.
 - 2026-04-11: Added local project-owned modules under `<root>/modules/<ModuleName>/<ModuleName>.dll` to make the local config root structurally symmetrical with plugin-provided capabilities.
-- 2026-04-12: Defined collision and naming rules for roles and modules: every artifact has a fully qualified name based on its provider namespace, `configtool.builtin` and `configtool.local` are reserved synthetic providers, short names are only convenience aliases when unique, and role/module names may overlap because they are resolved in separate namespaces.
+- 2026-04-12: Defined collision and naming rules for roles and modules: every artifact has a fully qualified name based on its provider namespace, `station.builtin` and `station.local` are reserved synthetic providers, short names are only convenience aliases when unique, and role/module names may overlap because they are resolved in separate namespaces.
 - 2026-04-12: Defined the initial plugin manifest direction: every plugin has a root `plugin-manifest.yaml|yml` containing `name`, `version`, `roles`, and `modules`, and plugin loading must fail if any exported role or module declared there is missing from the plugin payload.
 - 2026-04-12: Accepted additional plugin-manifest rules: exported names are short names, plugin roles and modules use explicit directory layouts, dual manifest extensions are an error, unexported artifacts are allowed as internal implementation details, and plugin version is treated as semver for now.
 - 2026-04-12: Drafted plugin providers and declaration forms for local sources under `<root>/plugins`, git repositories, remote archive URLs, NuGet feeds, and npm registries, with provider inference in short form and no authentication support yet.
 - 2026-04-12: Refined plugin providers: long-form declarations now use provider-specific fields (`name`, `url`, `id`, `version`, `feed`, `registry`) instead of a unified `source`; local directories win over same-named archives; no-extension remote URLs default to git; archive URLs require an archive extension or explicit `provider: url`; plugin-scoped vars were removed from the current design.
-- 2026-04-12: Defined the current root and role schema direction: the in-memory .NET model is the source of truth; YAML is only the first serialization; `config-tool.yaml` has top-level `roles`, `plugins`, `vars`, and `tasks`; root tasks run before roles; `role.yaml` is a root-level task list; tasks use an Ansible-like single-module shape; role dependencies are inferred from used modules; plugin-provided roles are supported in v1; non-local plugins use a cache with explicit `restore` and implicit restore during other commands; packaging remains self-contained exe for now.
-- 2026-04-12: Confirmed that root `vars` is a mapping/dictionary, root task default names should use `config-tool.tasks.<index>`, and future Ansible-like shorthand forms for module arguments should normalize into the same canonical in-memory task object.
+- 2026-04-12: Defined the current root and role schema direction: the in-memory .NET model is the source of truth; YAML is only the first serialization; `station.yaml` has top-level `roles`, `plugins`, `vars`, and `tasks`; root tasks run before roles; `role.yaml` is a root-level task list; tasks use an Ansible-like single-module shape; role dependencies are inferred from used modules; plugin-provided roles are supported in v1; non-local plugins use a cache with explicit `restore` and implicit restore during other commands; packaging remains self-contained exe for now.
+- 2026-04-12: Confirmed that root `vars` is a mapping/dictionary, root task default names should use `station.tasks.<index>`, and future Ansible-like shorthand forms for module arguments should normalize into the same canonical in-memory task object.

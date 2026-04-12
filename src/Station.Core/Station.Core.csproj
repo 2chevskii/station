@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
+    <ProjectReference Include="..\Station.Modules.Apt\Station.Modules.Apt.csproj" />
+    <ProjectReference Include="..\Station.Modules.Dotfile\Station.Modules.Dotfile.csproj" />
+    <ProjectReference Include="..\Station.Modules.Script\Station.Modules.Script.csproj" />
+    <ProjectReference Include="..\Station.Modules.Scoop\Station.Modules.Scoop.csproj" />
+    <ProjectReference Include="..\Station.Modules.Winget\Station.Modules.Winget.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="NuGet.Versioning" />
+    <PackageReference Include="SharpCompress" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Station.Tests" />
+  </ItemGroup>
+
+</Project>

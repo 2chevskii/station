@@ -3,7 +3,7 @@
     id: ${git_package_id}
     state: present
 
-- configtool.builtin.dotfile:
+- station.builtin.dotfile:
     source: templates/git/.gitconfig
     destination: ${git_config_path}
 

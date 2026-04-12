@@ -1,16 +1,16 @@
 # AGENTS
 
-This repository contains `config-tool`, a local desired-state workstation configuration tool implemented in .NET.
+This repository contains `Station`, a local desired-state workstation configuration tool implemented in .NET.
 
 ## Current architecture
 
-- `ConfigTool.Abstractions`
+- `Station.Abstractions`
   Shared contracts only. Module projects are allowed to depend on this project.
-- `ConfigTool.Core`
+- `Station.Core`
   Orchestration, config loading, plugin restore/cache, role/module resolution, CLI execution flow.
-- `ConfigTool.Modules.*`
-  Concrete builtin modules. These projects must depend on `ConfigTool.Abstractions` only, not on `ConfigTool.Core`.
-- `ConfigTool.Cli`
+- `Station.Modules.*`
+  Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on `Station.Core`.
+- `Station.Cli`
   Thin command-line frontend.
 
 ## Important project rules
@@ -72,7 +72,7 @@ Supported provider kinds:
 Non-local plugins are cached under:
 
 ```text
-<root>/.configtool/plugin_cache
+<root>/.station/plugin_cache
 ```
 
 `restore` is explicit in CLI, and `validate/check/apply` perform implicit restore.
@@ -82,16 +82,16 @@ Non-local plugins are cached under:
 Before closing substantive changes, prefer to run:
 
 ```powershell
-dotnet build ConfigTool.slnx -v minimal
-dotnet test tests/ConfigTool.Tests/ConfigTool.Tests.csproj -v minimal
+dotnet build Station.slnx -v minimal
+dotnet test tests/Station.Tests/Station.Tests.csproj -v minimal
 ```
 
 If CLI behavior changed, also smoke-test:
 
 ```powershell
-dotnet src/ConfigTool.Cli/bin/Debug/net10.0/ConfigTool.Cli.dll --help
+dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
 ```
 
 ## Example root
 
-Use [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation) as the canonical example of the current target config structure.
+Use [examples/workstation](C:\Users\dvchevskii\source\experiments\station\examples\workstation) as the canonical example of the current target config structure.
