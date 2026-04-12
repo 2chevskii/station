@@ -1,6 +1,6 @@
 namespace Station.Abstractions.Interfaces;
 
-using Station.Abstractions.Models;
+using Models;
 
 public interface ITemplateEngine
 {

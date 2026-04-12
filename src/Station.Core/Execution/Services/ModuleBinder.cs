@@ -125,7 +125,7 @@ internal sealed class ModuleBinder
         Type targetType,
         ConfigValue rawValue,
         VariableSet variables,
-        Station.Abstractions.Interfaces.ITemplateEngine templateEngine,
+        Abstractions.Interfaces.ITemplateEngine templateEngine,
         string parameterName,
         bool allowDeferred)
     {

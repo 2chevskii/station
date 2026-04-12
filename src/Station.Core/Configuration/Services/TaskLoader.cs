@@ -35,7 +35,7 @@ internal sealed class TaskLoader
         var taskValues = manifest.GetOptionalList("tasks") ?? [];
         return ParseTasks(
             new ConfigArray(taskValues.Select(static value =>
-                Infrastructure.Configuration.ConfigValueFactory.FromClrValue(value))),
+                ConfigValueFactory.FromClrValue(value))),
             roleName: null,
             taskRoot: configRoot,
             roleRoot: null,
