@@ -23,73 +23,53 @@ internal sealed class JavaScriptConfigRuntime
 
     public ConfigObject LoadVariables(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
     {
-        var prepared = PrepareEvaluationDirectory(artifact, context);
-        try
-        {
-            var engine = CreateEngine(prepared.ModuleRoot);
-            var module = engine.Modules.Import(prepared.ImportSpecifier);
-            var exportValue = module.Get("default").ToObject();
-            return ConfigValueFactory.RequireObject(
-                ConfigValueFactory.FromClrValue(exportValue),
-                artifact.DisplayName);
-        }
-        finally
-        {
-            Cleanup(prepared.ModuleRoot);
-        }
+        var engine = CreateEngine(artifact, context);
+        var module = engine.Modules.Import(GetImportSpecifier(artifact));
+        var exportValue = module.Get("default").ToObject();
+        return ConfigValueFactory.RequireObject(
+            ConfigValueFactory.FromClrValue(exportValue),
+            artifact.DisplayName);
     }
 
     public ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
     {
         var taskRegistrations = new List<object?>();
-        var prepared = PrepareEvaluationDirectory(artifact, context);
-        try
-        {
-            var engine = CreateEngine(prepared.ModuleRoot);
-            engine.SetValue(
-                "task",
-                new Func<object?, object?, object?, object?>((first, second, third) =>
-                {
-                    RegisterTask(taskRegistrations, first, second, third, artifact);
-                    return null;
-                }));
+        var engine = CreateEngine(artifact, context);
+        engine.SetValue(
+            "task",
+            new Func<object?, object?, object?, object?>((first, second, third) =>
+            {
+                RegisterTask(taskRegistrations, first, second, third, artifact);
+                return null;
+            }));
 
-            engine.Modules.Import(prepared.ImportSpecifier);
-            return new ConfigArray(taskRegistrations.Select(static item =>
-                ConfigValueFactory.FromClrValue(item)));
-        }
-        finally
-        {
-            Cleanup(prepared.ModuleRoot);
-        }
+        engine.Modules.Import(GetImportSpecifier(artifact));
+        return new ConfigArray(taskRegistrations.Select(static item =>
+            ConfigValueFactory.FromClrValue(item)));
     }
 
-    private static Engine CreateEngine(string moduleRoot)
+    private static Engine CreateEngine(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
     {
+        var moduleRoot = Path.GetDirectoryName(artifact.FullPath)
+            ?? throw new ConfigurationException(
+                $"Could not determine the directory for '{artifact.FullPath}'.");
         var engine = new Engine(options => options
-            .EnableModules(moduleRoot)
+            .EnableModules(moduleRoot, restrictToBasePath: false)
             .LimitMemory(4_000_000)
             .MaxStatements(10_000)
             .TimeoutInterval(TimeSpan.FromSeconds(2)));
+
+        engine.Modules.Add(
+            "station:vars",
+            builder => builder.AddSource(BuildVarsModuleSource(context.VisibleVariables)));
+        engine.Modules.Add(
+            "station:modules/builtin",
+            builder => builder.AddSource(BuildBuiltinModuleSource()));
         return engine;
     }
 
-    private (string ModuleRoot, string ImportSpecifier) PrepareEvaluationDirectory(
-        ResolvedConfigArtifact artifact,
-        ConfigEvaluationContext context)
-    {
-        var sourceRoot = Path.GetDirectoryName(artifact.FullPath)
-            ?? throw new ConfigurationException(
-                $"Could not determine the directory for '{artifact.FullPath}'.");
-        var moduleRoot = Path.Combine(Path.GetTempPath(), "station-js", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(moduleRoot);
-
-        CopyDirectory(sourceRoot, moduleRoot);
-        WriteHelpers(moduleRoot, context.VisibleVariables);
-        RewriteStationImports(moduleRoot);
-
-        return (moduleRoot, $"./{Path.GetFileName(artifact.FullPath).Replace('\\', '/')}");
-    }
+    private static string GetImportSpecifier(ResolvedConfigArtifact artifact) =>
+        $"./{Path.GetFileName(artifact.FullPath).Replace('\\', '/')}";
 
     private static string BuildBuiltinModuleSource()
     {
@@ -109,7 +89,28 @@ internal sealed class JavaScriptConfigRuntime
     private static string BuildVarsModuleSource(VariableSet variables)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("const __ref = path => ({ __stationVariableReference: path });");
+        builder.AppendLine(
+            """
+            class StationVariableReference {
+              constructor(name) {
+                this.$type = 'variable_reference';
+                this.name = name;
+              }
+
+              toString() {
+                return `{{ ${this.name} }}`;
+              }
+
+              valueOf() {
+                return this.toString();
+              }
+
+              [Symbol.toPrimitive]() {
+                return this.toString();
+              }
+            }
+            """);
+        builder.AppendLine("const __ref = path => new StationVariableReference(path);");
         builder.AppendLine("const __default = {};");
 
         foreach (var (key, value) in variables.Root)
@@ -206,64 +207,5 @@ internal sealed class JavaScriptConfigRuntime
 
         task[moduleName] = parameters;
         tasks.Add(task);
-    }
-
-    private static void WriteHelpers(string moduleRoot, VariableSet visibleVariables)
-    {
-        File.WriteAllText(Path.Combine(moduleRoot, "__station_builtin_modules.js"), BuildBuiltinModuleSource());
-        File.WriteAllText(Path.Combine(moduleRoot, "__station_vars.js"), BuildVarsModuleSource(visibleVariables));
-    }
-
-    private static void RewriteStationImports(string moduleRoot)
-    {
-        foreach (var file in Directory.GetFiles(moduleRoot, "*.js", SearchOption.AllDirectories))
-        {
-            var directory = Path.GetDirectoryName(file) ?? moduleRoot;
-            var builtinSpecifier = ToRelativeModuleSpecifier(directory, Path.Combine(moduleRoot, "__station_builtin_modules.js"));
-            var varsSpecifier = ToRelativeModuleSpecifier(directory, Path.Combine(moduleRoot, "__station_vars.js"));
-
-            var source = File.ReadAllText(file);
-            source = source
-                .Replace("'station:modules/builtin'", $"'{builtinSpecifier}'", StringComparison.Ordinal)
-                .Replace("\"station:modules/builtin\"", $"\"{builtinSpecifier}\"", StringComparison.Ordinal)
-                .Replace("'station:vars'", $"'{varsSpecifier}'", StringComparison.Ordinal)
-                .Replace("\"station:vars\"", $"\"{varsSpecifier}\"", StringComparison.Ordinal);
-            File.WriteAllText(file, source);
-        }
-    }
-
-    private static string ToRelativeModuleSpecifier(string fromDirectory, string targetPath)
-    {
-        var relativePath = Path.GetRelativePath(fromDirectory, targetPath)
-            .Replace('\\', '/');
-        return relativePath.StartsWith("./", StringComparison.Ordinal)
-            || relativePath.StartsWith("../", StringComparison.Ordinal)
-            ? relativePath
-            : $"./{relativePath}";
-    }
-
-    private static void CopyDirectory(string sourceRoot, string destinationRoot)
-    {
-        foreach (var directory in Directory.GetDirectories(sourceRoot, "*", SearchOption.AllDirectories))
-        {
-            var relativePath = Path.GetRelativePath(sourceRoot, directory);
-            Directory.CreateDirectory(Path.Combine(destinationRoot, relativePath));
-        }
-
-        foreach (var file in Directory.GetFiles(sourceRoot, "*", SearchOption.AllDirectories))
-        {
-            var relativePath = Path.GetRelativePath(sourceRoot, file);
-            var destinationPath = Path.Combine(destinationRoot, relativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-            File.Copy(file, destinationPath, overwrite: true);
-        }
-    }
-
-    private static void Cleanup(string moduleRoot)
-    {
-        if (Directory.Exists(moduleRoot))
-        {
-            Directory.Delete(moduleRoot, recursive: true);
-        }
     }
 }

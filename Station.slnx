@@ -2,6 +2,7 @@
   <Folder Name="/common/">
     <File Path="Directory.Packages.props" />
   </Folder>
+  <Folder Name="/examples/" />
   <Folder Name="/misc/" />
   <Folder Name="/src/">
     <Project Path="src/Station.Abstractions/Station.Abstractions.csproj" />

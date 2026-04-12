@@ -112,4 +112,34 @@ public sealed class ConfigLoaderTests
         roleTask.Parameters["destination"].Should().BeOfType<VariableReference>()
             .Which.Path.Should().Be("destination_path");
     }
+
+    [Fact]
+    public void Load_supports_javascript_variable_references_inside_expressions()
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile("station.yaml", """
+            roles:
+              - base
+            plugins: []
+            vars:
+              user_home: C:/Users/demo
+            """);
+        directory.WriteFile("roles/base/role.js", """
+            import { copy } from 'station:modules/builtin';
+            import { user_home } from 'station:vars';
+
+            task('Copy from JS expression', copy, {
+              file: 'sample.txt',
+              destination: `${user_home}/.config/my_config.json`
+            });
+            """);
+
+        var loader = new ConfigLoader();
+        var configuration = loader.Load(directory.Path);
+        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var roleTask = loader.LoadRoleTasks(role, configuration.RootVariables).Should().ContainSingle().Subject;
+
+        roleTask.Parameters["destination"].Should().BeOfType<TemplateMarkup>()
+            .Which.TemplateText.Should().Be("{{ user_home }}/.config/my_config.json");
+    }
 }

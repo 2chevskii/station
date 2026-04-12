@@ -43,7 +43,17 @@ internal static class ConfigValueFactory
     {
         if (mapping.Count == 1
             && mapping.TryGetValue("__stationVariableReference", out var pathValue)
-            && pathValue is string path
+            && pathValue is string legacyPath
+            && !string.IsNullOrWhiteSpace(legacyPath))
+        {
+            reference = new VariableReference(legacyPath);
+            return true;
+        }
+
+        if (mapping.TryGetValue("$type", out var typeValue)
+            && string.Equals(typeValue?.ToString(), "variable_reference", StringComparison.Ordinal)
+            && mapping.TryGetValue("name", out var nameValue)
+            && nameValue is string path
             && !string.IsNullOrWhiteSpace(path))
         {
             reference = new VariableReference(path);

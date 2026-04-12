@@ -265,6 +265,35 @@ public sealed class ConfigEngineTests
     }
 
     [Fact]
+    public async Task Validate_supports_javascript_variable_references_inside_expressions()
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile("station.yaml", """
+            roles:
+              - base
+            plugins: []
+            vars:
+              user_home: C:/Users/demo
+            """);
+        directory.WriteFile("roles/base/role.js", """
+            import { copy } from 'station:modules/builtin';
+            import { user_home } from 'station:vars';
+
+            task('Copy using JS expression', copy, {
+              file: 'sample.txt',
+              destination: `${user_home}/.config/my_config.json`
+            });
+            """);
+        directory.WriteFile("roles/base/files/sample.txt", "hello");
+
+        var engine = new ConfigEngine();
+        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+
+        result.Succeeded.Should().BeTrue();
+        result.Message.Should().Contain("Validated");
+    }
+
+    [Fact]
     public async Task Validate_resolves_plugin_roles_from_local_plugins_authored_in_javascript()
     {
         using var directory = new TemporaryDirectory();
