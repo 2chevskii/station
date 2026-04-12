@@ -1,9 +1,8 @@
 using Station.Abstractions.Interfaces;
-using Station.Abstractions.Models;
-using Station.Core.Configuration.Services;
+using Station.Core.Configuration.Models;
 using Station.Core.Infrastructure.Templates;
 
-namespace Station.Core.Configuration;
+namespace Station.Core.Configuration.Services;
 
 public sealed class ConfigLoader
 {

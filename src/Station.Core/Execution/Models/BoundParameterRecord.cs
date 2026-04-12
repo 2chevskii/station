@@ -1,4 +1,4 @@
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Models;
 
 internal sealed record BoundParameterRecord(
     string Name,

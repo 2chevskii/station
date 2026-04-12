@@ -1,9 +1,10 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-using Station.Abstractions.Attributes;
-using Station.Abstractions.Models;
 
-namespace Station.Core.Execution;
+using Station.Abstractions.Attributes;
+using Station.Core.Execution.Models;
+
+namespace Station.Core.Execution.Services;
 
 internal static class ModuleSchemaRegistry
 {

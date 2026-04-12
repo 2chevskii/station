@@ -1,7 +1,6 @@
-using Station.Abstractions.Models;
 using Station.Abstractions.Interfaces;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Services;
 
 internal static class ModuleArtifactFactory
 {

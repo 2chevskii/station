@@ -1,11 +1,12 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
 using Station.Abstractions.Enums;
-using Station.Abstractions.Models;
+using Station.Core.Execution.Models;
 using Station.Core.Infrastructure.Json;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Services;
 
 internal sealed class ModuleBinder
 {

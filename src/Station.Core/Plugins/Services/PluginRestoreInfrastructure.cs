@@ -6,6 +6,7 @@ using NuGet.Versioning;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Plugins.Providers;

@@ -1,4 +1,4 @@
-namespace Station.Core.Configuration;
+namespace Station.Core.Configuration.Models;
 
 public sealed record ResolvedRole(
     string ProviderName,

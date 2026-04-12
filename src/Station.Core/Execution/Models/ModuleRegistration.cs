@@ -1,4 +1,4 @@
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Models;
 
 public sealed record ModuleRegistration(
     string ProviderName,

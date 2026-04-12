@@ -1,7 +1,6 @@
-using Station.Abstractions.Models;
-using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Services;
 
 internal sealed class RoleCatalog
 {

@@ -1,6 +1,4 @@
-using Station.Abstractions.Models;
-
-namespace Station.Core.Configuration;
+namespace Station.Core.Configuration.Models;
 
 public sealed record LoadedConfiguration(
     string ConfigRoot,

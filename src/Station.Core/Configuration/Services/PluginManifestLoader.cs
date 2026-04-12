@@ -1,3 +1,5 @@
+using Station.Core.Configuration.Models;
+
 namespace Station.Core.Configuration.Services;
 
 internal sealed class PluginManifestLoader

@@ -1,7 +1,6 @@
 using Station.Abstractions.Enums;
-using Station.Abstractions.Models;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Models;
 
 internal sealed record ModuleBindingResult(
     ConfigModule? Module,

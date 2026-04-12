@@ -1,4 +1,5 @@
 using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Plugins.Services;
 

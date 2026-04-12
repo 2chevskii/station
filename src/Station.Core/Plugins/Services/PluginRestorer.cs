@@ -1,11 +1,10 @@
-using Station.Abstractions.Models;
-using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
 using Station.Core.Infrastructure.Processes;
+using Station.Core.Plugins.Models;
 using Station.Core.Plugins.Providers;
-using Station.Core.Plugins.Services;
 
-namespace Station.Core.Plugins;
+namespace Station.Core.Plugins.Services;
 
 internal sealed class PluginRestorer
 {

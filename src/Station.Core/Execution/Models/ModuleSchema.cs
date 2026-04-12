@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Models;
 
 internal sealed record ModuleSchema(
     Type ModuleType,

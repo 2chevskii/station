@@ -1,6 +1,6 @@
-using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 
-namespace Station.Core.Plugins;
+namespace Station.Core.Plugins.Models;
 
 public sealed record PluginRestoreResult(
     bool Succeeded,

@@ -1,14 +1,14 @@
 using System.Runtime.Loader;
 
-using Station.Abstractions.Models;
-using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
+using Station.Core.Execution.Models;
 using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Dotfile;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Script;
 using Station.Modules.Builtin.Winget;
 
-namespace Station.Core.Execution;
+namespace Station.Core.Execution.Services;
 
 internal sealed class ModuleCatalog
 {

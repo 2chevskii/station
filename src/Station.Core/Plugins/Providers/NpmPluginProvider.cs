@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using Station.Core.Configuration;
+using Station.Core.Configuration.Models;
 using Station.Core.Plugins.Services;
 
 namespace Station.Core.Plugins.Providers;

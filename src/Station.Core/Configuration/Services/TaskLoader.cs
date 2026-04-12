@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Station.Abstractions.Models;
 using Station.Abstractions.Interfaces;
+using Station.Core.Configuration.Models;
 using Station.Core.Infrastructure.Json;
 
 namespace Station.Core.Configuration.Services;

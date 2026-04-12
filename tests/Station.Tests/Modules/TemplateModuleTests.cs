@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
 using Station.Core.Execution;
+using Station.Core.Execution.Services;
 using Station.Core.Infrastructure.Templates;
 using Station.Modules.Builtin.Dotfile;
 using Station.Tests.Helpers;
