@@ -31,13 +31,19 @@ public sealed class AptModule : ConfigModule
     [Parameter]
     public bool Sudo { get; set; } = true;
 
+    [Parameter]
+    public string WslCommand { get; set; } = "wsl";
+
+    [Parameter]
+    public string AptGetCommand { get; set; } = "apt-get";
+
     public override async ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
         if (OperatingSystem.IsWindows())
         {
-            if (!CommandExists("wsl"))
+            if (!CommandExists(WslCommand))
             {
-                return ModuleInspectionResult.Failure(new ModuleDiagnostic("wsl.exe is not available on PATH."));
+                return ModuleInspectionResult.Failure(new ModuleDiagnostic($"'{WslCommand}' is not available on PATH."));
             }
 
             if (string.IsNullOrWhiteSpace(Distribution))
@@ -46,7 +52,7 @@ public sealed class AptModule : ConfigModule
                     new ModuleDiagnostic("apt on Windows requires a 'distribution' parameter."));
             }
 
-            var distrosResult = await RunAsync("wsl", ["-l", "-q"], Environment.CurrentDirectory, cancellationToken);
+            var distrosResult = await RunAsync(WslCommand, ["-l", "-q"], Environment.CurrentDirectory, cancellationToken);
             if (distrosResult.ExitCode != 0 ||
                 !distrosResult.StandardOutput
                     .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -56,9 +62,9 @@ public sealed class AptModule : ConfigModule
                     new ModuleDiagnostic($"WSL distribution '{Distribution}' was not found."));
             }
         }
-        else if (!CommandExists("apt-get"))
+        else if (!CommandExists(AptGetCommand))
         {
-            return ModuleInspectionResult.Failure(new ModuleDiagnostic("apt-get is not available on PATH."));
+            return ModuleInspectionResult.Failure(new ModuleDiagnostic($"'{AptGetCommand}' is not available on PATH."));
         }
 
         return ModuleInspectionResult.Success();
@@ -130,13 +136,13 @@ public sealed class AptModule : ConfigModule
         {
             var arguments = new List<string> { "-d", distribution!, "--" };
             arguments.AddRange(command);
-            return await RunAsync("wsl", arguments, Environment.CurrentDirectory, cancellationToken);
+            return await RunAsync(WslCommand, arguments, Environment.CurrentDirectory, cancellationToken);
         }
 
         return await RunAsync(command[0], command.Skip(1).ToArray(), Environment.CurrentDirectory, cancellationToken);
     }
 
-    private static IReadOnlyList<string> BuildAptCommand(string action, string packageName, bool useSudo)
+    private IReadOnlyList<string> BuildAptCommand(string action, string packageName, bool useSudo)
     {
         var arguments = new List<string>();
         if (useSudo)
@@ -144,7 +150,7 @@ public sealed class AptModule : ConfigModule
             arguments.Add("sudo");
         }
 
-        arguments.Add("apt-get");
+        arguments.Add(AptGetCommand);
         arguments.Add(action);
         arguments.Add("-y");
         arguments.Add(packageName);
@@ -166,6 +172,11 @@ public sealed class AptModule : ConfigModule
         if (string.IsNullOrWhiteSpace(commandName))
         {
             return false;
+        }
+
+        if (Path.IsPathRooted(commandName))
+        {
+            return File.Exists(commandName);
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)

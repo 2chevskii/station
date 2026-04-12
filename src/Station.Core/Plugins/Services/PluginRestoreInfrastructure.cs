@@ -75,6 +75,7 @@ internal sealed class PluginRestoreInfrastructure
         {
             if (Directory.Exists(tempRoot))
             {
+                ClearAttributes(tempRoot);
                 Directory.Delete(tempRoot, recursive: true);
             }
         }
@@ -287,5 +288,20 @@ internal sealed class PluginRestoreInfrastructure
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             File.Copy(file, destinationPath, overwrite: true);
         }
+    }
+
+    private static void ClearAttributes(string root)
+    {
+        foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(directory, FileAttributes.Normal);
+        }
+
+        foreach (var file in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
+        {
+            File.SetAttributes(file, FileAttributes.Normal);
+        }
+
+        File.SetAttributes(root, FileAttributes.Normal);
     }
 }

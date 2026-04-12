@@ -25,12 +25,15 @@ public sealed class ScoopModule : ConfigModule
     [Parameter("global")]
     public bool IsGlobal { get; set; }
 
+    [Parameter]
+    public string Command { get; set; } = "scoop";
+
     public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
-        if (!CommandExists("scoop"))
+        if (!CommandExists(Command))
         {
             return ValueTask.FromResult(
-                ModuleInspectionResult.Failure(new ModuleDiagnostic("scoop is not available on PATH.")));
+                ModuleInspectionResult.Failure(new ModuleDiagnostic($"'{Command}' is not available on PATH.")));
         }
 
         var privilege = IsGlobal
@@ -43,7 +46,7 @@ public sealed class ScoopModule : ConfigModule
     public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
     {
         var state = NormalizeState(State);
-        var listResult = await RunAsync("scoop", ["list"], cancellationToken);
+        var listResult = await RunAsync(Command, ["list"], cancellationToken);
         var installed = listResult.ExitCode == 0 &&
                         listResult.StandardOutput.Contains(PackageName, StringComparison.OrdinalIgnoreCase);
             var shouldExist = state == "present";
@@ -69,7 +72,7 @@ public sealed class ScoopModule : ConfigModule
 
             arguments.Add(PackageName);
 
-            var result = await RunAsync("scoop", arguments, cancellationToken);
+            var result = await RunAsync(Command, arguments, cancellationToken);
             if (result.ExitCode != 0)
             {
                 return ModuleResult.Failure(SelectProcessError(result));
@@ -93,6 +96,11 @@ public sealed class ScoopModule : ConfigModule
         if (string.IsNullOrWhiteSpace(commandName))
         {
             return false;
+        }
+
+        if (Path.IsPathRooted(commandName))
+        {
+            return File.Exists(commandName);
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)

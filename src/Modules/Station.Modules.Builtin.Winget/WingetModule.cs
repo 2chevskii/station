@@ -28,12 +28,15 @@ public sealed class WingetModule : ConfigModule
     [Parameter]
     public string? Scope { get; set; }
 
+    [Parameter]
+    public string Command { get; set; } = "winget";
+
     public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
     {
-        if (!CommandExists("winget"))
+        if (!CommandExists(Command))
         {
             return ValueTask.FromResult(
-                ModuleInspectionResult.Failure(new ModuleDiagnostic("winget is not available on PATH.")));
+                ModuleInspectionResult.Failure(new ModuleDiagnostic($"'{Command}' is not available on PATH.")));
         }
 
         var privilege = string.Equals(Scope, "machine", StringComparison.OrdinalIgnoreCase)
@@ -68,7 +71,7 @@ public sealed class WingetModule : ConfigModule
             var arguments = state == "present"
                 ? CreateInstallArguments(PackageId, Version, Scope)
                 : CreateUninstallArguments(PackageId);
-            var result = await RunAsync("winget", arguments, cancellationToken);
+            var result = await RunAsync(Command, arguments, cancellationToken);
             if (result.ExitCode != 0)
             {
                 return ModuleResult.Failure(SelectProcessError(result));
@@ -83,7 +86,7 @@ public sealed class WingetModule : ConfigModule
         CancellationToken cancellationToken)
     {
         var result = await RunAsync(
-            "winget",
+            Command,
             [
                 "list",
                 "--id",
@@ -159,6 +162,11 @@ public sealed class WingetModule : ConfigModule
         if (string.IsNullOrWhiteSpace(commandName))
         {
             return false;
+        }
+
+        if (Path.IsPathRooted(commandName))
+        {
+            return File.Exists(commandName);
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
