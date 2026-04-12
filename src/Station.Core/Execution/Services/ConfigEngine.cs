@@ -4,6 +4,7 @@ using System.Text.Json;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
 using Station.Core.Configuration;
+using Station.Core.Configuration.Services;
 using Station.Core.Infrastructure.Privileges;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Infrastructure.Templates;
@@ -23,7 +24,11 @@ public sealed class ConfigEngine
     public ConfigEngine()
         : this(
             new ConfigLoader(new ScribanTemplateRenderer()),
-            new PluginRestorer(new ConfigLoader(new ScribanTemplateRenderer()), new ProcessRunner()),
+            new PluginRestorer(
+                new PluginManifestLoader(new YamlConfigurationReader()),
+                new LocalConfigurationDiscovery(),
+                new ProcessRunner()
+            ),
             new WindowsPrivilegeDetector(),
             [])
     {

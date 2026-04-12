@@ -1,7 +1,7 @@
 namespace Station.Core.Configuration;
 
 public sealed record PluginDeclaration(
-    PluginProviderKind Provider,
+    string Provider,
     string DisplaySource,
     string? Name = null,
     string? Url = null,

@@ -1,5 +1,6 @@
 using Station.Abstractions.Enums;
 using Station.Core.Configuration;
+using Station.Core.Configuration.Services;
 using Station.Core.Execution;
 using Station.Core.Infrastructure.Templates;
 using Station.Core.Plugins;
@@ -113,7 +114,11 @@ public sealed class EngineTests
     {
         var processRunner = new StubProcessRunner();
         var configLoader = new ConfigLoader(new ScribanTemplateRenderer());
-        var pluginRestorer = new PluginRestorer(configLoader, processRunner);
+        var pluginRestorer = new PluginRestorer(
+            new PluginManifestLoader(new YamlConfigurationReader()),
+            new LocalConfigurationDiscovery(),
+            processRunner
+        );
 
         return new ConfigEngine(
             configLoader,

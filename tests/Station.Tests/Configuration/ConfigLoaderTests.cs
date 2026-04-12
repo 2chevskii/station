@@ -51,7 +51,7 @@ public sealed class ConfigLoaderTests
             Assert.Equal(["base"], configuration.RequestedRoles);
 
             var plugin = Assert.Single(configuration.PluginDeclarations);
-            Assert.Equal(PluginProviderKind.Local, plugin.Provider);
+            Assert.Equal("local", plugin.Provider);
             Assert.Equal("demo_plugin.zip", plugin.Name);
 
             var rootTask = Assert.Single(configuration.RootTasks);
