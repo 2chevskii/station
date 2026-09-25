@@ -1,6 +1,8 @@
 using System.Text;
+
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -95,7 +97,7 @@ public sealed class TemplateModule : ConfigModule
         if (destinationPath.ExistsFile() && Backup)
         {
             var timestamp = Context.TimeProvider.GetUtcNow().ToString("yyyyMMddHHmmss");
-            destinationPath.Copy(new AbsolutePath($"{destinationPath}.bak.{timestamp}"), overwrite: true);
+            destinationPath.Copy($"{destinationPath}.bak.{timestamp}".AsAbsolutePath(), overwrite: true);
         }
 
         await destinationPath.WriteAllBytesAsync(desiredBytes, cancellationToken);

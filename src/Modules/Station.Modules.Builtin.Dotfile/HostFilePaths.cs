@@ -1,12 +1,13 @@
-using TruePath.SystemIo;
+using Station.Abstractions.FileSystem;
 using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Dotfile;
 
 internal static class HostFilePaths
 {
     public static AbsolutePath Resolve(string path) =>
-        new LocalPath(Environment.ExpandEnvironmentVariables(path)).ResolveToCurrentDirectory();
+        Environment.ExpandEnvironmentVariables(path).AsLocalPath().ResolveToCurrentDirectory();
 
     public static bool RequiresAdmin(string destination)
     {

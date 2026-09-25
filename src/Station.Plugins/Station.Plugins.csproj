@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
+      <ProjectReference Include="..\Station.Configuration.Yaml\Station.Configuration.Yaml.csproj" />
+      <ProjectReference Include="..\Station.Utilities\Station.Utilities.csproj" />
+      <ProjectReference Include="..\Station.Plugins.Abstractions\Station.Plugins.Abstractions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="NuGet.Versioning" />
+      <PackageReference Include="SharpCompress" />
+      <PackageReference Include="TruePath" />
+      <PackageReference Include="TruePath.SystemIo" />
+    </ItemGroup>
+
+</Project>

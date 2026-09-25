@@ -1,5 +1,6 @@
-using TruePath.SystemIo;
+using Station.Abstractions.FileSystem;
 using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Abstractions.Models;
 
@@ -15,7 +16,7 @@ public sealed class ManagedFile
 
     public string SourcePath { get; }
 
-    public byte[] ReadAllBytes() => new AbsolutePath(SourcePath).ReadAllBytes();
+    public byte[] ReadAllBytes() => SourcePath.AsAbsolutePath().ReadAllBytes();
 
-    public string ReadAllText() => new AbsolutePath(SourcePath).ReadAllText();
+    public string ReadAllText() => SourcePath.AsAbsolutePath().ReadAllText();
 }

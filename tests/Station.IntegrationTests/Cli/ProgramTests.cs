@@ -1,5 +1,7 @@
 using System.Diagnostics;
+
 using FluentAssertions;
+using Station.Abstractions.FileSystem;
 using Station.Testing;
 using TruePath;
 using TruePath.SystemIo;
@@ -22,7 +24,7 @@ public sealed class ProgramTests
     [Fact]
     public async Task Explain_command_renders_plan_for_example_config()
     {
-        var configRoot = (new AbsolutePath(FindRepositoryRoot()) / "examples" / "workstation").Value;
+        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
         var result = await RunCliAsync("explain", "--config", configRoot);
 
@@ -61,7 +63,7 @@ public sealed class ProgramTests
 
     private static string FindRepositoryRoot()
     {
-        AbsolutePath? directory = new AbsolutePath(AppContext.BaseDirectory);
+        AbsolutePath? directory = AppContext.BaseDirectory.AsAbsolutePath();
         while (directory is { } current && !(current / "Station.slnx").ExistsFile())
         {
             directory = current.Parent;

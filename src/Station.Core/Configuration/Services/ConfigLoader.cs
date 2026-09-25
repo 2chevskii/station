@@ -1,3 +1,4 @@
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Interfaces;
 using Station.Core.Configuration.Models;
 using TruePath;
@@ -57,7 +58,7 @@ public sealed class ConfigLoader
         if (tree.RootManifest is null)
         {
             throw new ConfigurationException(
-                $"Missing root manifest '{new LocalPath(configRoot).ResolveToCurrentDirectory() / "station.yaml"}'."
+                $"Missing root manifest '{configRoot.AsLocalPath().ResolveToCurrentDirectory() / "station.yaml"}'."
             );
         }
 

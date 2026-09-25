@@ -4,7 +4,7 @@ using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
 using Station.Core.Execution.Models;
 using Station.Core.Infrastructure.Privileges;
-using Station.Core.Infrastructure.Processes;
+using Station.Utilities.Processes;
 using Station.Core.Plugins.Models;
 using Station.Core.Plugins.Services;
 
@@ -24,7 +24,6 @@ public sealed class ConfigEngine
             new ConfigLoader(new ScribanTemplateRenderer()),
             new PluginRestorer(
                 new PluginManifestLoader(new YamlConfigurationReader()),
-                new LocalConfigurationDiscovery(),
                 new ProcessRunner()
             ),
             new WindowsPrivilegeDetector(),

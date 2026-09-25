@@ -5,10 +5,16 @@ This repository contains `Station`, a local desired-state workstation configurat
 ## Current architecture
 
 - `Station.Abstractions`
-  Shared contracts only. Module projects are allowed to depend on this project.
+  Shared contracts and path conversion helpers. Module projects are allowed to depend on this project.
 - `Station.Core`
-  Orchestration plus internal `Configuration`, `Execution`, and `Plugins` subdomains.
-  Keep domain records in `Models/`, orchestration/loaders in `Services/`, and plugin restore strategies in `Plugins/Providers/`.
+  Orchestration plus internal `Configuration`, `Execution`, and plugin manifest validation.
+  Keep domain records in `Models/` and orchestration/loaders in `Services/`.
+- `Station.Plugins.Abstractions`
+  Plugin declaration and manifest document contracts shared by Core and plugin restoration.
+- `Station.Plugins`
+  Plugin source restoration, caching, and provider implementations. This project must not depend on Core.
+- `Station.Utilities`
+  Shared process execution used by Core and Plugins.
 - `Station.Configuration.Abstractions`
   Shared configuration document contracts, artifact records, and value conversion used by format loaders and Core.
 - `Station.Configuration.Yaml`

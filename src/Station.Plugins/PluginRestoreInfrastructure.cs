@@ -2,18 +2,20 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
+
 using NuGet.Versioning;
 using SharpCompress.Archives;
 using SharpCompress.Common;
-using Station.Core.Configuration;
-using Station.Core.Configuration.Models;
-using Station.Core.Configuration.Services;
-using Station.Core.Infrastructure.Processes;
-using Station.Core.Plugins.Providers;
+using Station.Abstractions.FileSystem;
+using Station.Abstractions.Models;
+using Station.Configuration.Yaml;
+using Station.Plugins.Abstractions;
+using Station.Plugins.Providers;
+using Station.Utilities.Processes;
 using TruePath;
 using TruePath.SystemIo;
 
-namespace Station.Core.Plugins.Services;
+namespace Station.Plugins.Services;
 
 internal sealed class PluginRestoreInfrastructure
 {
@@ -21,66 +23,146 @@ internal sealed class PluginRestoreInfrastructure
     private const string PluginCacheDirectoryName = "plugin_cache";
 
     private static readonly HttpClient HttpClient = new();
-    private readonly LocalConfigurationDiscovery localConfigurationDiscovery;
     private readonly IProcessRunner processRunner;
 
-    public PluginRestoreInfrastructure(
-        LocalConfigurationDiscovery localConfigurationDiscovery,
-        IProcessRunner processRunner
-    )
+    public PluginRestoreInfrastructure(IProcessRunner processRunner)
     {
-        this.localConfigurationDiscovery = localConfigurationDiscovery;
         this.processRunner = processRunner;
     }
 
     public IProcessRunner ProcessRunner => processRunner;
 
     public string GetPluginsDirectory(string configRoot) =>
-        localConfigurationDiscovery.GetPluginsDirectory(configRoot);
+        (configRoot.AsLocalPath().ResolveToCurrentDirectory() / "plugins").Value;
 
-    public async Task<RestoredPluginLocation> RestoreToCacheAsync(
+    public PluginManifest ReadManifest(string pluginRoot)
+    {
+        var root = pluginRoot.AsAbsolutePath();
+        var yamlPath = root / "plugin-manifest.yaml";
+        var ymlPath = root / "plugin-manifest.yml";
+        if (yamlPath.ExistsFile() && ymlPath.ExistsFile())
+        {
+            throw new ConfigurationException($"Plugin root '{root}' contains both manifest files.");
+        }
+
+        var manifestPath = yamlPath.ExistsFile() ? yamlPath
+            : ymlPath.ExistsFile() ? ymlPath
+            : throw new ConfigurationException($"Plugin root '{root}' has no plugin manifest.");
+        var manifest = new YamlConfigurationReader().Load<PluginManifest>(manifestPath.Value);
+        if (string.IsNullOrWhiteSpace(manifest.Name) || string.IsNullOrWhiteSpace(manifest.Version))
+        {
+            throw new ConfigurationException(
+                $"Plugin manifest '{manifestPath}' must declare a name and version."
+            );
+        }
+
+        return manifest;
+    }
+
+    public async Task<PluginSourceSnapshot> StageAsync(Func<string, Task<string>> stageSourceAsync)
+    {
+        var tempRoot = Temporary.SystemTempDirectory() / "station" / Guid.NewGuid().ToString("N");
+        tempRoot.CreateDirectory();
+        try
+        {
+            var stagedRoot = await stageSourceAsync(tempRoot.Value);
+            var pluginRoot = ResolvePluginRoot(stagedRoot);
+            return new PluginSourceSnapshot(pluginRoot, ReadManifest(pluginRoot), tempRoot);
+        }
+        catch
+        {
+            ClearAttributes(tempRoot);
+            tempRoot.DeleteDirectoryRecursively();
+            throw;
+        }
+    }
+
+    public RestoredPluginLocation RestoreToCache(
         string configRoot,
         PluginDeclaration declaration,
+        PluginSourceSnapshot source,
         Action<string>? log,
-        CancellationToken cancellationToken,
-        Func<string, Task<string>> restoreIntoTempAsync,
-        bool isLocal = false,
-        string? cacheKeyOverride = null
+        bool isLocal = false
     )
     {
         var cacheRoot = GetCacheRoot(configRoot);
         cacheRoot.CreateDirectory();
 
-        var cacheKey = cacheKeyOverride ?? BuildCacheKey(declaration);
+        var cacheKey = BuildCacheKey(declaration);
         var destinationRoot = cacheRoot / cacheKey;
         if (destinationRoot.ExistsDirectory())
         {
-            var cachedPluginRoot = ResolvePluginRoot(destinationRoot.Value);
-            log?.Invoke($"Using cached plugin '{declaration.DisplaySource}'.");
-            return new RestoredPluginLocation(cachedPluginRoot, CacheHit: true, IsLocal: isLocal);
+            try
+            {
+                var cachedPluginRoot = ResolvePluginRoot(destinationRoot.Value);
+                var cachedManifest = ReadManifest(cachedPluginRoot);
+                if (string.Equals(
+                        cachedManifest.Name!.Trim(),
+                        source.Manifest.Name!.Trim(),
+                        StringComparison.OrdinalIgnoreCase
+                    )
+                    && string.Equals(
+                        cachedManifest.Version!.Trim(),
+                        source.Manifest.Version!.Trim(),
+                        StringComparison.Ordinal
+                    ))
+                {
+                    log?.Invoke($"Using cached plugin '{declaration.DisplaySource}'.");
+                    return new RestoredPluginLocation(cachedPluginRoot, CacheHit: true, IsLocal: isLocal);
+                }
+            }
+            catch (Exception exception) when (exception is ConfigurationException or IOException)
+            {
+                log?.Invoke($"Refreshing invalid cached plugin '{declaration.DisplaySource}': {exception.Message}");
+            }
         }
 
-        var tempRoot = Temporary.SystemTempDirectory() / "station" / Guid.NewGuid().ToString("N");
-        tempRoot.CreateDirectory();
-
+        var stagingRoot = cacheRoot / $"{cacheKey}.staging.{Guid.NewGuid():N}";
+        var backupRoot = cacheRoot / $"{cacheKey}.backup.{Guid.NewGuid():N}";
         try
         {
             log?.Invoke($"Restoring plugin '{declaration.DisplaySource}'.");
-            var stagedRoot = await restoreIntoTempAsync(tempRoot.Value);
-            var pluginRoot = ResolvePluginRoot(stagedRoot);
-            CopyDirectory(new AbsolutePath(pluginRoot), destinationRoot);
-            return new RestoredPluginLocation(
-                ResolvePluginRoot(destinationRoot.Value),
-                CacheHit: false,
-                IsLocal: isLocal
-            );
+            CopyDirectory(source.PluginRoot.AsAbsolutePath(), stagingRoot);
+            if (destinationRoot.ExistsDirectory())
+            {
+                Directory.Move(destinationRoot.Value, backupRoot.Value);
+            }
+
+            try
+            {
+                Directory.Move(stagingRoot.Value, destinationRoot.Value);
+                var installedRoot = ResolvePluginRoot(destinationRoot.Value);
+                _ = ReadManifest(installedRoot);
+                return new RestoredPluginLocation(installedRoot, CacheHit: false, IsLocal: isLocal);
+            }
+            catch
+            {
+                if (destinationRoot.ExistsDirectory())
+                {
+                    ClearAttributes(destinationRoot);
+                    destinationRoot.DeleteDirectoryRecursively();
+                }
+
+                if (backupRoot.ExistsDirectory())
+                {
+                    Directory.Move(backupRoot.Value, destinationRoot.Value);
+                }
+
+                throw;
+            }
         }
         finally
         {
-            if (tempRoot.ExistsDirectory())
+            if (stagingRoot.ExistsDirectory())
             {
-                ClearAttributes(tempRoot);
-                tempRoot.DeleteDirectoryRecursively();
+                ClearAttributes(stagingRoot);
+                stagingRoot.DeleteDirectoryRecursively();
+            }
+
+            if (backupRoot.ExistsDirectory() && destinationRoot.ExistsDirectory())
+            {
+                ClearAttributes(backupRoot);
+                backupRoot.DeleteDirectoryRecursively();
             }
         }
     }
@@ -99,13 +181,13 @@ internal sealed class PluginRestoreInfrastructure
         response.EnsureSuccessStatusCode();
 
         await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var destination = new AbsolutePath(destinationPath).Create();
+        await using var destination = destinationPath.AsAbsolutePath().Create();
         await source.CopyToAsync(destination, cancellationToken);
     }
 
     public string ResolveLocalPluginCandidate(string pluginsRoot, string name)
     {
-        var pluginName = new LocalPath(name);
+        var pluginName = name.AsLocalPath();
         if (pluginName.IsAbsolute || pluginName.FileName != name)
         {
             throw new ConfigurationException(
@@ -113,7 +195,7 @@ internal sealed class PluginRestoreInfrastructure
             );
         }
 
-        var pluginDirectory = new AbsolutePath(pluginsRoot);
+        var pluginDirectory = pluginsRoot.AsAbsolutePath();
         var directoryCandidate = pluginDirectory / name;
         if (directoryCandidate.Parent is not { } candidateParent
             || !candidateParent.Equals(pluginDirectory, AbsolutePath.PlatformDefaultComparer))
@@ -138,11 +220,11 @@ internal sealed class PluginRestoreInfrastructure
 
         var archiveCandidate = new[]
         {
-            new AbsolutePath($"{directoryCandidate}.zip"),
-            new AbsolutePath($"{directoryCandidate}.tar"),
-            new AbsolutePath($"{directoryCandidate}.tar.gz"),
-            new AbsolutePath($"{directoryCandidate}.tgz"),
-            new AbsolutePath($"{directoryCandidate}.7z"),
+            $"{directoryCandidate}.zip".AsAbsolutePath(),
+            $"{directoryCandidate}.tar".AsAbsolutePath(),
+            $"{directoryCandidate}.tar.gz".AsAbsolutePath(),
+            $"{directoryCandidate}.tgz".AsAbsolutePath(),
+            $"{directoryCandidate}.7z".AsAbsolutePath(),
         }.Where(static path => path.ExistsFile()).Select(static path => path.Value).FirstOrDefault();
 
         return archiveCandidate ?? string.Empty;
@@ -202,25 +284,17 @@ internal sealed class PluginRestoreInfrastructure
             return candidateRoot;
         }
 
-        var manifests = new AbsolutePath(candidateRoot).GetFiles(
+        var manifests = candidateRoot.AsAbsolutePath().GetFiles(
             "plugin-manifest.y*",
             SearchOption.AllDirectories
         );
         if (manifests.Length == 1)
         {
-            return new AbsolutePath(manifests[0]).Parent!.Value.Value;
+            return manifests[0].AsAbsolutePath().Parent!.Value.Value;
         }
 
         throw new ConfigurationException(
             $"Could not locate a unique plugin manifest under '{candidateRoot}'."
-        );
-    }
-
-    public string BuildLocalArchiveCacheKey(string archivePath)
-    {
-        var fileInfo = new FileInfo(new AbsolutePath(archivePath).Value);
-        return ComputeStableHash(
-            $"{archivePath}|{fileInfo.Length}|{fileInfo.LastWriteTimeUtc.Ticks}"
         );
     }
 
@@ -240,11 +314,11 @@ internal sealed class PluginRestoreInfrastructure
     }
 
     private static bool HasPluginManifest(string root) =>
-        (new AbsolutePath(root) / "plugin-manifest.yaml").ExistsFile()
-        || (new AbsolutePath(root) / "plugin-manifest.yml").ExistsFile();
+        (root.AsAbsolutePath() / "plugin-manifest.yaml").ExistsFile()
+        || (root.AsAbsolutePath() / "plugin-manifest.yml").ExistsFile();
 
     private static AbsolutePath GetCacheRoot(string configRoot) =>
-        new LocalPath(configRoot).ResolveToCurrentDirectory() / CacheDirectoryName / PluginCacheDirectoryName;
+        configRoot.AsLocalPath().ResolveToCurrentDirectory() / CacheDirectoryName / PluginCacheDirectoryName;
 
     private static string BuildCacheKey(PluginDeclaration declaration)
     {
@@ -280,29 +354,29 @@ internal sealed class PluginRestoreInfrastructure
 
         foreach (var path in sourceRoot.GetDirectories("*", SearchOption.AllDirectories))
         {
-            var relativePath = new AbsolutePath(path).RelativeTo(sourceRoot);
+            var relativePath = path.AsAbsolutePath().RelativeTo(sourceRoot);
             (destinationRoot / relativePath).CreateDirectory();
         }
 
         foreach (var path in sourceRoot.GetFiles("*", SearchOption.AllDirectories))
         {
-            var file = new AbsolutePath(path);
+            var file = path.AsAbsolutePath();
             var destinationPath = destinationRoot / file.RelativeTo(sourceRoot);
             destinationPath.Parent!.Value.CreateDirectory();
             file.Copy(destinationPath, overwrite: true);
         }
     }
 
-    private static void ClearAttributes(AbsolutePath root)
+    internal static void ClearAttributes(AbsolutePath root)
     {
         foreach (var path in root.GetDirectories("*", SearchOption.AllDirectories))
         {
-            new AbsolutePath(path).SetAttributes(FileAttributes.Normal);
+            path.AsAbsolutePath().SetAttributes(FileAttributes.Normal);
         }
 
         foreach (var path in root.GetFiles("*", SearchOption.AllDirectories))
         {
-            new AbsolutePath(path).SetAttributes(FileAttributes.Normal);
+            path.AsAbsolutePath().SetAttributes(FileAttributes.Normal);
         }
 
         root.SetAttributes(FileAttributes.Normal);

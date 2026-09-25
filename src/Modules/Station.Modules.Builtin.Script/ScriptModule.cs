@@ -3,8 +3,10 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -152,7 +154,7 @@ public sealed class ScriptModule : ConfigModule
 
     private AbsolutePath ResolveScriptPath()
     {
-        var taskRoot = new LocalPath(Context.WorkingDirectory).ResolveToCurrentDirectory();
+        var taskRoot = Context.WorkingDirectory.AsLocalPath().ResolveToCurrentDirectory();
         var fullPath = taskRoot / ScriptPath;
         if (!IsWithinRoot(fullPath, taskRoot))
         {
@@ -202,14 +204,14 @@ public sealed class ScriptModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            if ((new LocalPath(directory) / commandName).ResolveToCurrentDirectory().ExistsFile())
+            if ((directory.AsLocalPath() / commandName).ResolveToCurrentDirectory().ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
+                if ((directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }

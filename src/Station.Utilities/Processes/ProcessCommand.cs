@@ -1,4 +1,4 @@
-namespace Station.Core.Infrastructure.Processes;
+namespace Station.Utilities.Processes;
 
 public sealed record ProcessCommand(
     string FileName,

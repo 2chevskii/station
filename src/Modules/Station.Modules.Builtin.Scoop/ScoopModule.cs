@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -105,9 +107,9 @@ public sealed class ScoopModule : ConfigModule
             return false;
         }
 
-        if (new LocalPath(commandName).IsAbsolute)
+        if (commandName.AsLocalPath().IsAbsolute)
         {
-            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
+            return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -123,14 +125,14 @@ public sealed class ScoopModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            if ((new LocalPath(directory) / commandName).ResolveToCurrentDirectory().ExistsFile())
+            if ((directory.AsLocalPath() / commandName).ResolveToCurrentDirectory().ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
+                if ((directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }

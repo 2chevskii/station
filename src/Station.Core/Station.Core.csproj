@@ -8,6 +8,9 @@
     <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
     <ProjectReference Include="..\Station.Configuration.Yaml\Station.Configuration.Yaml.csproj" />
     <ProjectReference Include="..\Station.Configuration.JavaScript\Station.Configuration.JavaScript.csproj" />
+    <ProjectReference Include="..\Station.Plugins\Station.Plugins.csproj" />
+    <ProjectReference Include="..\Station.Plugins.Abstractions\Station.Plugins.Abstractions.csproj" />
+    <ProjectReference Include="..\Station.Utilities\Station.Utilities.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -17,8 +20,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NuGet.Versioning" />
-    <PackageReference Include="SharpCompress" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="TruePath" />

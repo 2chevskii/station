@@ -1,5 +1,5 @@
 using FluentAssertions;
-using Station.Core.Infrastructure.Processes;
+using Station.Utilities.Processes;
 using Station.Testing;
 
 namespace Station.IntegrationTests.Infrastructure;

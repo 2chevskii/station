@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
+
 using Jint;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using Station.Configuration.Abstractions;
 using TruePath;
@@ -64,7 +66,7 @@ public sealed class JavaScriptConfigRuntime
     )
     {
         var moduleRoot =
-            new AbsolutePath(artifact.FullPath).Parent?.Value
+            artifact.FullPath.AsAbsolutePath().Parent?.Value
             ?? throw new ConfigurationException(
                 $"Could not determine the directory for '{artifact.FullPath}'."
             );
@@ -88,7 +90,7 @@ public sealed class JavaScriptConfigRuntime
     }
 
     private static string GetImportSpecifier(ResolvedConfigArtifact artifact) =>
-        $"./{new AbsolutePath(artifact.FullPath).FileName}";
+        $"./{artifact.FullPath.AsAbsolutePath().FileName}";
 
     private static string BuildBuiltinModuleSource()
     {

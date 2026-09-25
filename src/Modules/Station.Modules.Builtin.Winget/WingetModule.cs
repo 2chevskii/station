@@ -1,8 +1,10 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -178,9 +180,9 @@ public sealed class WingetModule : ConfigModule
             return false;
         }
 
-        if (new LocalPath(commandName).IsAbsolute)
+        if (commandName.AsLocalPath().IsAbsolute)
         {
-            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
+            return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -196,7 +198,7 @@ public sealed class WingetModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            var directPath = (new LocalPath(directory) / commandName).ResolveToCurrentDirectory();
+            var directPath = (directory.AsLocalPath() / commandName).ResolveToCurrentDirectory();
             if (directPath.ExistsFile())
             {
                 return true;
@@ -204,7 +206,7 @@ public sealed class WingetModule : ConfigModule
 
             foreach (var extension in extensions)
             {
-                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
+                if ((directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }

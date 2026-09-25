@@ -1,3 +1,4 @@
+using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -27,7 +28,7 @@ internal sealed class LocalConfigurationDiscovery
         var tree = treeDiscovery.Discover(configRoot);
         return tree
             .LocalModuleDirectories.Select(moduleRoot =>
-                new AbsolutePath(moduleRoot.FullPath) / $"{moduleRoot.Name}.dll"
+                moduleRoot.FullPath.AsAbsolutePath() / $"{moduleRoot.Name}.dll"
             )
             .Where(static path => path.ExistsFile())
             .Select(static path => path.Value)
@@ -36,5 +37,5 @@ internal sealed class LocalConfigurationDiscovery
 
     public string GetPluginsDirectory(string configRoot) =>
         treeDiscovery.Discover(configRoot).PluginsRoot?.FullPath
-        ?? (new LocalPath(configRoot).ResolveToCurrentDirectory() / "plugins").Value;
+        ?? (configRoot.AsLocalPath().ResolveToCurrentDirectory() / "plugins").Value;
 }

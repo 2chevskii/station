@@ -1,6 +1,6 @@
-using System.IO.Compression;
 using FluentAssertions;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Core.Execution.Services;
 using Station.Testing;
 using TruePath;
@@ -53,8 +53,8 @@ public sealed class ConfigEngineTests
             "plugin-role"
         );
         var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
-        new AbsolutePath(archivePath).Parent!.Value.CreateDirectory();
-        ZipFile.CreateFromDirectory(pluginRoot, archivePath);
+        archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
         directory.WriteFile(
             "station.yaml",
             """
@@ -70,9 +70,25 @@ public sealed class ConfigEngineTests
         var first = await engine.RestoreAsync(directory.Path);
         var second = await engine.RestoreAsync(directory.Path);
 
+        source.WriteFile(
+            "archive-plugin/plugin-manifest.yaml",
+            """
+            name: archive.plugin
+            version: 2.0.0
+            roles:
+              - plugin-role
+            modules: []
+            """
+        );
+        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
+        var updated = await engine.RestoreAsync(directory.Path);
+
         first.Succeeded.Should().BeTrue();
         first.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
         second.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeTrue();
+        updated.Succeeded.Should().BeTrue();
+        updated.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
+        updated.Plugins[0].Version.Should().Be("2.0.0");
     }
 
     [Fact]
@@ -117,7 +133,7 @@ public sealed class ConfigEngineTests
         var npmPackagePath = packages.GetPath("station-demo-plugin-2.0.0.zip");
         ArchiveBuilder.CreateZip(npmPluginRoot, npmPackagePath);
 
-        server.AddFile("/packages/url-plugin.zip", await new AbsolutePath(urlArchivePath).ReadAllBytesAsync());
+        server.AddFile("/packages/url-plugin.zip", await urlArchivePath.AsAbsolutePath().ReadAllBytesAsync());
         server.AddJson(
             "/nuget/index.json",
             $$"""
@@ -141,7 +157,7 @@ public sealed class ConfigEngineTests
         );
         server.AddFile(
             "/flatcontainer/station.demo.plugin/1.2.3/station.demo.plugin.1.2.3.nupkg",
-            await new AbsolutePath(nugetPackagePath).ReadAllBytesAsync()
+            await nugetPackagePath.AsAbsolutePath().ReadAllBytesAsync()
         );
         server.AddJson(
             "/npm/station-demo-plugin",
@@ -162,7 +178,7 @@ public sealed class ConfigEngineTests
         );
         server.AddFile(
             "/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip",
-            await new AbsolutePath(npmPackagePath).ReadAllBytesAsync()
+            await npmPackagePath.AsAbsolutePath().ReadAllBytesAsync()
         );
         server.Start();
 

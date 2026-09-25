@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using Station.Testing;
 using TruePath;
@@ -13,8 +14,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var path = directory.GetPath("files", "sample.txt");
-        new AbsolutePath(path).Parent!.Value.CreateDirectory();
-        new AbsolutePath(path).WriteAllText("hello");
+        path.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        path.AsAbsolutePath().WriteAllText("hello");
         var file = new ManagedFile("sample.txt", path);
 
         file.ReadAllText().Should().Be("hello");
@@ -26,8 +27,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var path = directory.GetPath("templates", "sample.scriban");
-        new AbsolutePath(path).Parent!.Value.CreateDirectory();
-        new AbsolutePath(path).WriteAllText("hello {{ name }}");
+        path.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        path.AsAbsolutePath().WriteAllText("hello {{ name }}");
         var variables = new VariableSet(
             new ConfigObject(
                 new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
@@ -61,8 +62,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var templatePath = directory.GetPath("templates", "app.scriban");
-        new AbsolutePath(templatePath).Parent!.Value.CreateDirectory();
-        new AbsolutePath(templatePath).WriteAllText("hello");
+        templatePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        templatePath.AsAbsolutePath().WriteAllText("hello");
         var template = new ManagedTemplate(
             "nested/app.scriban",
             templatePath,

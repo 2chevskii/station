@@ -1,8 +1,10 @@
 using System.CommandLine;
 using System.CommandLine.Parsing;
+
 using Spectre.Console;
 using Station.Abstractions;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Core;
 using Station.Core.Execution;
 using Station.Core.Execution.Models;
@@ -128,7 +130,7 @@ async Task<int> ExecuteCommandAsync(
 }
 
 string ResolveConfigRoot(ParseResult parseResult) =>
-    new LocalPath(parseResult.GetValue(configOption)!).ResolveToCurrentDirectory().Value;
+    parseResult.GetValue(configOption)!.AsLocalPath().ResolveToCurrentDirectory().Value;
 
 static IReadOnlyDictionary<string, string> ParseCliVariables(string[]? values)
 {

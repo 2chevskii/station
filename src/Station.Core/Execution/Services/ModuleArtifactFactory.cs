@@ -1,3 +1,4 @@
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Interfaces;
 using TruePath;
 using TruePath.SystemIo;
@@ -39,13 +40,13 @@ internal static class ModuleArtifactFactory
 
         void AddScope(string root)
         {
-            var scopeRoot = new AbsolutePath(root);
+            var scopeRoot = root.AsAbsolutePath();
             var filesRoot = scopeRoot / "files";
             if (filesRoot.ExistsDirectory())
             {
                 foreach (var path in filesRoot.GetFiles("*", SearchOption.AllDirectories))
                 {
-                    var filePath = new AbsolutePath(path);
+                    var filePath = path.AsAbsolutePath();
                     var logicalName = Normalize(filePath.RelativeTo(filesRoot).Value);
                     files[logicalName] = new ManagedFile(logicalName, filePath.Value);
                 }
@@ -59,7 +60,7 @@ internal static class ModuleArtifactFactory
 
             var templatesInScope = templatesRoot
                 .GetFiles("*", SearchOption.AllDirectories)
-                .Select(static path => new AbsolutePath(path))
+                .Select(static path => path.AsAbsolutePath())
                 .Where(static path =>
                     path.Value.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase)
                     || path.Value.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase)

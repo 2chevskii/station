@@ -1,6 +1,7 @@
-using Station.Core.Plugins.Providers;
+using Station.Abstractions.Models;
+using Station.Plugins.Providers;
 
-namespace Station.Core.Plugins.Services;
+namespace Station.Plugins.Services;
 
 internal sealed class PluginProviderRegistry
 {

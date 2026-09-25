@@ -1,4 +1,6 @@
+using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Models;
+using Station.Plugins.Abstractions;
 using TruePath;
 
 namespace Station.Core.Configuration.Services;
@@ -191,7 +193,7 @@ internal sealed class PluginDeclarationParser
     {
         var lastSegment = uri.Segments.LastOrDefault()?.TrimEnd('/');
         return !string.IsNullOrWhiteSpace(lastSegment)
-            && string.IsNullOrEmpty(new LocalPath(lastSegment).GetExtensionWithDot());
+            && string.IsNullOrEmpty(lastSegment.AsLocalPath().GetExtensionWithDot());
     }
 
     private static bool HasArchiveExtension(string value) =>

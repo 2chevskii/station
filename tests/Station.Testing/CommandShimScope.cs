@@ -1,4 +1,6 @@
 using System.Text;
+
+using Station.Abstractions.FileSystem;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -27,14 +29,14 @@ public sealed class CommandShimScope : IDisposable
     public string AddCommand(string name, string body)
     {
         var path = directory.GetPath($"{name}.cmd");
-        new AbsolutePath(path).WriteAllText("@echo off\r\n" + body.Trim() + "\r\n", Encoding.ASCII);
+        path.AsAbsolutePath().WriteAllText("@echo off\r\n" + body.Trim() + "\r\n", Encoding.ASCII);
         return path;
     }
 
     public string AddPowerShellCommand(string name, string body)
     {
         var scriptPath = directory.GetPath($"{name}.ps1");
-        new AbsolutePath(scriptPath).WriteAllText(body.Replace("\r\n", "\n"), Encoding.UTF8);
+        scriptPath.AsAbsolutePath().WriteAllText(body.Replace("\r\n", "\n"), Encoding.UTF8);
         return AddCommand(
             name,
             $"powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0{name}.ps1\" %*"

@@ -1,30 +1,25 @@
+using Station.Abstractions.Models;
 using Station.Core.Configuration.Models;
 using Station.Core.Configuration.Services;
-using Station.Core.Infrastructure.Processes;
 using Station.Core.Plugins.Models;
-using Station.Core.Plugins.Providers;
+using Station.Plugins.Abstractions;
+using Station.Plugins.Services;
+using Station.Utilities.Processes;
 
 namespace Station.Core.Plugins.Services;
 
 internal sealed class PluginRestorer
 {
     private readonly PluginManifestLoader pluginManifestLoader;
-    private readonly PluginProviderRegistry pluginProviderRegistry;
-    private readonly PluginRestoreInfrastructure restoreInfrastructure;
+    private readonly PluginSourceRestorer sourceRestorer;
 
     public PluginRestorer(
         PluginManifestLoader pluginManifestLoader,
-        LocalConfigurationDiscovery localConfigurationDiscovery,
-        IProcessRunner processRunner,
-        IEnumerable<IPluginProvider>? providers = null
+        IProcessRunner processRunner
     )
     {
         this.pluginManifestLoader = pluginManifestLoader;
-        restoreInfrastructure = new PluginRestoreInfrastructure(
-            localConfigurationDiscovery,
-            processRunner
-        );
-        pluginProviderRegistry = new PluginProviderRegistry(providers);
+        sourceRestorer = new PluginSourceRestorer(processRunner);
     }
 
     public async Task<PluginRestoreResult> RestoreAsync(
@@ -47,11 +42,9 @@ internal sealed class PluginRestorer
         {
             try
             {
-                var provider = pluginProviderRegistry.Resolve(declaration.Provider);
-                var restored = await provider.RestoreAsync(
+                var restored = await sourceRestorer.RestoreAsync(
                     configRoot,
                     declaration,
-                    restoreInfrastructure,
                     log,
                     cancellationToken
                 );

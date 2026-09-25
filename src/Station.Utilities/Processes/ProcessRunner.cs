@@ -1,10 +1,12 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+
+using Station.Abstractions.FileSystem;
 using TruePath;
 using TruePath.SystemIo;
 
-namespace Station.Core.Infrastructure.Processes;
+namespace Station.Utilities.Processes;
 
 public sealed class ProcessRunner : IProcessRunner
 {
@@ -15,9 +17,9 @@ public sealed class ProcessRunner : IProcessRunner
             return false;
         }
 
-        if (new LocalPath(commandName).IsAbsolute)
+        if (commandName.AsLocalPath().IsAbsolute)
         {
-            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
+            return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -34,7 +36,7 @@ public sealed class ProcessRunner : IProcessRunner
 
         foreach (var directory in pathEntries)
         {
-            var directPath = (new LocalPath(directory) / commandName).ResolveToCurrentDirectory();
+            var directPath = (directory.AsLocalPath() / commandName).ResolveToCurrentDirectory();
             if (directPath.ExistsFile())
             {
                 return true;
@@ -42,7 +44,7 @@ public sealed class ProcessRunner : IProcessRunner
 
             foreach (var extension in extensions)
             {
-                var candidate = (new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory();
+                var candidate = (directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory();
                 if (candidate.ExistsFile())
                 {
                     return true;

@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
+
 using SharpYaml;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -11,7 +13,7 @@ public sealed class YamlConfigurationReader
 {
     public object? LoadObject(string path)
     {
-        using var reader = new AbsolutePath(path).OpenText();
+        using var reader = path.AsAbsolutePath().OpenText();
         return NormalizeYamlValue(
             YamlSerializer.Deserialize<object?>(reader, CreateYamlOptions(path))
         );
@@ -19,7 +21,7 @@ public sealed class YamlConfigurationReader
 
     public T Load<T>(string path)
     {
-        using var reader = new AbsolutePath(path).OpenText();
+        using var reader = path.AsAbsolutePath().OpenText();
         return YamlSerializer.Deserialize<T>(reader, CreateYamlOptions(path))!;
     }
 

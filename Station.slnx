@@ -5,6 +5,7 @@
     <File Path="global.json" />
     <File Path="NuGet.Config" />
   </Folder>
+  <Folder Name="/examples/" />
   <Folder Name="/examples/workstation/">
     <File Path="examples/workstation/station.yaml" />
   </Folder>
@@ -41,6 +42,9 @@
     <Project Path="src/Station.Configuration.JavaScript/Station.Configuration.JavaScript.csproj" />
     <Project Path="src/Station.Cli/Station.Cli.csproj" />
     <Project Path="src/Station.Core/Station.Core.csproj" />
+    <Project Path="src/Station.Plugins.Abstractions/Station.Plugins.Abstractions.csproj" />
+    <Project Path="src/Station.Plugins/Station.Plugins.csproj" />
+    <Project Path="src/Station.Utilities/Station.Utilities.csproj" />
   </Folder>
   <Folder Name="/src/Modules/">
     <Project Path="src/Modules/Station.Modules.Builtin.Apt/Station.Modules.Builtin.Apt.csproj" />

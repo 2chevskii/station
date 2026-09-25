@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using Station.Modules.Builtin.Dotfile;
 using Station.Testing;
@@ -15,8 +16,8 @@ public sealed class CopyModuleTests
     {
         using var directory = new TemporaryDirectory();
         var sourcePath = directory.GetPath("role", "files", "sample.txt");
-        new AbsolutePath(sourcePath).Parent!.Value.CreateDirectory();
-        await new AbsolutePath(sourcePath).WriteAllTextAsync("hello");
+        sourcePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        await sourcePath.AsAbsolutePath().WriteAllTextAsync("hello");
         var artifacts = new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase)
             {
@@ -36,7 +37,7 @@ public sealed class CopyModuleTests
             timeProvider: timeProvider
         );
         var destination = directory.GetPath("out.txt");
-        await new AbsolutePath(destination).WriteAllTextAsync("old");
+        await destination.AsAbsolutePath().WriteAllTextAsync("old");
         var module = new CopyModule(context)
         {
             FileName = "sample.txt",
@@ -48,8 +49,8 @@ public sealed class CopyModuleTests
         var result = await module.ExecuteAsync(CancellationToken.None);
 
         result.Changed.Should().BeTrue();
-        (await new AbsolutePath(destination).ReadAllTextAsync()).Should().Be("hello");
-        new AbsolutePath(destination + ".bak.20260412091011").ExistsFile().Should().BeTrue();
+        (await destination.AsAbsolutePath().ReadAllTextAsync()).Should().Be("hello");
+        (destination + ".bak.20260412091011").AsAbsolutePath().ExistsFile().Should().BeTrue();
     }
 
     [Fact]
@@ -57,8 +58,8 @@ public sealed class CopyModuleTests
     {
         using var directory = new TemporaryDirectory();
         var sourcePath = directory.GetPath("role", "files", "sample.txt");
-        new AbsolutePath(sourcePath).Parent!.Value.CreateDirectory();
-        await new AbsolutePath(sourcePath).WriteAllTextAsync("hello");
+        sourcePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        await sourcePath.AsAbsolutePath().WriteAllTextAsync("hello");
         var artifacts = new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase)
             {
@@ -68,7 +69,7 @@ public sealed class CopyModuleTests
             new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
         );
         var destination = directory.GetPath("out.txt");
-        await new AbsolutePath(destination).WriteAllTextAsync("hello");
+        await destination.AsAbsolutePath().WriteAllTextAsync("hello");
         var context = TestModuleContextFactory.Create(
             directory.Path,
             directory.GetPath("role"),

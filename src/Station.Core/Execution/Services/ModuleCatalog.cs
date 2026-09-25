@@ -1,4 +1,6 @@
 using System.Runtime.Loader;
+
+using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Models;
 using Station.Core.Execution.Models;
 using Station.Modules.Builtin.Apt;
@@ -50,7 +52,7 @@ internal sealed class ModuleCatalog
 
         foreach (var modulePath in localModulePaths)
         {
-            var shortName = new LocalPath(modulePath).GetFilenameWithoutExtension();
+            var shortName = modulePath.AsLocalPath().GetFilenameWithoutExtension();
             resolvedModules.Add(LoadModuleFromAssembly(modulePath, "station.local", shortName));
         }
 
@@ -59,7 +61,7 @@ internal sealed class ModuleCatalog
             foreach (var shortName in plugin.Modules)
             {
                 var modulePath = (
-                    new AbsolutePath(plugin.PluginRoot) / "modules" / shortName / $"{shortName}.dll"
+                    plugin.PluginRoot.AsAbsolutePath() / "modules" / shortName / $"{shortName}.dll"
                 ).Value;
                 resolvedModules.Add(LoadModuleFromAssembly(modulePath, plugin.Name, shortName));
             }
@@ -118,7 +120,7 @@ internal sealed class ModuleCatalog
         string shortName
     )
     {
-        var resolvedPath = new LocalPath(assemblyPath).ResolveToCurrentDirectory();
+        var resolvedPath = assemblyPath.AsLocalPath().ResolveToCurrentDirectory();
         if (!resolvedPath.ExistsFile())
         {
             throw new ConfigurationException($"Module assembly '{assemblyPath}' does not exist.");
@@ -159,7 +161,7 @@ internal sealed class ModuleCatalog
         if (
             string.IsNullOrWhiteSpace(shortName)
             || shortName.Contains('.')
-            || new LocalPath(shortName).FileName != shortName
+            || shortName.AsLocalPath().FileName != shortName
         )
         {
             throw new ConfigurationException($"{owner} must have a valid short name.");

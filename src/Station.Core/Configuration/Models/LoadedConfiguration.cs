@@ -1,3 +1,5 @@
+using Station.Plugins.Abstractions;
+
 namespace Station.Core.Configuration.Models;
 
 public sealed record LoadedConfiguration(

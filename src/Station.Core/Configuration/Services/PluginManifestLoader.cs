@@ -1,4 +1,6 @@
+using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Models;
+using Station.Plugins.Abstractions;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -43,7 +45,7 @@ internal sealed class PluginManifestLoader
 
     public ResolvedPluginManifest Load(string pluginRoot)
     {
-        var fullPluginRoot = new LocalPath(pluginRoot).ResolveToCurrentDirectory();
+        var fullPluginRoot = pluginRoot.AsLocalPath().ResolveToCurrentDirectory();
         var tree = treeDiscovery.Discover(fullPluginRoot.Value);
         var yamlPath = fullPluginRoot / PluginManifestYamlFileName;
         var ymlPath = fullPluginRoot / PluginManifestYmlFileName;
@@ -62,7 +64,7 @@ internal sealed class PluginManifestLoader
                 $"Plugin root '{fullPluginRoot}' is missing '{PluginManifestYamlFileName}' or '{PluginManifestYmlFileName}'."
             );
 
-        var manifest = yamlReader.Load<PluginManifestFile>(manifestPath.Value);
+        var manifest = yamlReader.Load<PluginManifest>(manifestPath.Value);
         var name = manifest.Name?.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -133,7 +135,7 @@ internal sealed class PluginManifestLoader
         {
             if (
                 export.Contains('.')
-                || new LocalPath(export).FileName != export
+                || export.AsLocalPath().FileName != export
             )
             {
                 throw new ConfigurationException(

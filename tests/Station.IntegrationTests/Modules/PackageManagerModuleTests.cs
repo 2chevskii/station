@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Winget;
@@ -14,7 +15,7 @@ public sealed class PackageManagerModuleTests
     public async Task Scoop_module_uses_shimmed_command_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = (new AbsolutePath(shims.Path) / "scoop-state.txt").Value;
+        var statePath = (shims.Path.AsAbsolutePath() / "scoop-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "scoop",
             $$"""
@@ -51,7 +52,7 @@ public sealed class PackageManagerModuleTests
     public async Task Winget_module_uses_shimmed_command_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = (new AbsolutePath(shims.Path) / "winget-state.txt").Value;
+        var statePath = (shims.Path.AsAbsolutePath() / "winget-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "winget",
             $$"""
@@ -89,7 +90,7 @@ public sealed class PackageManagerModuleTests
     public async Task Apt_module_uses_shimmed_wsl_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = (new AbsolutePath(shims.Path) / "apt-state.txt").Value;
+        var statePath = (shims.Path.AsAbsolutePath() / "apt-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "wsl",
             $$"""

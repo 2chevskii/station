@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Station.Abstractions.Enums;
+using Station.Abstractions.FileSystem;
 using Station.Abstractions.Models;
 using Station.Modules.Builtin.Dotfile;
 using Station.Testing;
@@ -15,8 +16,8 @@ public sealed class TemplateModuleTests
     {
         using var directory = new TemporaryDirectory();
         var templatePath = directory.GetPath("role", "templates", "app.scriban");
-        new AbsolutePath(templatePath).Parent!.Value.CreateDirectory();
-        await new AbsolutePath(templatePath).WriteAllTextAsync("hello {{ name }}");
+        templatePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        await templatePath.AsAbsolutePath().WriteAllTextAsync("hello {{ name }}");
         var variables = new VariableSet(
             new ConfigObject(
                 new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
@@ -67,7 +68,7 @@ public sealed class TemplateModuleTests
 
         (await checkModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
         (await applyModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await new AbsolutePath(destination).ReadAllTextAsync()).Should().Be("hello Alice");
+        (await destination.AsAbsolutePath().ReadAllTextAsync()).Should().Be("hello Alice");
         (await checkModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
     }
 
@@ -76,8 +77,8 @@ public sealed class TemplateModuleTests
     {
         using var directory = new TemporaryDirectory();
         var templatePath = directory.GetPath("role", "templates", "app.scriban");
-        new AbsolutePath(templatePath).Parent!.Value.CreateDirectory();
-        await new AbsolutePath(templatePath).WriteAllTextAsync("hello {{ name }}");
+        templatePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        await templatePath.AsAbsolutePath().WriteAllTextAsync("hello {{ name }}");
         var variables = new VariableSet(
             new ConfigObject(
                 new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
@@ -97,7 +98,7 @@ public sealed class TemplateModuleTests
             }
         );
         var destination = directory.GetPath("out.txt");
-        await new AbsolutePath(destination).WriteAllTextAsync("old");
+        await destination.AsAbsolutePath().WriteAllTextAsync("old");
         var module = new TemplateModule(
             TestModuleContextFactory.Create(
                 directory.Path,
@@ -120,6 +121,6 @@ public sealed class TemplateModuleTests
         var result = await module.ExecuteAsync(CancellationToken.None);
 
         result.Changed.Should().BeTrue();
-        new AbsolutePath(destination + ".bak.20260412091011").ExistsFile().Should().BeTrue();
+        (destination + ".bak.20260412091011").AsAbsolutePath().ExistsFile().Should().BeTrue();
     }
 }

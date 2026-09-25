@@ -1,4 +1,4 @@
-namespace Station.Core.Configuration.Models;
+namespace Station.Plugins.Abstractions;
 
 public sealed record PluginDeclaration(
     string Provider,

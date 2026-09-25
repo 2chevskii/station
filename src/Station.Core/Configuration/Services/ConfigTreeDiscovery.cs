@@ -1,3 +1,4 @@
+using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Models;
 using TruePath;
 using TruePath.SystemIo;
@@ -16,7 +17,7 @@ internal sealed class ConfigTreeDiscovery
 
     public DiscoveredConfigTree Discover(string rootPath)
     {
-        var fullRoot = new LocalPath(rootPath).ResolveToCurrentDirectory();
+        var fullRoot = rootPath.AsLocalPath().ResolveToCurrentDirectory();
         if (!fullRoot.ExistsDirectory())
         {
             throw new ConfigurationException($"Configuration root '{fullRoot}' does not exist.");
@@ -51,7 +52,7 @@ internal sealed class ConfigTreeDiscovery
         var directories = fullPath
             .GetDirectories()
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
-            .Select(static path => new AbsolutePath(path))
+            .Select(static path => path.AsAbsolutePath())
             .Select(path =>
                 DiscoverDirectory(path, CombineRelative(relativePath, path.FileName))
             )
@@ -60,7 +61,7 @@ internal sealed class ConfigTreeDiscovery
         var files = fullPath
             .GetFiles()
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
-            .Select(static path => new AbsolutePath(path))
+            .Select(static path => path.AsAbsolutePath())
             .Select(path => new DiscoveredFile(
                 path.Value,
                 path.FileName,
