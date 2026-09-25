@@ -67,7 +67,7 @@ public sealed class ConfigLoaderTests
         configuration.RootVariables.Get<string>("greeting").Should().Be("cli");
         configuration.RequestedRoles.Should().Equal("base");
         configuration
-            .PluginDeclarations.Should()
+            .PluginRequirements.Should()
             .ContainSingle()
             .Which.Should()
             .BeEquivalentTo(new { Provider = "local", Name = "demo_plugin.zip" });

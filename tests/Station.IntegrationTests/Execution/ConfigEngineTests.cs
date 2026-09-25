@@ -15,6 +15,86 @@ namespace Station.IntegrationTests.Execution;
 public sealed class ConfigEngineTests
 {
     [Fact]
+    public async Task ListRoles_shows_local_and_plugin_descriptions_without_selected_roles()
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile("station.yaml", "plugins: [demo_plugin]\n");
+        directory.WriteFile("roles/local/role.yaml", "[]");
+        directory.WriteFile("roles/local/metadata.yaml", "description: Local workstation setup\n");
+        directory.WriteFile("roles/undocumented/role.yaml", "[]");
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
+        directory.WriteFile(
+            "plugins/demo_plugin/roles/plugin-role/metadata.yml",
+            "description: Shared plugin setup\n"
+        );
+
+        var result = await new ConfigEngine().ListRolesAsync(directory.Path);
+
+        result.Succeeded.Should().BeTrue();
+        result.Components.Should().HaveCount(3);
+        result.Components.Should().ContainSingle(component =>
+            component.Name == "station.local.local"
+            && component.Description == "Local workstation setup"
+            && component.Source == "station.local: roles/local"
+        );
+        result.Components.Should().ContainSingle(component =>
+            component.Name == "example.plugin.plugin-role"
+            && component.Description == "Shared plugin setup"
+            && component.Source == "example.plugin: plugins/demo_plugin/roles/plugin-role"
+        );
+        result.Components.Should().ContainSingle(component =>
+            component.Name == "station.local.undocumented" && component.Description == null
+        );
+    }
+
+    [Fact]
+    public async Task ListModules_shows_builtin_and_plugin_modules_with_descriptions_and_sources()
+    {
+        using var directory = new TemporaryDirectory();
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
+        directory.WriteFile("station.yaml", "plugins: [demo_plugin]\n");
+        directory.WriteFile(
+            "plugins/demo_plugin/manifest.yaml",
+            """
+            name: example.plugin
+            version: 1.0.0
+            modules:
+              - assemblies/bundle.dll:Station.Modules.Builtin.Dotfile.CopyModule
+              - assemblies/bundle.dll:Station.Modules.Builtin.Dotfile.TemplateModule
+            """
+        );
+        var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
+        assemblyPath.Parent!.Value.CreateDirectory();
+        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
+            .Copy(assemblyPath, overwrite: true);
+
+        var result = await new ConfigEngine().ListModulesAsync(directory.Path);
+
+        result.Succeeded.Should().BeTrue();
+        result.Components.Should().Contain(component =>
+            component.Name == "station.builtin.copy"
+            && !string.IsNullOrWhiteSpace(component.Description)
+            && component.Source == "station.builtin"
+        );
+        result.Components.Should().Contain(component =>
+            component.Name == "example.plugin.copy"
+            && !string.IsNullOrWhiteSpace(component.Description)
+            && component.Source.Contains("bundle.dll", StringComparison.OrdinalIgnoreCase)
+        );
+        result.Components.Should().Contain(component => component.Name == "example.plugin.template");
+    }
+
+    [Fact]
     public async Task Restore_returns_plugin_records_for_local_plugins()
     {
         using var directory = new TemporaryDirectory();
@@ -75,7 +155,7 @@ public sealed class ConfigEngineTests
         var second = await engine.RestoreAsync(directory.Path);
 
         source.WriteFile(
-            "archive-plugin/plugin-manifest.yaml",
+            "archive-plugin/manifest.yaml",
             """
             name: archive.plugin
             version: 2.0.0
@@ -89,10 +169,74 @@ public sealed class ConfigEngineTests
 
         first.Succeeded.Should().BeTrue();
         first.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
+        first.Plugins[0].PluginRoot.Should().Be(
+            directory.GetPath(".station", "plugin_cache", "archive.plugin", "1.0.0")
+        );
         second.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeTrue();
         updated.Succeeded.Should().BeTrue();
         updated.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
         updated.Plugins[0].Version.Should().Be("2.0.0");
+        updated.Plugins[0].PluginRoot.Should().Be(
+            directory.GetPath(".station", "plugin_cache", "archive.plugin", "2.0.0")
+        );
+        directory.GetPath(".station", "plugin_cache", "archive.plugin", "1.0.0", "manifest.yaml")
+            .AsAbsolutePath().ExistsFile().Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Restore_rejects_legacy_plugin_manifest_name()
+    {
+        using var directory = new TemporaryDirectory();
+        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
+        File.Move(
+            directory.GetPath("plugins", "demo_plugin", "manifest.yaml"),
+            directory.GetPath("plugins", "demo_plugin", "plugin-manifest.yaml")
+        );
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+
+        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+
+        result.Succeeded.Should().BeFalse();
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("no plugin manifest");
+    }
+
+    [Fact]
+    public async Task Restore_accepts_yml_plugin_manifest()
+    {
+        using var directory = new TemporaryDirectory();
+        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
+        File.Move(
+            directory.GetPath("plugins", "demo_plugin", "manifest.yaml"),
+            directory.GetPath("plugins", "demo_plugin", "manifest.yml")
+        );
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+
+        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+
+        result.Succeeded.Should().BeTrue();
+        result.Plugins.Should().ContainSingle().Which.PluginName.Should().Be("example.plugin");
+    }
+
+    [Fact]
+    public async Task Restore_rejects_manifest_name_that_escapes_cache_directory()
+    {
+        using var directory = new TemporaryDirectory();
+        using var source = new TemporaryDirectory();
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            source,
+            "archive-plugin",
+            "../outside",
+            "plugin-role"
+        );
+        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n");
+
+        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+
+        result.Succeeded.Should().BeFalse();
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("valid directory name");
     }
 
     [Fact]
@@ -253,6 +397,109 @@ public sealed class ConfigEngineTests
 
         result.Succeeded.Should().BeTrue();
         result.Message.Should().Contain("Validated");
+    }
+
+    [Fact]
+    public async Task Validate_loads_multiple_plugin_modules_from_one_assembly()
+    {
+        using var directory = new TemporaryDirectory();
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
+        directory.WriteFile(
+            "plugins/demo_plugin/manifest.yaml",
+            """
+            name: example.plugin
+            version: 1.0.0
+            roles:
+              - plugin-role
+            modules:
+              - assemblies/bundle.dll:Station.Modules.Builtin.Dotfile.CopyModule
+              - assemblies/bundle.dll:Station.Modules.Builtin.Dotfile.TemplateModule
+            """
+        );
+        var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
+        assemblyPath.Parent!.Value.CreateDirectory();
+        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
+            .Copy(assemblyPath, overwrite: true);
+        directory.WriteFile("files/input.txt", "hello");
+        directory.WriteFile("templates/sample.scriban", "hello");
+        directory.WriteFile(
+            "station.yaml",
+            $$"""
+            roles: [plugin-role]
+            plugins: [demo_plugin]
+            tasks:
+              - example.plugin.copy:
+                  file: input.txt
+                  destination: {{directory.GetPath("copy.txt")}}
+              - example.plugin.template:
+                  template: sample
+                  destination: {{directory.GetPath("template.txt")}}
+            """
+        );
+
+        var result = await new ConfigEngine().RunAsync(directory.Path, ExecutionMode.Validate);
+
+        result.Succeeded.Should().BeTrue();
+        result.Message.Should().Be("Validated 3 task(s).");
+    }
+
+    [Fact]
+    public async Task Restore_rejects_module_assembly_outside_plugin_root()
+    {
+        using var directory = new TemporaryDirectory();
+        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
+        directory.WriteFile(
+            "plugins/demo_plugin/manifest.yaml",
+            """
+            name: example.plugin
+            version: 1.0.0
+            modules:
+              - ../outside.dll:Example.Module
+            """
+        );
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+
+        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+
+        result.Succeeded.Should().BeFalse();
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("outside the plugin root");
+    }
+
+    [Fact]
+    public async Task Validate_reports_missing_module_type_in_plugin_assembly()
+    {
+        using var directory = new TemporaryDirectory();
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
+        directory.WriteFile(
+            "plugins/demo_plugin/manifest.yaml",
+            """
+            name: example.plugin
+            version: 1.0.0
+            roles: [plugin-role]
+            modules:
+              - assemblies/bundle.dll:Example.MissingModule
+            """
+        );
+        var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
+        assemblyPath.Parent!.Value.CreateDirectory();
+        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
+            .Copy(assemblyPath, overwrite: true);
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+
+        var result = await new ConfigEngine().RunAsync(directory.Path, ExecutionMode.Validate);
+
+        result.Succeeded.Should().BeFalse();
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("Example.MissingModule");
     }
 
     [Fact]

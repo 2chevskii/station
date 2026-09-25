@@ -4,7 +4,7 @@ using Station.Core.Configuration.Plugins;
 using Station.Core.Configuration.Roles;
 using Station.Core.Configuration.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -26,35 +26,37 @@ internal sealed class PluginRestorer
 
     public async Task<PluginRestoreResult> RestoreAsync(
         string configRoot,
-        IReadOnlyList<PluginDeclaration> declarations,
+        IReadOnlyList<PluginRequirement> requirements,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? cacheRootOverride = null
     )
     {
-        if (declarations.Count == 0)
+        if (requirements.Count == 0)
         {
-            return new PluginRestoreResult(true, "No plugins declared.", [], [], []);
+            return new PluginRestoreResult(true, "No plugin requirements.", [], [], []);
         }
 
         var diagnostics = new List<string>();
         var records = new List<PluginRestoreRecord>();
         var manifests = new List<ResolvedPluginManifest>();
 
-        foreach (var declaration in declarations)
+        foreach (var requirement in requirements)
         {
             try
             {
                 var restored = await sourceRestorer.RestoreAsync(
                     configRoot,
-                    declaration,
+                    requirement,
                     log,
-                    cancellationToken
+                    cancellationToken,
+                    cacheRootOverride
                 );
                 var manifest = pluginManifestLoader.Load(restored.PluginRoot);
                 manifests.Add(manifest);
                 records.Add(
                     new PluginRestoreRecord(
-                        declaration.DisplaySource,
+                        requirement.DisplaySource,
                         manifest.Name,
                         manifest.Version,
                         manifest.PluginRoot,
@@ -66,7 +68,7 @@ internal sealed class PluginRestorer
             catch (Exception exception)
                 when (exception is ConfigurationException or IOException or HttpRequestException)
             {
-                diagnostics.Add($"{declaration.DisplaySource}: {exception.Message}");
+                diagnostics.Add($"{requirement.DisplaySource}: {exception.Message}");
             }
         }
 

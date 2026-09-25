@@ -20,7 +20,7 @@ public static class PluginFixtureBuilder
 
         var moduleList = includeModule ? "  - script" : string.Empty;
         root.WriteFile(
-            $"{pluginDirectoryName}/plugin-manifest.yaml",
+            $"{pluginDirectoryName}/manifest.yaml",
             $$"""
             name: {{pluginName}}
             version: 1.0.0

@@ -5,7 +5,7 @@ using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -20,21 +20,21 @@ internal sealed class NpmPluginProvider : IPluginProvider
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
-        var registry = string.IsNullOrWhiteSpace(declaration.Registry)
+        var registry = string.IsNullOrWhiteSpace(requirement.Registry)
             ? "https://registry.npmjs.org/"
-            : declaration.Registry!;
+            : requirement.Registry!;
 
         return infrastructure.StageAsync(async tempRoot =>
         {
-            var metadataUrl = $"{registry.TrimEnd('/')}/{Uri.EscapeDataString(declaration.Id!)}";
+            var metadataUrl = $"{registry.TrimEnd('/')}/{Uri.EscapeDataString(requirement.Id!)}";
             var metadata = await GetMetadataAsync(metadataUrl, cancellationToken);
 
-            var resolvedVersion = declaration.Version;
+            var resolvedVersion = requirement.Version;
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
                 resolvedVersion = metadata["dist-tags"]?["latest"]?.GetValue<string>();
@@ -43,7 +43,7 @@ internal sealed class NpmPluginProvider : IPluginProvider
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
                 throw new ConfigurationException(
-                    $"npm registry '{registry}' did not resolve a version for package '{declaration.Id}'."
+                    $"npm registry '{registry}' did not resolve a version for package '{requirement.Id}'."
                 );
             }
 
@@ -52,7 +52,7 @@ internal sealed class NpmPluginProvider : IPluginProvider
             if (string.IsNullOrWhiteSpace(tarballUrl))
             {
                 throw new ConfigurationException(
-                    $"npm registry '{registry}' did not return a tarball URL for '{declaration.Id}@{resolvedVersion}'."
+                    $"npm registry '{registry}' did not return a tarball URL for '{requirement.Id}@{resolvedVersion}'."
                 );
             }
 
@@ -70,18 +70,18 @@ internal sealed class NpmPluginProvider : IPluginProvider
 
     public RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
     )
     {
-        var registry = string.IsNullOrWhiteSpace(declaration.Registry)
+        var registry = string.IsNullOrWhiteSpace(requirement.Registry)
             ? "https://registry.npmjs.org/"
-            : declaration.Registry!;
+            : requirement.Registry!;
         return infrastructure.RestoreToCache(
             configRoot,
-            declaration with
+            requirement with
             {
                 Registry = registry,
             },

@@ -8,6 +8,7 @@ using Station.Abstractions.FileSystem;
 using Station.Core;
 using Station.Core.Execution;
 using Station.Core.Execution.Modules;
+using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Execution.Roles;
@@ -29,9 +30,15 @@ var setOption = new Option<string[]>("--set")
     AllowMultipleArgumentsPerToken = true,
 };
 
+var pluginCacheDirectoryOption = new Option<string?>("--plugin-cache-dir")
+{
+    Description = "Override the plugin cache directory.",
+};
+
 var rootCommand = new RootCommand("Manage local workstation configuration.");
 rootCommand.Subcommands.Add(CreateRestoreCommand());
 rootCommand.Subcommands.Add(CreateExplainCommand());
+rootCommand.Subcommands.Add(CreateListCommand());
 rootCommand.Subcommands.Add(
     CreateCommand("validate", "Validate config and plugins.", ExecutionMode.Validate)
 );
@@ -46,9 +53,10 @@ return await rootCommand.Parse(args).InvokeAsync();
 
 Command CreateRestoreCommand()
 {
-    var command = new Command("restore", "Resolve and cache declared plugins.");
+    var command = new Command("restore", "Resolve and cache required plugins.");
     command.Options.Add(configOption);
     command.Options.Add(setOption);
+    command.Options.Add(pluginCacheDirectoryOption);
     command.SetAction(
         async (parseResult, cancellationToken) =>
         {
@@ -59,7 +67,8 @@ Command CreateRestoreCommand()
                 configRoot,
                 cliVariables,
                 stationConsole.WriteLogMessage,
-                cancellationToken
+                cancellationToken,
+                parseResult.GetValue(pluginCacheDirectoryOption)
             );
 
             stationConsole.WriteRestoreResult(result);
@@ -77,6 +86,7 @@ Command CreateExplainCommand()
     );
     command.Options.Add(configOption);
     command.Options.Add(setOption);
+    command.Options.Add(pluginCacheDirectoryOption);
     command.SetAction(
         async (parseResult, cancellationToken) =>
         {
@@ -87,10 +97,80 @@ Command CreateExplainCommand()
                 configRoot,
                 cliVariables,
                 stationConsole.WriteLogMessage,
-                cancellationToken
+                cancellationToken,
+                parseResult.GetValue(pluginCacheDirectoryOption)
             );
 
             stationConsole.WriteExplainResult(result);
+            return result.Succeeded ? 0 : 1;
+        }
+    );
+    return command;
+}
+
+Command CreateListCommand()
+{
+    var command = new Command("list", "Show available roles and modules.");
+    command.Subcommands.Add(
+        CreateInventoryCommand(
+            "roles",
+            "Show available roles, descriptions, and sources.",
+            (engine, root, variables, cacheDirectory, cancellationToken) =>
+                engine.ListRolesAsync(
+                    root,
+                    stationConsole.WriteLogMessage,
+                    cancellationToken,
+                    variables,
+                    cacheDirectory
+                )
+        )
+    );
+    command.Subcommands.Add(
+        CreateInventoryCommand(
+            "modules",
+            "Show available modules, descriptions, and sources.",
+            (engine, root, variables, cacheDirectory, cancellationToken) =>
+                engine.ListModulesAsync(
+                    root,
+                    stationConsole.WriteLogMessage,
+                    cancellationToken,
+                    variables,
+                    cacheDirectory
+                )
+        )
+    );
+    return command;
+}
+
+Command CreateInventoryCommand(
+    string name,
+    string description,
+    Func<
+        ConfigEngine,
+        string,
+        IReadOnlyDictionary<string, string>,
+        string?,
+        CancellationToken,
+        Task<InventoryResult>
+    > list
+)
+{
+    var command = new Command(name, description);
+    command.Options.Add(configOption);
+    command.Options.Add(setOption);
+    command.Options.Add(pluginCacheDirectoryOption);
+    command.SetAction(
+        async (parseResult, cancellationToken) =>
+        {
+            var engine = new ConfigEngine();
+            var result = await list(
+                engine,
+                ResolveConfigRoot(parseResult),
+                ParseCliVariables(parseResult.GetValue(setOption)),
+                parseResult.GetValue(pluginCacheDirectoryOption),
+                cancellationToken
+            );
+            stationConsole.WriteInventoryResult(result, name);
             return result.Succeeded ? 0 : 1;
         }
     );
@@ -102,6 +182,7 @@ Command CreateCommand(string name, string description, ExecutionMode mode)
     var command = new Command(name, description);
     command.Options.Add(configOption);
     command.Options.Add(setOption);
+    command.Options.Add(pluginCacheDirectoryOption);
     command.SetAction(
         (parseResult, cancellationToken) =>
             ExecuteCommandAsync(parseResult, mode, cancellationToken)
@@ -124,7 +205,8 @@ async Task<int> ExecuteCommandAsync(
         mode,
         cliVariables,
         stationConsole.WriteLogMessage,
-        cancellationToken
+        cancellationToken,
+        parseResult.GetValue(pluginCacheDirectoryOption)
     );
 
     stationConsole.WriteResult(result);

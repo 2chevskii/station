@@ -3,7 +3,7 @@ using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -18,17 +18,17 @@ internal sealed class LocalPluginProvider : IPluginProvider
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
         var pluginsRoot = infrastructure.GetPluginsDirectory(configRoot);
-        var candidate = infrastructure.ResolveLocalPluginCandidate(pluginsRoot, declaration.Name!);
+        var candidate = infrastructure.ResolveLocalPluginCandidate(pluginsRoot, requirement.Name!);
         if (string.IsNullOrWhiteSpace(candidate))
         {
             throw new ConfigurationException(
-                $"Local plugin '{declaration.Name}' was not found under '{pluginsRoot}'."
+                $"Local plugin '{requirement.Name}' was not found under '{pluginsRoot}'."
             );
         }
 
@@ -54,7 +54,7 @@ internal sealed class LocalPluginProvider : IPluginProvider
 
     public RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
@@ -66,6 +66,6 @@ internal sealed class LocalPluginProvider : IPluginProvider
             return new RestoredPluginLocation(source.PluginRoot, true, true);
         }
 
-        return infrastructure.RestoreToCache(configRoot, declaration, source, log, isLocal: true);
+        return infrastructure.RestoreToCache(configRoot, requirement, source, log, isLocal: true);
     }
 }

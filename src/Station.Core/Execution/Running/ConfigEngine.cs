@@ -5,6 +5,7 @@ using Station.Core.Configuration.Plugins;
 using Station.Core.Configuration.Roles;
 using Station.Core.Configuration.Artifacts;
 using Station.Core.Execution.Modules;
+using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Roles;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Privileges;
@@ -20,6 +21,7 @@ public sealed class ConfigEngine
     private readonly ConfigLoader configLoader;
     private readonly PluginRestorer pluginRestorer;
     private readonly IPrivilegeDetector privilegeDetector;
+    private readonly ConfigurationInventory inventory;
     private readonly ScribanTemplateRenderer templateEngine = new();
 
     public ConfigEngine()
@@ -44,31 +46,69 @@ public sealed class ConfigEngine
         this.pluginRestorer = pluginRestorer;
         this.privilegeDetector = privilegeDetector;
         this.builtInModules = builtInModules.ToArray();
+        inventory = new ConfigurationInventory(
+            this.configLoader,
+            this.pluginRestorer,
+            this.builtInModules
+        );
     }
+
+    public Task<InventoryResult> ListRolesAsync(
+        string configRoot,
+        Action<string>? log = null,
+        CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<string, string>? cliVariables = null,
+        string? pluginCacheDirectory = null
+    ) => inventory.ListRolesAsync(
+        configRoot,
+        cliVariables,
+        pluginCacheDirectory,
+        log,
+        cancellationToken
+    );
+
+    public Task<InventoryResult> ListModulesAsync(
+        string configRoot,
+        Action<string>? log = null,
+        CancellationToken cancellationToken = default,
+        IReadOnlyDictionary<string, string>? cliVariables = null,
+        string? pluginCacheDirectory = null
+    ) => inventory.ListModulesAsync(
+        configRoot,
+        cliVariables,
+        pluginCacheDirectory,
+        log,
+        cancellationToken
+    );
 
     public async Task<PluginRestoreResult> RestoreAsync(
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? pluginCacheDirectory = null
     )
     {
-        LoadedConfiguration configuration;
         try
         {
-            configuration = configLoader.Load(configRoot, cliVariables);
+            var configuration = configLoader.Load(configRoot, cliVariables);
+            var cacheRoot = PluginCacheDirectoryResolver.Resolve(
+                configuration.ConfigRoot,
+                configuration.RootVariables,
+                pluginCacheDirectory
+            );
+            return await pluginRestorer.RestoreAsync(
+                configuration.ConfigRoot,
+                configuration.PluginRequirements,
+                log,
+                cancellationToken,
+                cacheRoot
+            );
         }
         catch (Exception exception) when (exception is ConfigurationException or IOException)
         {
             return new PluginRestoreResult(false, exception.Message, [exception.Message], [], []);
         }
-
-        return await pluginRestorer.RestoreAsync(
-            configuration.ConfigRoot,
-            configuration.PluginDeclarations,
-            log,
-            cancellationToken
-        );
     }
 
     public async Task<EngineRunResult> RunAsync(
@@ -76,7 +116,8 @@ public sealed class ConfigEngine
         ExecutionMode mode,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? pluginCacheDirectory = null
     )
     {
         if (mode == ExecutionMode.Restore)
@@ -88,7 +129,13 @@ public sealed class ConfigEngine
 
         try
         {
-            prepared = await PrepareAsync(configRoot, cliVariables, log, cancellationToken);
+            prepared = await PrepareAsync(
+                configRoot,
+                cliVariables,
+                pluginCacheDirectory,
+                log,
+                cancellationToken
+            );
 
             if (!prepared.RestoreResult.Succeeded)
             {
@@ -124,14 +171,21 @@ public sealed class ConfigEngine
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? pluginCacheDirectory = null
     )
     {
         PreparedExecution prepared;
 
         try
         {
-            prepared = await PrepareAsync(configRoot, cliVariables, log, cancellationToken);
+            prepared = await PrepareAsync(
+                configRoot,
+                cliVariables,
+                pluginCacheDirectory,
+                log,
+                cancellationToken
+            );
 
             if (!prepared.RestoreResult.Succeeded)
             {
@@ -158,16 +212,23 @@ public sealed class ConfigEngine
     private async Task<PreparedExecution> PrepareAsync(
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables,
+        string? pluginCacheDirectory,
         Action<string>? log,
         CancellationToken cancellationToken
     )
     {
         var configuration = configLoader.Load(configRoot, cliVariables);
+        var cacheRoot = PluginCacheDirectoryResolver.Resolve(
+            configuration.ConfigRoot,
+            configuration.RootVariables,
+            pluginCacheDirectory
+        );
         var restoreResult = await pluginRestorer.RestoreAsync(
             configuration.ConfigRoot,
-            configuration.PluginDeclarations,
+            configuration.PluginRequirements,
             log,
-            cancellationToken
+            cancellationToken,
+            cacheRoot
         );
 
         if (!restoreResult.Succeeded)

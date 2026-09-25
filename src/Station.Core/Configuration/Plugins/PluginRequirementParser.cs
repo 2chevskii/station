@@ -3,21 +3,21 @@ using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Loading;
 using Station.Core.Configuration.Roles;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using TruePath;
 
 namespace Station.Core.Configuration.Plugins;
 
-internal sealed class PluginDeclarationParser
+internal sealed class PluginRequirementParser
 {
     private static readonly string[] ArchiveExtensions = [".zip", ".tar", ".tar.gz", ".tgz", ".7z"];
 
-    public IReadOnlyList<PluginDeclaration> Parse(IReadOnlyList<object?>? nodes, string sourceName)
+    public IReadOnlyList<PluginRequirement> Parse(IReadOnlyList<object?>? nodes, string sourceName)
     {
-        var declarations = new List<PluginDeclaration>();
+        var requirements = new List<PluginRequirement>();
         foreach (var node in nodes ?? [])
         {
-            declarations.Add(
+            requirements.Add(
                 node switch
                 {
                     string shortForm => ParseShortForm(shortForm),
@@ -29,35 +29,35 @@ internal sealed class PluginDeclarationParser
             );
         }
 
-        return declarations;
+        return requirements;
     }
 
-    private PluginDeclaration ParseShortForm(string shortForm)
+    private PluginRequirement ParseShortForm(string shortForm)
     {
         var trimmed = shortForm.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
         {
-            throw new ConfigurationException("Plugin declarations must not be empty.");
+            throw new ConfigurationException("Plugin requirements must not be empty.");
         }
 
         if (trimmed.StartsWith("nuget://", StringComparison.OrdinalIgnoreCase))
         {
             var idAndVersion = trimmed["nuget://".Length..];
             var (id, version) = SplitPackageCoordinate(idAndVersion);
-            return new PluginDeclaration("nuget", trimmed, Id: id, Version: version);
+            return new PluginRequirement("nuget", trimmed, Id: id, Version: version);
         }
 
         if (trimmed.StartsWith("npm://", StringComparison.OrdinalIgnoreCase))
         {
             var idAndVersion = trimmed["npm://".Length..];
             var (id, version) = SplitPackageCoordinate(idAndVersion);
-            return new PluginDeclaration("npm", trimmed, Id: id, Version: version);
+            return new PluginRequirement("npm", trimmed, Id: id, Version: version);
         }
 
         if (trimmed.StartsWith("git://", StringComparison.OrdinalIgnoreCase))
         {
             var (url, gitRef) = SplitGitReference(trimmed);
-            return new PluginDeclaration("git", trimmed, Url: url, Ref: gitRef);
+            return new PluginRequirement("git", trimmed, Url: url, Ref: gitRef);
         }
 
         if (Uri.TryCreate(trimmed, UriKind.Absolute, out var absoluteUri))
@@ -65,7 +65,7 @@ internal sealed class PluginDeclarationParser
             var normalized = absoluteUri.ToString();
             if (HasArchiveExtension(absoluteUri.AbsolutePath))
             {
-                return new PluginDeclaration("url", trimmed, Url: normalized);
+                return new PluginRequirement("url", trimmed, Url: normalized);
             }
 
             if (
@@ -74,7 +74,7 @@ internal sealed class PluginDeclarationParser
             )
             {
                 var (url, gitRef) = SplitGitReference(normalized);
-                return new PluginDeclaration("git", trimmed, Url: url, Ref: gitRef);
+                return new PluginRequirement("git", trimmed, Url: url, Ref: gitRef);
             }
 
             throw new ConfigurationException(
@@ -82,10 +82,10 @@ internal sealed class PluginDeclarationParser
             );
         }
 
-        return new PluginDeclaration("local", trimmed, Name: trimmed);
+        return new PluginRequirement("local", trimmed, Name: trimmed);
     }
 
-    private static PluginDeclaration ParseLongForm(
+    private static PluginRequirement ParseLongForm(
         IDictionary<string, object?> mapping,
         string sourceName
     )
@@ -100,30 +100,30 @@ internal sealed class PluginDeclarationParser
 
         return provider switch
         {
-            "local" => new PluginDeclaration(
+            "local" => new PluginRequirement(
                 provider,
                 mapping.RequireString("name", sourceName),
                 Name: mapping.RequireString("name", sourceName)
             ),
-            "git" => new PluginDeclaration(
+            "git" => new PluginRequirement(
                 provider,
                 mapping.RequireString("url", sourceName),
                 Url: mapping.RequireString("url", sourceName),
                 Ref: mapping.GetOptionalString("ref")
             ),
-            "url" => new PluginDeclaration(
+            "url" => new PluginRequirement(
                 provider,
                 mapping.RequireString("url", sourceName),
                 Url: mapping.RequireString("url", sourceName)
             ),
-            "nuget" => new PluginDeclaration(
+            "nuget" => new PluginRequirement(
                 provider,
                 mapping.RequireString("id", sourceName),
                 Id: mapping.RequireString("id", sourceName),
                 Version: mapping.GetOptionalString("version"),
                 Feed: mapping.GetOptionalString("feed")
             ),
-            "npm" => new PluginDeclaration(
+            "npm" => new PluginRequirement(
                 provider,
                 mapping.RequireString("id", sourceName),
                 Id: mapping.RequireString("id", sourceName),
@@ -144,7 +144,7 @@ internal sealed class PluginDeclarationParser
         }
 
         throw new ConfigurationException(
-            "Plugin object declarations without 'provider' currently require a 'name'."
+            "Plugin object requirements without 'provider' currently require a 'name'."
         );
     }
 

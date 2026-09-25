@@ -1,5 +1,5 @@
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Providers;
 using Station.Utilities.Processes;
 
@@ -8,27 +8,29 @@ namespace Station.Plugins.Restoration;
 public sealed class PluginSourceRestorer
 {
     private readonly PluginProviderRegistry providerRegistry = new();
-    private readonly PluginRestoreInfrastructure infrastructure;
+    private readonly IProcessRunner processRunner;
 
     public PluginSourceRestorer(IProcessRunner processRunner)
     {
-        infrastructure = new PluginRestoreInfrastructure(processRunner);
+        this.processRunner = processRunner;
     }
 
     public async Task<RestoredPluginLocation> RestoreAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        string? cacheRootOverride = null
     )
     {
-        var provider = providerRegistry.Resolve(declaration.Provider);
+        var infrastructure = new PluginRestoreInfrastructure(processRunner, cacheRootOverride);
+        var provider = providerRegistry.Resolve(requirement.Provider);
         using var source = await provider.GetManifestAsync(
             configRoot,
-            declaration,
+            requirement,
             infrastructure,
             cancellationToken
         );
-        return provider.Restore(configRoot, declaration, source, infrastructure, log);
+        return provider.Restore(configRoot, requirement, source, infrastructure, log);
     }
 }

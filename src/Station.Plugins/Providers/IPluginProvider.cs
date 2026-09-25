@@ -1,5 +1,5 @@
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -12,14 +12,14 @@ internal interface IPluginProvider
 
     Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     );
 
     RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log

@@ -1,6 +1,6 @@
 using Station.Abstractions.FileSystem;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -15,7 +15,7 @@ internal sealed class UrlPluginProvider : IPluginProvider
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
@@ -24,10 +24,10 @@ internal sealed class UrlPluginProvider : IPluginProvider
         {
             var archivePath = (
                 tempRoot.AsAbsolutePath()
-                / new Uri(declaration.Url!).AbsolutePath.AsLocalPath().FileName
+                / new Uri(requirement.Url!).AbsolutePath.AsLocalPath().FileName
             ).Value;
             await infrastructure.DownloadFileAsync(
-                declaration.Url!,
+                requirement.Url!,
                 archivePath,
                 cancellationToken
             );
@@ -40,12 +40,12 @@ internal sealed class UrlPluginProvider : IPluginProvider
 
     public RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
     )
     {
-        return infrastructure.RestoreToCache(configRoot, declaration, source, log);
+        return infrastructure.RestoreToCache(configRoot, requirement, source, log);
     }
 }

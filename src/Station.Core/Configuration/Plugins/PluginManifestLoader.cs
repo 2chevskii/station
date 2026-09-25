@@ -4,7 +4,7 @@ using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Loading;
 using Station.Core.Configuration.Roles;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -15,6 +15,7 @@ internal sealed class PluginManifestLoader
     private readonly ConfigArtifactResolver artifactResolver;
     private readonly ConfigTreeDiscovery treeDiscovery;
     private readonly YamlConfigurationReader yamlReader;
+    private readonly PluginModuleExportParser moduleExportParser = new();
 
     public PluginManifestLoader(YamlConfigurationReader yamlReader)
         : this(
@@ -82,7 +83,11 @@ internal sealed class PluginManifestLoader
         }
 
         var roles = NormalizeExportList(manifest.Roles, "roles", manifestPath.Value);
-        var modules = NormalizeExportList(manifest.Modules, "modules", manifestPath.Value);
+        var modules = moduleExportParser.Parse(
+            manifest.Modules,
+            fullPluginRoot.Value,
+            manifestPath.Value
+        );
 
         foreach (var role in roles)
         {
@@ -97,18 +102,6 @@ internal sealed class PluginManifestLoader
             }
 
             _ = artifactResolver.ResolveRoleTaskArtifact(roleDirectory, $"{name}.{role}");
-        }
-
-        foreach (var module in modules)
-        {
-            var modulePath =
-                fullPluginRoot / PluginLayout.ModulesDirectoryName / module / $"{module}.dll";
-            if (!modulePath.ExistsFile())
-            {
-                throw new ConfigurationException(
-                    $"Plugin '{name}' exports module '{module}', but '{modulePath}' does not exist."
-                );
-            }
         }
 
         return new ResolvedPluginManifest(

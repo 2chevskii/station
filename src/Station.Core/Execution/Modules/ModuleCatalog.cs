@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.Loader;
 using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Discovery;
@@ -11,8 +12,6 @@ using Station.Modules.Builtin.Dotfile;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Script;
 using Station.Modules.Builtin.Winget;
-using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -39,6 +38,7 @@ internal sealed class ModuleCatalog
     )
     {
         var resolvedModules = new List<ResolvedModule>();
+        var loadedAssemblies = new Dictionary<string, Assembly>(StringComparer.Ordinal);
 
         foreach (var registration in CreateDefaultBuiltIns().Concat(additionalBuiltInModules ?? []))
         {
@@ -58,21 +58,40 @@ internal sealed class ModuleCatalog
         foreach (var modulePath in localModulePaths)
         {
             var shortName = modulePath.AsLocalPath().GetFilenameWithoutExtension();
-            resolvedModules.Add(LoadModuleFromAssembly(modulePath, "station.local", shortName));
+            resolvedModules.Add(
+                LoadModuleFromAssembly(
+                    modulePath,
+                    "station.local",
+                    loadedAssemblies,
+                    expectedName: shortName
+                )
+            );
         }
 
         foreach (var plugin in plugins)
         {
-            foreach (var shortName in plugin.Modules)
+            foreach (var module in plugin.Modules)
             {
-                var modulePath = (
-                    plugin.PluginRoot.AsAbsolutePath()
-                    / PluginLayout.ModulesDirectoryName
-                    / shortName
-                    / $"{shortName}.dll"
-                ).Value;
-                resolvedModules.Add(LoadModuleFromAssembly(modulePath, plugin.Name, shortName));
+                resolvedModules.Add(
+                    LoadModuleFromAssembly(
+                        module.AssemblyPath,
+                        plugin.Name,
+                        loadedAssemblies,
+                        module.TypeName,
+                        module.ExpectedName
+                    )
+                );
             }
+        }
+
+        var duplicateModule = resolvedModules
+            .GroupBy(module => module.FullName, StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(group => group.Count() > 1);
+        if (duplicateModule is not null)
+        {
+            throw new ConfigurationException(
+                $"Module '{duplicateModule.Key}' is exported more than once."
+            );
         }
 
         var modulesByFullName = resolvedModules.ToDictionary(
@@ -100,6 +119,10 @@ internal sealed class ModuleCatalog
             new("station.builtin", typeof(WingetModule)),
         ];
 
+    public IReadOnlyList<ResolvedModule> All => modulesByFullName.Values
+        .OrderBy(module => module.FullName, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
     public ResolvedModule Resolve(string name)
     {
         if (modulesByFullName.TryGetValue(name, out var fullNameMatch))
@@ -125,7 +148,9 @@ internal sealed class ModuleCatalog
     private static ResolvedModule LoadModuleFromAssembly(
         string assemblyPath,
         string providerName,
-        string shortName
+        IDictionary<string, Assembly> loadedAssemblies,
+        string? typeName = null,
+        string? expectedName = null
     )
     {
         var resolvedPath = assemblyPath.AsLocalPath().ResolveToCurrentDirectory();
@@ -134,9 +159,12 @@ internal sealed class ModuleCatalog
             throw new ConfigurationException($"Module assembly '{assemblyPath}' does not exist.");
         }
 
-        ValidateShortName(shortName, $"module '{shortName}'");
+        if (!loadedAssemblies.TryGetValue(resolvedPath.Value, out var assembly))
+        {
+            assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(resolvedPath.Value);
+            loadedAssemblies.Add(resolvedPath.Value, assembly);
+        }
 
-        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(resolvedPath.Value);
         var discoveredModules = assembly
             .GetExportedTypes()
             .Where(static type =>
@@ -145,23 +173,47 @@ internal sealed class ModuleCatalog
             )
             .ToArray();
 
-        if (discoveredModules.Length != 1)
+        Type moduleType;
+        if (typeName is not null)
+        {
+            moduleType = discoveredModules.SingleOrDefault(type =>
+                string.Equals(type.FullName, typeName, StringComparison.Ordinal)
+            ) ?? throw new ConfigurationException(
+                $"Module assembly '{assemblyPath}' does not contain public module type '{typeName}'."
+            );
+        }
+        else if (discoveredModules.Length == 1)
+        {
+            moduleType = discoveredModules[0];
+        }
+        else
         {
             throw new ConfigurationException(
                 $"Module assembly '{assemblyPath}' must contain exactly one public {nameof(ConfigModule)} implementation."
             );
         }
 
-        var schema = ModuleSchemaRegistry.Get(discoveredModules[0]);
+        var schema = ModuleSchemaRegistry.Get(moduleType);
+        var shortName = schema.Name;
+        ValidateShortName(shortName, $"module '{shortName}'");
 
-        if (!string.Equals(schema.Name, shortName, StringComparison.OrdinalIgnoreCase))
+        if (
+            expectedName is not null
+            && !string.Equals(shortName, expectedName, StringComparison.OrdinalIgnoreCase)
+        )
         {
             throw new ConfigurationException(
-                $"Module assembly '{assemblyPath}' is expected to export '{shortName}', but its descriptor name is '{schema.Name}'."
+                $"Module assembly '{assemblyPath}' is expected to export '{expectedName}', but its descriptor name is '{shortName}'."
             );
         }
 
-        return new ResolvedModule(providerName, shortName, $"{providerName}.{shortName}", schema);
+        return new ResolvedModule(
+            providerName,
+            shortName,
+            $"{providerName}.{shortName}",
+            schema,
+            resolvedPath.Value
+        );
     }
 
     private static void ValidateShortName(string shortName, string owner)

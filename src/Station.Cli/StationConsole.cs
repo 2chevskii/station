@@ -1,5 +1,6 @@
 using Spectre.Console;
 using Station.Core.Execution.Modules;
+using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;
@@ -74,6 +75,18 @@ public sealed class StationConsole
         }
     }
 
+    public void WriteInventoryResult(InventoryResult result, string kind)
+    {
+        var console = GetConsole(result.Succeeded);
+        WriteSummary(console, result.Succeeded, result.Message, kind);
+        if (result.Succeeded)
+        {
+            console.Write(BuildInventoryTable(result.Components, kind));
+        }
+
+        WriteDiagnostics(console, result.Diagnostics);
+    }
+
     private IAnsiConsole GetConsole(bool succeeded) => succeeded ? standardConsole : errorConsole;
 
     private static void WriteSummary(
@@ -143,10 +156,32 @@ public sealed class StationConsole
         foreach (var plugin in plugins)
         {
             table.AddRow(
-                EscapeCell(plugin.PluginName ?? plugin.Declaration),
+                EscapeCell(plugin.PluginName ?? plugin.Requirement),
                 EscapeCell(plugin.Version ?? "unknown"),
                 GetPluginSourceMarkup(plugin),
                 EscapeCell(plugin.PluginRoot)
+            );
+        }
+
+        return table;
+    }
+
+    private static Table BuildInventoryTable(
+        IReadOnlyList<AvailableComponent> components,
+        string kind
+    )
+    {
+        var table = CreateTable(kind);
+        table.AddColumn("Name");
+        table.AddColumn("Description");
+        table.AddColumn("Source");
+
+        foreach (var component in components)
+        {
+            table.AddRow(
+                EscapeCell(component.Name),
+                EscapeCell(component.Description ?? "—"),
+                EscapeCell(component.Source)
             );
         }
 

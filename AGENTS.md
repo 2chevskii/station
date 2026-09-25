@@ -12,7 +12,7 @@ This repository contains `Station`, a local desired-state workstation configurat
   loading, roles, modules, planning, execution, and restoration in focused folders.
   Do not introduce generic `Models/`, `Services/`, or `Interfaces/` folders.
 - `Station.Plugins.Abstractions`
-  Plugin declaration and manifest document contracts shared by Core and plugin restoration.
+  Plugin requirement and manifest document contracts shared by Core and plugin restoration.
 - `Station.Plugins`
   Plugin source restoration, caching, and provider implementations. This project must not depend on Core.
 - `Station.Utilities`
@@ -44,7 +44,7 @@ This repository contains `Station`, a local desired-state workstation configurat
   - exactly one module key at task root
   - module parameters nested under that key
 - Keep the in-memory .NET object model as the source of truth. YAML is only one serialization format.
-- Plugin identity comes from `plugin-manifest.yaml|yml`, not from the declaration string.
+- Plugin identity comes from `manifest.yaml|yml`, not from the requirement string.
 - Keep plugin restore provider-specific behavior behind separate provider implementations.
 - Keep large loaders split by responsibility. Do not collapse `ConfigLoader` back into a monolith.
 - Role/module resolution rules:
@@ -63,6 +63,7 @@ Root config currently supports:
 
 Role layout currently supports:
 
+- `metadata.yaml` or `metadata.yml` with an optional `description`
 - `defaults.yaml`
 - `role.yaml`
 - `files/`
@@ -82,10 +83,12 @@ modules/<ModuleName>/<ModuleName>.dll
 Plugin manifest layout:
 
 ```text
-plugin-manifest.yaml|yml
+manifest.yaml|yml
 roles/<RoleName>/role.yaml
 modules/<ModuleName>/<ModuleName>.dll
 ```
+
+Plugin manifests may also export modules as `<relative assembly path>:<fully qualified type name>`, including multiple types from one DLL. The module name comes from `[Module]`.
 
 ## Plugin restore
 
@@ -97,11 +100,13 @@ Supported provider names:
 - `nuget`
 - `npm`
 
-Non-local plugins are cached under:
+Remote and local archive plugins are cached under:
 
 ```text
-<root>/.station/plugin_cache
+<root>/.station/plugin_cache/<manifest.name>/<manifest.version>/<plugin contents>
 ```
+
+The cache root can be overridden by `vars.plugin_cache_dir`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR`, `--set plugin_cache_dir=<path>`, or `--plugin-cache-dir <path>` in that precedence order from lowest to highest. Relative paths resolve from the config root.
 
 `restore` is explicit in CLI, and `validate/check/apply` perform implicit restore.
 

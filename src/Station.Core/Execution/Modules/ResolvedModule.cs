@@ -4,5 +4,6 @@ internal sealed record ResolvedModule(
     string ProviderName,
     string ShortName,
     string FullName,
-    ModuleSchema Schema
+    ModuleSchema Schema,
+    string? AssemblyPath = null
 );

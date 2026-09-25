@@ -4,7 +4,7 @@ using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Configuration.Yaml;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -12,8 +12,6 @@ namespace Station.Plugins.Manifests;
 
 internal sealed class PluginManifestReader
 {
-    private const string ManifestSearchPattern = "plugin-manifest.y*";
-
     public PluginManifest ReadManifest(string pluginRoot)
     {
         var root = pluginRoot.AsAbsolutePath();
@@ -48,7 +46,12 @@ internal sealed class PluginManifestReader
 
         var manifests = candidateRoot
             .AsAbsolutePath()
-            .GetFiles(ManifestSearchPattern, SearchOption.AllDirectories);
+            .GetFiles("*", SearchOption.AllDirectories)
+            .Where(path =>
+                string.Equals(path.AsAbsolutePath().FileName, PluginLayout.ManifestYamlFileName, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(path.AsAbsolutePath().FileName, PluginLayout.ManifestYmlFileName, StringComparison.OrdinalIgnoreCase)
+            )
+            .ToArray();
         if (manifests.Length == 1)
         {
             return manifests[0].AsAbsolutePath().Parent!.Value.Value;

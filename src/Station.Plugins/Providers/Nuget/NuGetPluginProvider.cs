@@ -6,7 +6,7 @@ using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -21,14 +21,14 @@ internal sealed class NuGetPluginProvider : IPluginProvider
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
-        var feed = string.IsNullOrWhiteSpace(declaration.Feed)
+        var feed = string.IsNullOrWhiteSpace(requirement.Feed)
             ? "https://api.nuget.org/v3/index.json"
-            : declaration.Feed!;
+            : requirement.Feed!;
 
         return infrastructure.StageAsync(async tempRoot =>
         {
@@ -36,8 +36,8 @@ internal sealed class NuGetPluginProvider : IPluginProvider
                 feed,
                 cancellationToken
             );
-            var normalizedId = declaration.Id!.ToLowerInvariant();
-            var resolvedVersion = declaration.Version;
+            var normalizedId = requirement.Id!.ToLowerInvariant();
+            var resolvedVersion = requirement.Version;
             if (string.IsNullOrWhiteSpace(resolvedVersion))
             {
                 var versionsUri = $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/index.json";
@@ -56,7 +56,7 @@ internal sealed class NuGetPluginProvider : IPluginProvider
                 if (string.IsNullOrWhiteSpace(resolvedVersion))
                 {
                     throw new ConfigurationException(
-                        $"NuGet feed '{feed}' did not return any versions for package '{declaration.Id}'."
+                        $"NuGet feed '{feed}' did not return any versions for package '{requirement.Id}'."
                     );
                 }
             }
@@ -76,18 +76,18 @@ internal sealed class NuGetPluginProvider : IPluginProvider
 
     public RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
     )
     {
-        var feed = string.IsNullOrWhiteSpace(declaration.Feed)
+        var feed = string.IsNullOrWhiteSpace(requirement.Feed)
             ? "https://api.nuget.org/v3/index.json"
-            : declaration.Feed!;
+            : requirement.Feed!;
         return infrastructure.RestoreToCache(
             configRoot,
-            declaration with
+            requirement with
             {
                 Feed = feed,
             },

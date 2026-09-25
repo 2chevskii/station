@@ -80,4 +80,8 @@ internal sealed class RoleCatalog
 
         return shortNameMatches[0];
     }
+
+    public IReadOnlyList<ResolvedRole> All => rolesByFullName.Values
+        .OrderBy(role => role.FullName, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
 }

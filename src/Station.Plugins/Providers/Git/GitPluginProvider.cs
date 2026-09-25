@@ -3,7 +3,7 @@ using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
 using Station.Plugins.Caching;
 using Station.Plugins.Manifests;
@@ -18,7 +18,7 @@ internal sealed class GitPluginProvider : IPluginProvider
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
@@ -32,7 +32,7 @@ internal sealed class GitPluginProvider : IPluginProvider
 
             var cloneRoot = (tempRoot.AsAbsolutePath() / "clone").Value;
             var cloneResult = await infrastructure.ProcessRunner.RunAsync(
-                new ProcessCommand("git", ["clone", declaration.Url!, cloneRoot]),
+                new ProcessCommand("git", ["clone", requirement.Url!, cloneRoot]),
                 cancellationToken
             );
             if (!cloneResult.Succeeded)
@@ -42,10 +42,10 @@ internal sealed class GitPluginProvider : IPluginProvider
                 );
             }
 
-            if (!string.IsNullOrWhiteSpace(declaration.Ref))
+            if (!string.IsNullOrWhiteSpace(requirement.Ref))
             {
                 var checkoutResult = await infrastructure.ProcessRunner.RunAsync(
-                    new ProcessCommand("git", ["checkout", declaration.Ref!], cloneRoot),
+                    new ProcessCommand("git", ["checkout", requirement.Ref!], cloneRoot),
                     cancellationToken
                 );
                 if (!checkoutResult.Succeeded)
@@ -62,12 +62,12 @@ internal sealed class GitPluginProvider : IPluginProvider
 
     public RestoredPluginLocation Restore(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
     )
     {
-        return infrastructure.RestoreToCache(configRoot, declaration, source, log);
+        return infrastructure.RestoreToCache(configRoot, requirement, source, log);
     }
 }

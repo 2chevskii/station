@@ -3,6 +3,7 @@ using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Plugins;
 using Station.Core.Configuration.Roles;
+using Station.Plugins.Abstractions.Requirements;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -13,7 +14,7 @@ public sealed class ConfigLoader
     private readonly IConfigArtifactResolver artifactResolver;
     private readonly ConfigTreeDiscovery configTreeDiscovery;
     private readonly LocalConfigurationDiscovery localDiscovery;
-    private readonly PluginDeclarationParser pluginDeclarationParser;
+    private readonly PluginRequirementParser pluginRequirementParser;
     private readonly PluginManifestLoader pluginManifestLoader;
     private readonly IReadOnlyList<IRoleDocumentLoader> roleLoaders;
     private readonly TaskLoader taskLoader;
@@ -42,7 +43,7 @@ public sealed class ConfigLoader
         artifactResolver = new ConfigArtifactResolver(roleLoaders, variableLoaders);
         variableScopeLoader = new VariableScopeLoader(artifactResolver, variableLoaders);
         taskLoader = new TaskLoader(templateEngine, artifactResolver, roleLoaders);
-        pluginDeclarationParser = new PluginDeclarationParser();
+        pluginRequirementParser = new PluginRequirementParser();
         pluginManifestLoader = new PluginManifestLoader(
             yamlReader,
             (ConfigArtifactResolver)artifactResolver,
@@ -55,6 +56,53 @@ public sealed class ConfigLoader
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null
     )
+    {
+        var (tree, manifest, manifestPath) = ReadRootManifest(configRoot);
+        var variables = variableScopeLoader.LoadRootVariables(
+            tree.RootPath,
+            tree,
+            manifest,
+            manifestPath,
+            cliVariables
+        );
+
+        return new LoadedConfiguration(
+            tree.RootPath,
+            variables,
+            pluginRequirementParser.Parse(manifest.GetOptionalList("plugins"), manifestPath),
+            manifest.GetRequiredStringList("roles", manifestPath),
+            taskLoader.LoadRootTasks(tree.RootPath, manifest, variables, manifestPath)
+        );
+    }
+
+    public (
+        string ConfigRoot,
+        IReadOnlyList<PluginRequirement> Requirements,
+        VariableSet Variables
+    ) LoadPluginRequirements(
+        string configRoot,
+        IReadOnlyDictionary<string, string>? cliVariables = null
+    )
+    {
+        var (tree, manifest, manifestPath) = ReadRootManifest(configRoot);
+        return (
+            tree.RootPath,
+            pluginRequirementParser.Parse(manifest.GetOptionalList("plugins"), manifestPath),
+            variableScopeLoader.LoadRootVariables(
+                tree.RootPath,
+                tree,
+                manifest,
+                manifestPath,
+                cliVariables
+            )
+        );
+    }
+
+    private (
+        DiscoveredConfigTree Tree,
+        IDictionary<string, object?> Manifest,
+        string ManifestPath
+    ) ReadRootManifest(string configRoot)
     {
         var tree = configTreeDiscovery.Discover(configRoot);
         if (tree.RootManifest is null)
@@ -73,21 +121,7 @@ public sealed class ConfigLoader
             );
         }
 
-        var variables = variableScopeLoader.LoadRootVariables(
-            tree.RootPath,
-            tree,
-            manifest,
-            manifestPath,
-            cliVariables
-        );
-
-        return new LoadedConfiguration(
-            tree.RootPath,
-            variables,
-            pluginDeclarationParser.Parse(manifest.GetOptionalList("plugins"), manifestPath),
-            manifest.GetRequiredStringList("roles", manifestPath),
-            taskLoader.LoadRootTasks(tree.RootPath, manifest, variables, manifestPath)
-        );
+        return (tree, manifest, manifestPath);
     }
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(ResolvedRole role, VariableSet rootVariables)

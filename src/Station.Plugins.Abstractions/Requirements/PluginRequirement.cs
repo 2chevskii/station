@@ -1,6 +1,6 @@
-namespace Station.Plugins.Abstractions.Sources;
+namespace Station.Plugins.Abstractions.Requirements;
 
-public sealed record PluginDeclaration(
+public sealed record PluginRequirement(
     string Provider,
     string DisplaySource,
     string? Name = null,

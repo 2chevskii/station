@@ -7,7 +7,7 @@ using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Providers;
 using Station.Plugins.Manifests;
 using Station.Plugins.Caching;
@@ -24,10 +24,10 @@ internal sealed class PluginRestoreInfrastructure
     private readonly PluginManifestReader manifestReader = new();
     private readonly PluginCacheStore cacheStore;
 
-    public PluginRestoreInfrastructure(IProcessRunner processRunner)
+    public PluginRestoreInfrastructure(IProcessRunner processRunner, string? cacheRootOverride)
     {
         this.processRunner = processRunner;
-        cacheStore = new PluginCacheStore(manifestReader);
+        cacheStore = new PluginCacheStore(manifestReader, cacheRootOverride);
     }
 
     public IProcessRunner ProcessRunner => processRunner;
@@ -60,11 +60,11 @@ internal sealed class PluginRestoreInfrastructure
 
     public RestoredPluginLocation RestoreToCache(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         Action<string>? log,
         bool isLocal = false
-    ) => cacheStore.RestoreToCache(configRoot, declaration, source, log, isLocal);
+    ) => cacheStore.RestoreToCache(configRoot, requirement, source, log, isLocal);
 
     public async Task DownloadFileAsync(
         string url,

@@ -17,7 +17,7 @@ public sealed class ProgramTests
         result.ExitCode.Should().Be(0);
         result
             .StandardOutput.Should()
-            .ContainAll("restore", "explain", "validate", "check", "apply");
+            .ContainAll("restore", "explain", "list", "validate", "check", "apply");
     }
 
     [Fact]
@@ -30,6 +30,67 @@ public sealed class ProgramTests
         result.ExitCode.Should().Be(0);
         result.StandardOutput.Should().Contain("station");
         result.StandardOutput.Should().Contain("tasks");
+    }
+
+    [Fact]
+    public async Task List_roles_command_shows_descriptions_and_sources()
+    {
+        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
+
+        var result = await RunCliAsync("list", "roles", "--config", configRoot);
+
+        result.ExitCode.Should().Be(0);
+        result.StandardOutput.Should().ContainAll(
+            "station.local.git",
+            "Configures Git",
+            "preferences and user",
+            "Source"
+        );
+    }
+
+    [Fact]
+    public async Task List_modules_command_shows_descriptions_and_sources()
+    {
+        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
+
+        var result = await RunCliAsync("list", "modules", "--config", configRoot);
+
+        result.ExitCode.Should().Be(0);
+        result.StandardOutput.Should().ContainAll(
+            "station.builtin.copy",
+            "Copies a file",
+            "station.builtin"
+        );
+    }
+
+    [Fact]
+    public async Task Restore_command_accepts_plugin_cache_directory_option()
+    {
+        using var directory = new TemporaryDirectory();
+        using var source = new TemporaryDirectory();
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            source,
+            "archive-plugin",
+            "archive.plugin",
+            "plugin-role"
+        );
+        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
+        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
+        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n");
+        var cacheDirectory = directory.GetPath("external-cache");
+
+        var result = await RunCliAsync(
+            "restore",
+            "--config",
+            directory.Path,
+            "--plugin-cache-dir",
+            cacheDirectory
+        );
+
+        result.ExitCode.Should().Be(0);
+        directory.GetPath("external-cache", "archive.plugin", "1.0.0", "manifest.yaml")
+            .AsAbsolutePath().ExistsFile().Should().BeTrue();
     }
 
     private static async Task<(

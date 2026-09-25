@@ -109,20 +109,23 @@ dotnet publish src/Station.Cli/Station.Cli.csproj `
 ## CLI
 
 ```text
-station restore  --config <dir> [--set key=value ...]
-station explain  --config <dir> [--set key=value ...]
-station validate --config <dir> [--set key=value ...]
-station check    --config <dir> [--set key=value ...]
-station apply    --config <dir> [--set key=value ...]
+station restore      --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station explain      --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station list roles   --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station list modules --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station validate     --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station check        --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
+station apply        --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
 ```
 
-- `restore` resolves declared plugins and stores non-local ones under `<root>/.station/plugin_cache`
+- `restore` resolves plugin requirements and caches remote and local archive plugins under `<root>/.station/plugin_cache/<manifest.name>/<manifest.version>/`
 - `explain` prints an ASCII plan of tasks, bound parameters, and currently visible variables
+- `list roles` and `list modules` restore declared plugins and show all available names, descriptions, and sources without running tasks
 - `validate` restores plugins if needed, resolves roles/modules, and runs inspection
 - `check` performs the same validation and runs dry-run execution
 - `apply` mutates the machine in declared order
 
-`Station.Core` is intentionally split so domain records live under `*/Models`, orchestration and loaders under `*/Services`, and plugin restore strategies under `Plugins/Providers`.
+`Station.Core` groups configuration, execution, and plugin restoration by responsibility. Plugin source strategies live under `Station.Plugins/Providers`.
 
 ## Config root
 
@@ -137,6 +140,7 @@ vars/
   10-workstation.yaml
 roles/
   git/
+    metadata.yaml
     defaults.yaml
     role.yaml
     files/
@@ -154,9 +158,11 @@ plugins/
 Top-level fields:
 
 - `roles`: ordered list of role names or role FQNs
-- `plugins`: plugin declarations
+- `plugins`: plugin requirements
 - `vars`: mapping of root variable overrides
 - `tasks`: ordered root-level tasks that run before roles
+
+A role may contain `metadata.yaml` or `metadata.yml` with `description: ...`. Listing shows `—` when a role has no description. Module descriptions come from `[Module]` attributes. Sources identify the provider and the role directory or module assembly.
 
 Example:
 
@@ -248,7 +254,7 @@ Sources of modules:
 
 - builtin modules under the synthetic provider `station.builtin`
 - local modules under the synthetic provider `station.local`
-- plugin-provided modules under the provider declared by `plugin-manifest`
+- plugin-provided modules under the namespace named in `manifest.yaml` or `manifest.yml`
 - builtin file-oriented modules currently follow the Ansible-like split into `copy` and `template`
 
 Local modules use:
@@ -263,8 +269,8 @@ Plugins can export any number of roles and modules.
 
 Each plugin root must contain exactly one manifest:
 
-- `plugin-manifest.yaml`
-- or `plugin-manifest.yml`
+- `manifest.yaml`
+- or `manifest.yml`
 
 Initial manifest shape:
 
@@ -274,21 +280,25 @@ version: 1.0.0
 roles:
   - workstation
 modules:
-  - chocolatey
+  - assemblies/Example.Plugin.dll:Example.Plugin.ChocolateyModule
+  - assemblies/Example.Plugin.dll:Example.Plugin.ScoopModule
 ```
 
 Rules:
 
 - `name` is the provider namespace
-- `roles` and `modules` contain short names
+- `roles` contains short names
+- `modules` selects public `ConfigModule` types with `<assembly path relative to plugin root>:<fully qualified type name>`; several entries may select types from one DLL
+- the module's short name comes from its `[Module]` attribute
+- legacy short module entries still resolve `modules/<ModuleName>/<ModuleName>.dll` when that DLL contains one module type
 - exported role path: `roles/<RoleName>/role.yaml`
-- exported module path: `modules/<ModuleName>/<ModuleName>.dll`
+- exported module assembly must exist inside the plugin root
 - if both manifest extensions exist, loading fails
 - non-exported artifacts under `roles/` and `modules/` are treated as internal
 
 ### Plugin providers
 
-Supported declaration styles.
+Supported requirement styles.
 Internally, plugin restore is implemented through provider strategies rather than a central provider enum switch:
 
 Local:
@@ -341,11 +351,13 @@ plugins:
     registry: https://registry.npmjs.org/
 ```
 
-Non-local plugins are restored into:
+Remote and local archive plugins are restored into:
 
 ```text
-<root>/.station/plugin_cache
+<root>/.station/plugin_cache/<manifest.name>/<manifest.version>/<plugin contents>
 ```
+
+Set `vars.plugin_cache_dir` in `station.yaml`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR` in the environment, or `--plugin-cache-dir <path>` to change the cache root. `--set plugin_cache_dir=<path>` also works. A relative path is resolved from the config root. The priority is command-line flag, `--set`, environment variable, then configuration variables. Local plugin directories are used directly and are unaffected.
 
 ## Test architecture
 

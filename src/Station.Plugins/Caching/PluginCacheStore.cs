@@ -1,11 +1,9 @@
-using System.Security.Cryptography;
-using System.Text;
 using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Artifacts;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Sources;
+using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Providers;
 using Station.Plugins.Restoration;
 using Station.Plugins.Manifests;
@@ -14,24 +12,28 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Caching;
 
-internal sealed class PluginCacheStore(PluginManifestReader manifestReader)
+internal sealed class PluginCacheStore(
+    PluginManifestReader manifestReader,
+    string? cacheRootOverride = null
+)
 {
     private const string CacheDirectoryName = ".station";
     private const string PluginCacheDirectoryName = "plugin_cache";
 
     public RestoredPluginLocation RestoreToCache(
         string configRoot,
-        PluginDeclaration declaration,
+        PluginRequirement requirement,
         PluginSourceSnapshot source,
         Action<string>? log,
         bool isLocal = false
     )
     {
-        var cacheRoot = GetCacheRoot(configRoot);
-        cacheRoot.CreateDirectory();
+        var pluginName = GetCacheSegment(source.Manifest.Name, "name");
+        var pluginVersion = GetCacheSegment(source.Manifest.Version, "version");
+        var pluginCacheRoot = GetCacheRoot(configRoot) / pluginName;
+        pluginCacheRoot.CreateDirectory();
 
-        var cacheKey = BuildCacheKey(declaration);
-        var destinationRoot = cacheRoot / cacheKey;
+        var destinationRoot = pluginCacheRoot / pluginVersion;
         if (destinationRoot.ExistsDirectory())
         {
             try
@@ -51,7 +53,7 @@ internal sealed class PluginCacheStore(PluginManifestReader manifestReader)
                     )
                 )
                 {
-                    log?.Invoke($"Using cached plugin '{declaration.DisplaySource}'.");
+                    log?.Invoke($"Using cached plugin '{requirement.DisplaySource}'.");
                     return new RestoredPluginLocation(
                         cachedPluginRoot,
                         CacheHit: true,
@@ -62,16 +64,16 @@ internal sealed class PluginCacheStore(PluginManifestReader manifestReader)
             catch (Exception exception) when (exception is ConfigurationException or IOException)
             {
                 log?.Invoke(
-                    $"Refreshing invalid cached plugin '{declaration.DisplaySource}': {exception.Message}"
+                    $"Refreshing invalid cached plugin '{requirement.DisplaySource}': {exception.Message}"
                 );
             }
         }
 
-        var stagingRoot = cacheRoot / $"{cacheKey}.staging.{Guid.NewGuid():N}";
-        var backupRoot = cacheRoot / $"{cacheKey}.backup.{Guid.NewGuid():N}";
+        var stagingRoot = pluginCacheRoot / $"{pluginVersion}.staging.{Guid.NewGuid():N}";
+        var backupRoot = pluginCacheRoot / $"{pluginVersion}.backup.{Guid.NewGuid():N}";
         try
         {
-            log?.Invoke($"Restoring plugin '{declaration.DisplaySource}'.");
+            log?.Invoke($"Restoring plugin '{requirement.DisplaySource}'.");
             CopyDirectory(source.PluginRoot.AsAbsolutePath(), stagingRoot);
             if (destinationRoot.ExistsDirectory())
             {
@@ -117,37 +119,31 @@ internal sealed class PluginCacheStore(PluginManifestReader manifestReader)
         }
     }
 
-    private static AbsolutePath GetCacheRoot(string configRoot) =>
-        configRoot.AsLocalPath().ResolveToCurrentDirectory()
-        / CacheDirectoryName
-        / PluginCacheDirectoryName;
+    private AbsolutePath GetCacheRoot(string configRoot) =>
+        cacheRootOverride is null
+            ? configRoot.AsLocalPath().ResolveToCurrentDirectory()
+                / CacheDirectoryName
+                / PluginCacheDirectoryName
+            : cacheRootOverride.AsAbsolutePath();
 
-    private static string BuildCacheKey(PluginDeclaration declaration)
+    private static string GetCacheSegment(string? value, string propertyName)
     {
-        var builder = new StringBuilder()
-            .Append(declaration.Provider)
-            .Append('|')
-            .Append(declaration.Name)
-            .Append('|')
-            .Append(declaration.Url)
-            .Append('|')
-            .Append(declaration.Ref)
-            .Append('|')
-            .Append(declaration.Id)
-            .Append('|')
-            .Append(declaration.Version)
-            .Append('|')
-            .Append(declaration.Feed)
-            .Append('|')
-            .Append(declaration.Registry);
+        var segment = value?.Trim();
+        if (
+            string.IsNullOrWhiteSpace(segment)
+            || segment is "." or ".."
+            || segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+            || segment.Contains('/')
+            || segment.Contains('\\')
+            || Path.GetFileName(segment) != segment
+        )
+        {
+            throw new ConfigurationException(
+                $"Plugin manifest '{propertyName}' must be a valid directory name."
+            );
+        }
 
-        return ComputeStableHash(builder.ToString());
-    }
-
-    private static string ComputeStableHash(string input)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        return segment;
     }
 
     private static void CopyDirectory(AbsolutePath sourceRoot, AbsolutePath destinationRoot)
