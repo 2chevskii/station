@@ -15,9 +15,9 @@ public sealed class ConfigEngineTests
     {
         using var directory = new TemporaryDirectory();
         directory.WriteFile("station.yaml", "plugins: [demo_plugin]\n");
-        directory.WriteFile("roles/local/role.yaml", "[]");
-        directory.WriteFile("roles/local/metadata.yaml", "description: Local workstation setup\n");
+        directory.WriteFile("roles/local/role.yaml", "description: Local workstation setup\ntasks: []\n");
         directory.WriteFile("roles/undocumented/role.yaml", "[]");
+        directory.WriteFile("roles/undocumented/metadata.yaml", "description: Obsolete\n");
         PluginFixtureBuilder.CreatePlugin(
             directory,
             "plugins/demo_plugin",
@@ -25,8 +25,8 @@ public sealed class ConfigEngineTests
             "plugin-role"
         );
         directory.WriteFile(
-            "plugins/demo_plugin/roles/plugin-role/metadata.yml",
-            "description: Shared plugin setup\n"
+            "plugins/demo_plugin/roles/plugin-role/role.yaml",
+            "description: Shared plugin setup\ntasks: []\n"
         );
 
         var result = await new ConfigEngine().ListRolesAsync(directory.Path);

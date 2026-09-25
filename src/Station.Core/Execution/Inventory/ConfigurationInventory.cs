@@ -13,8 +13,6 @@ internal sealed class ConfigurationInventory(
     IReadOnlyList<ModuleRegistration> builtInModules
 )
 {
-    private readonly RoleMetadataReader roleMetadataReader = new(new YamlConfigurationReader());
-
     public Task<InventoryResult> ListRolesAsync(
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables,
@@ -102,7 +100,7 @@ internal sealed class ConfigurationInventory(
         var catalog = RoleCatalog.Create(configLoader.DiscoverLocalRoles(configRoot), plugins);
         return catalog.All.Select(role => new AvailableComponent(
             role.FullName,
-            roleMetadataReader.ReadDescription(role.RoleRoot),
+            configLoader.ReadRoleDescription(role),
             FormatSource(role.ProviderName, role.RoleRoot, configRoot)
         )).ToArray();
     }

@@ -65,7 +65,11 @@ internal sealed class VariableScopeLoader
         return new VariableSet(rootVariables);
     }
 
-    public VariableSet CreateRoleVariables(ResolvedRole role, VariableSet rootVariables)
+    public VariableSet CreateRoleVariables(
+        ResolvedRole role,
+        VariableSet rootVariables,
+        ConfigObject inlineDefaults
+    )
     {
         var artifact = artifactResolver.ResolveRoleDefaultsArtifact(
             role.RoleDirectory,
@@ -85,8 +89,9 @@ internal sealed class VariableScopeLoader
                     )
                 );
 
+        var mergedDefaults = (ConfigObject)ConfigValueUtilities.Merge(roleDefaults, inlineDefaults);
         return new VariableSet(
-            (ConfigObject)ConfigValueUtilities.Merge(roleDefaults, rootVariables.Root)
+            (ConfigObject)ConfigValueUtilities.Merge(mergedDefaults, rootVariables.Root)
         );
     }
 

@@ -63,9 +63,8 @@ Root config currently supports:
 
 Role layout currently supports:
 
-- `metadata.yaml` or `metadata.yml` with an optional `description`
 - `defaults.yaml`
-- `role.yaml`
+- `role.yaml` as a task array or an object with required `tasks` and optional `description` and `defaults`
 - `files/`
 - `templates/`
 

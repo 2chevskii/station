@@ -119,11 +119,15 @@ public sealed class ConfigLoader
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(ResolvedRole role, VariableSet rootVariables)
     {
+        var properties = taskLoader.ReadRoleProperties(role);
         return taskLoader.LoadRoleTasks(
             role,
-            variableScopeLoader.CreateRoleVariables(role, rootVariables)
+            variableScopeLoader.CreateRoleVariables(role, rootVariables, properties.Defaults)
         );
     }
+
+    public string? ReadRoleDescription(ResolvedRole role) =>
+        taskLoader.ReadRoleProperties(role).Description;
 
     public ResolvedPluginManifest LoadPluginManifest(string pluginRoot) =>
         pluginManifestLoader.Load(pluginRoot);

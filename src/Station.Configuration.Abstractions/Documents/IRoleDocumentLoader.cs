@@ -8,5 +8,7 @@ public interface IRoleDocumentLoader
 
     bool Supports(ConfigArtifactKind kind, string fileName);
 
+    RoleDocumentProperties ReadProperties(ResolvedConfigArtifact artifact);
+
     ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context);
 }

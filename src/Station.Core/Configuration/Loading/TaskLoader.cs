@@ -49,12 +49,7 @@ internal sealed class TaskLoader
 
     public IReadOnlyList<LoadedTask> LoadRoleTasks(ResolvedRole role, VariableSet variables)
     {
-        var artifact = artifactResolver.ResolveRoleTaskArtifact(role.RoleDirectory, role.FullName);
-        var loader = roleLoaders.TryGetValue(artifact.LoaderId, out var resolvedLoader)
-            ? resolvedLoader
-            : throw new ConfigurationException(
-                $"No role loader is registered for '{artifact.DisplayName}'."
-            );
+        var (artifact, loader) = ResolveRoleLoader(role);
 
         var tasks = loader.LoadRoleTasks(
             artifact,
@@ -76,6 +71,27 @@ internal sealed class TaskLoader
             artifact.FullPath,
             $"{role.ShortName}.tasks"
         );
+    }
+
+    public RoleDocumentProperties ReadRoleProperties(ResolvedRole role)
+    {
+        var (artifact, loader) = ResolveRoleLoader(role);
+        return loader.ReadProperties(artifact);
+    }
+
+    private (ResolvedConfigArtifact Artifact, IRoleDocumentLoader Loader) ResolveRoleLoader(
+        ResolvedRole role
+    )
+    {
+        var artifact = artifactResolver.ResolveRoleTaskArtifact(role.RoleDirectory, role.FullName);
+        if (!roleLoaders.TryGetValue(artifact.LoaderId, out var loader))
+        {
+            throw new ConfigurationException(
+                $"No role loader is registered for '{artifact.DisplayName}'."
+            );
+        }
+
+        return (artifact, loader);
     }
 
     private List<LoadedTask> ParseTasks(

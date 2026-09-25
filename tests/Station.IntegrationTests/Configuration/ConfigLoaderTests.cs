@@ -164,6 +164,78 @@ public sealed class ConfigLoaderTests
     }
 
     [Fact]
+    public void Load_merges_inline_role_defaults_over_defaults_file_before_root_overrides()
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile(
+            "station.yaml",
+            """
+            roles: [base]
+            vars:
+              nested:
+                root_value: root
+              overridden: root
+            """
+        );
+        directory.WriteFile(
+            "roles/base/defaults.yaml",
+            """
+            nested:
+              file_value: file
+              shared: file
+            overridden: file
+            """
+        );
+        directory.WriteFile(
+            "roles/base/role.yaml",
+            """
+            description: Example role
+            defaults:
+              nested:
+                shared: inline
+                inline_value: inline
+              overridden: inline
+            tasks:
+              - name: "{{ nested.shared }}"
+                copy:
+                  file: sample.txt
+                  destination: output.txt
+            """
+        );
+
+        var loader = new ConfigLoader();
+        var configuration = loader.Load(directory.Path);
+        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var task = loader.LoadRoleTasks(role, configuration.RootVariables).Should().ContainSingle().Subject;
+
+        loader.ReadRoleDescription(role).Should().Be("Example role");
+        task.Name.Should().Be("inline");
+        task.Variables.Get<string>("nested.file_value").Should().Be("file");
+        task.Variables.Get<string>("nested.inline_value").Should().Be("inline");
+        task.Variables.Get<string>("nested.root_value").Should().Be("root");
+        task.Variables.Get<string>("overridden").Should().Be("root");
+    }
+
+    [Theory]
+    [InlineData("description: Missing tasks\n", "'tasks' list")]
+    [InlineData("tasks: {}\n", "'tasks' list")]
+    [InlineData("tasks: []\ndefaults: []\n", "'defaults'")]
+    [InlineData("tasks: []\ndescription: []\n", "'description'")]
+    public void Load_rejects_invalid_role_mapping(string roleContents, string expectedMessage)
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile("station.yaml", "roles: [base]\n");
+        directory.WriteFile("roles/base/role.yaml", roleContents);
+
+        var loader = new ConfigLoader();
+        var configuration = loader.Load(directory.Path);
+        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+
+        var action = () => loader.LoadRoleTasks(role, configuration.RootVariables);
+        action.Should().Throw<ConfigurationException>().WithMessage($"*{expectedMessage}*");
+    }
+
+    [Fact]
     public void Load_supports_javascript_variable_references_inside_expressions()
     {
         using var directory = new TemporaryDirectory();

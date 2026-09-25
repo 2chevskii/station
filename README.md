@@ -5,7 +5,7 @@
 The current codebase already implements the new architecture we planned:
 
 - root config with `roles`, `plugins`, `vars`, and root-level `tasks`
-- roles as declarative task lists in `role.yaml`
+- roles as declarative task lists or documents in `role.yaml`
 - modules as atomic execution units
 - modules discovered from `[Module]` metadata and instantiated lazily per task
 - declarative module parameters via `[Parameter]` with engine-level binding/validation
@@ -140,7 +140,6 @@ vars/
   10-workstation.yaml
 roles/
   git/
-    metadata.yaml
     defaults.yaml
     role.yaml
     files/
@@ -162,7 +161,7 @@ Top-level fields:
 - `vars`: mapping of root variable overrides
 - `tasks`: ordered root-level tasks that run before roles
 
-A role may contain `metadata.yaml` or `metadata.yml` with `description: ...`. Listing shows `—` when a role has no description. Module descriptions come from `[Module]` attributes. Sources identify the provider and the role directory or module assembly.
+A role may declare `description` in an object-form `role.yaml`. Listing shows `—` when a role has no description. Module descriptions come from `[Module]` attributes. Sources identify the provider and the role directory or module assembly.
 
 Example:
 
@@ -191,10 +190,11 @@ tasks:
 Variable precedence:
 
 1. `roles/<role>/defaults.yaml`
-2. `vars/*.yaml` in alphabetical order
-3. root `vars`
-4. environment variables with the `CONFIG_TOOL_VAR_` prefix
-5. CLI `--set key=value`
+2. `roles/<role>/role.yaml` `defaults`, when present
+3. `vars/*.yaml` in alphabetical order
+4. root `vars`
+5. environment variables with the `CONFIG_TOOL_VAR_` prefix
+6. CLI `--set key=value`
 
 ## Roles and tasks
 
@@ -209,7 +209,7 @@ Supported files/directories today:
 - root-level `files/`
 - root-level `templates/`
 
-`role.yaml` is currently a root-level list of tasks:
+`role.yaml` can be a top-level list of tasks:
 
 ```yaml
 - name: Install Git
@@ -225,6 +225,20 @@ Supported files/directories today:
     file: git/.gitignore_global
     destination: C:\Users\demo\.gitignore_global
 ```
+
+It can also be an object with a required `tasks` list, an optional `description`, and optional `defaults`:
+
+```yaml
+description: Configure Git preferences.
+defaults:
+  git_config_path: C:\Users\demo\.gitconfig
+tasks:
+  - template:
+      template: git/.gitconfig
+      destination: "{{ git_config_path }}"
+```
+
+Inline `defaults` merge with `defaults.yaml` and take precedence over matching values in that file. Root variables and their overrides retain higher precedence.
 
 Rules:
 

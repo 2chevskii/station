@@ -1,8 +1,10 @@
-# - name: Install Windows Terminal
-#   winget:
-#     id: Microsoft.WindowsTerminal
-#     state: present
+description: Configures Windows Terminal appearance.
+tasks:
+  # - name: Install Windows Terminal
+  #   winget:
+  #     id: Microsoft.WindowsTerminal
+  #     state: present
 
-- template:
-    template: windows-terminal/settings.json
-    destination: "{{ terminal_settings_path }}"
+  - template:
+      template: windows-terminal/settings.json
+      destination: "{{ terminal_settings_path }}"

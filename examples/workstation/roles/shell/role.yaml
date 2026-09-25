@@ -1,11 +1,13 @@
-# - scoop:
-#     name: starship
-#     state: present
+description: Configures the PowerShell profile and shell prompt.
+tasks:
+  # - scoop:
+  #     name: starship
+  #     state: present
 
-- template:
-    template: powershell/Microsoft.PowerShell_profile.ps1
-    destination: "{{ powershell_profile_path }}"
+  - template:
+      template: powershell/Microsoft.PowerShell_profile.ps1
+      destination: "{{ powershell_profile_path }}"
 
-- template:
-    template: starship/starship.toml
-    destination: "{{ starship_config_path }}"
+  - template:
+      template: starship/starship.toml
+      destination: "{{ starship_config_path }}"
