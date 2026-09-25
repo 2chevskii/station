@@ -7,4 +7,5 @@ public sealed record PluginRestoreResult(
     string Message,
     IReadOnlyList<string> Diagnostics,
     IReadOnlyList<PluginRestoreRecord> Plugins,
-    IReadOnlyList<ResolvedPluginManifest> RestoredPlugins);
+    IReadOnlyList<ResolvedPluginManifest> RestoredPlugins
+);

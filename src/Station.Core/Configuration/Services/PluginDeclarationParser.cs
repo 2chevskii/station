@@ -6,9 +6,7 @@ internal sealed class PluginDeclarationParser
 {
     private static readonly string[] ArchiveExtensions = [".zip", ".tar", ".tar.gz", ".tgz", ".7z"];
 
-    public IReadOnlyList<PluginDeclaration> Parse(
-        IReadOnlyList<object?>? nodes,
-        string sourceName)
+    public IReadOnlyList<PluginDeclaration> Parse(IReadOnlyList<object?>? nodes, string sourceName)
     {
         var declarations = new List<PluginDeclaration>();
         foreach (var node in nodes ?? [])
@@ -83,7 +81,8 @@ internal sealed class PluginDeclarationParser
 
     private static PluginDeclaration ParseLongForm(
         IDictionary<string, object?> mapping,
-        string sourceName)
+        string sourceName
+    )
     {
         var providerName = mapping.TryGetValue("provider", out var providerValue)
             ? providerValue?.ToString()

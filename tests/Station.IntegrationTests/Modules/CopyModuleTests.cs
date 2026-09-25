@@ -21,14 +21,18 @@ public sealed class CopyModuleTests
                 ["sample.txt"] = new("sample.txt", sourcePath),
             },
             new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase));
-        var timeProvider = new FakeTimeProvider(new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero));
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+        );
+        var timeProvider = new FakeTimeProvider(
+            new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero)
+        );
         var context = TestModuleContextFactory.Create(
             directory.Path,
             directory.GetPath("role"),
             artifacts: artifacts,
             mode: ExecutionMode.Apply,
-            timeProvider: timeProvider);
+            timeProvider: timeProvider
+        );
         var destination = directory.GetPath("out.txt");
         await File.WriteAllTextAsync(destination, "old");
         var module = new CopyModule(context)
@@ -59,19 +63,17 @@ public sealed class CopyModuleTests
                 ["sample.txt"] = new("sample.txt", sourcePath),
             },
             new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase));
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+        );
         var destination = directory.GetPath("out.txt");
         await File.WriteAllTextAsync(destination, "hello");
         var context = TestModuleContextFactory.Create(
             directory.Path,
             directory.GetPath("role"),
             artifacts: artifacts,
-            mode: ExecutionMode.Check);
-        var module = new CopyModule(context)
-        {
-            FileName = "sample.txt",
-            Destination = destination,
-        };
+            mode: ExecutionMode.Check
+        );
+        var module = new CopyModule(context) { FileName = "sample.txt", Destination = destination };
 
         var result = await module.ExecuteAsync(CancellationToken.None);
 

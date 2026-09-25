@@ -8,4 +8,5 @@ public sealed record ConfigEvaluationContext(
     ResolvedConfigArtifact Artifact,
     VariableSet VisibleVariables,
     string? RoleName,
-    string? RoleRoot);
+    string? RoleRoot
+);

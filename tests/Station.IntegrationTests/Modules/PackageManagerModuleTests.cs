@@ -14,23 +14,34 @@ public sealed class PackageManagerModuleTests
     {
         using var shims = new CommandShimScope();
         var statePath = Path.Combine(shims.Path, "scoop-state.txt");
-        var commandPath = shims.AddPowerShellCommand("scoop", $$"""
+        var commandPath = shims.AddPowerShellCommand(
+            "scoop",
+            $$"""
             $state = '{{statePath.Replace("'", "''")}}'
             switch ($args[0]) {
               'list' { if (Test-Path $state) { Get-Content $state }; exit 0 }
               'install' { Set-Content -Path $state -Value $args[-1]; exit 0 }
               'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
             }
-            """);
+            """
+        );
 
-        var module = new ScoopModule(TestModuleContextFactory.Create(Environment.CurrentDirectory, Environment.CurrentDirectory, mode: ExecutionMode.Apply))
+        var module = new ScoopModule(
+            TestModuleContextFactory.Create(
+                Environment.CurrentDirectory,
+                Environment.CurrentDirectory,
+                mode: ExecutionMode.Apply
+            )
+        )
         {
             PackageName = "git",
             IsGlobal = true,
             Command = commandPath,
         };
 
-        (await module.InspectAsync(CancellationToken.None)).RequiredPrivilege.Should().Be(PrivilegeRequirement.Administrator);
+        (await module.InspectAsync(CancellationToken.None))
+            .RequiredPrivilege.Should()
+            .Be(PrivilegeRequirement.Administrator);
         (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
         (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
     }
@@ -40,16 +51,25 @@ public sealed class PackageManagerModuleTests
     {
         using var shims = new CommandShimScope();
         var statePath = Path.Combine(shims.Path, "winget-state.txt");
-        var commandPath = shims.AddPowerShellCommand("winget", $$"""
+        var commandPath = shims.AddPowerShellCommand(
+            "winget",
+            $$"""
             $state = '{{statePath.Replace("'", "''")}}'
             switch ($args[0]) {
               'list' { if (Test-Path $state) { Write-Output ('Git.Git ' + (Get-Content $state)) }; exit 0 }
               'install' { Set-Content -Path $state -Value '2.0.0'; exit 0 }
               'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
             }
-            """);
+            """
+        );
 
-        var module = new WingetModule(TestModuleContextFactory.Create(Environment.CurrentDirectory, Environment.CurrentDirectory, mode: ExecutionMode.Apply))
+        var module = new WingetModule(
+            TestModuleContextFactory.Create(
+                Environment.CurrentDirectory,
+                Environment.CurrentDirectory,
+                mode: ExecutionMode.Apply
+            )
+        )
         {
             PackageId = "Git.Git",
             Version = "2.0.0",
@@ -57,7 +77,9 @@ public sealed class PackageManagerModuleTests
             Command = commandPath,
         };
 
-        (await module.InspectAsync(CancellationToken.None)).RequiredPrivilege.Should().Be(PrivilegeRequirement.Administrator);
+        (await module.InspectAsync(CancellationToken.None))
+            .RequiredPrivilege.Should()
+            .Be(PrivilegeRequirement.Administrator);
         (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
         (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
     }
@@ -67,15 +89,24 @@ public sealed class PackageManagerModuleTests
     {
         using var shims = new CommandShimScope();
         var statePath = Path.Combine(shims.Path, "apt-state.txt");
-        var commandPath = shims.AddPowerShellCommand("wsl", $$"""
+        var commandPath = shims.AddPowerShellCommand(
+            "wsl",
+            $$"""
             $state = '{{statePath.Replace("'", "''")}}'
             if ($args[0] -eq '-l') { Write-Output 'Ubuntu'; exit 0 }
             if ($args -contains 'dpkg-query') { if (Test-Path $state) { Get-Content $state; exit 0 } exit 1 }
             if ($args -contains 'install') { Set-Content -Path $state -Value '1.0.0'; exit 0 }
             if ($args -contains 'remove') { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
-            """);
+            """
+        );
 
-        var module = new AptModule(TestModuleContextFactory.Create(Environment.CurrentDirectory, Environment.CurrentDirectory, mode: ExecutionMode.Apply))
+        var module = new AptModule(
+            TestModuleContextFactory.Create(
+                Environment.CurrentDirectory,
+                Environment.CurrentDirectory,
+                mode: ExecutionMode.Apply
+            )
+        )
         {
             PackageName = "git",
             Distribution = "Ubuntu",

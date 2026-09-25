@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
@@ -12,9 +11,7 @@ namespace Station.Modules.Builtin.Scoop;
 public sealed class ScoopModule : ConfigModule
 {
     public ScoopModule(ModuleContext context)
-        : base(context)
-    {
-    }
+        : base(context) { }
 
     [Parameter("name", Required = true)]
     public string PackageName { get; set; } = string.Empty;
@@ -28,17 +25,20 @@ public sealed class ScoopModule : ConfigModule
     [Parameter]
     public string Command { get; set; } = "scoop";
 
-    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
+    public override ValueTask<ModuleInspectionResult> InspectAsync(
+        CancellationToken cancellationToken
+    )
     {
         if (!CommandExists(Command))
         {
             return ValueTask.FromResult(
-                ModuleInspectionResult.Failure(new ModuleDiagnostic($"'{Command}' is not available on PATH.")));
+                ModuleInspectionResult.Failure(
+                    new ModuleDiagnostic($"'{Command}' is not available on PATH.")
+                )
+            );
         }
 
-        var privilege = IsGlobal
-            ? PrivilegeRequirement.Administrator
-            : PrivilegeRequirement.User;
+        var privilege = IsGlobal ? PrivilegeRequirement.Administrator : PrivilegeRequirement.User;
 
         return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
     }
@@ -47,49 +47,54 @@ public sealed class ScoopModule : ConfigModule
     {
         var state = NormalizeState(State);
         var listResult = await RunAsync(Command, ["list"], cancellationToken);
-        var installed = listResult.ExitCode == 0 &&
-                        listResult.StandardOutput.Contains(PackageName, StringComparison.OrdinalIgnoreCase);
-            var shouldExist = state == "present";
-            var changed = shouldExist != installed;
+        var installed =
+            listResult.ExitCode == 0
+            && listResult.StandardOutput.Contains(PackageName, StringComparison.OrdinalIgnoreCase);
+        var shouldExist = state == "present";
+        var changed = shouldExist != installed;
 
-            if (Context.Mode == ExecutionMode.Check)
-            {
-                return changed
-                    ? ModuleResult.ChangedResult($"scoop package '{PackageName}' would change.")
-                    : ModuleResult.NoChange($"scoop package '{PackageName}' is already in the desired state.");
-            }
+        if (Context.Mode == ExecutionMode.Check)
+        {
+            return changed
+                ? ModuleResult.ChangedResult($"scoop package '{PackageName}' would change.")
+                : ModuleResult.NoChange(
+                    $"scoop package '{PackageName}' is already in the desired state."
+                );
+        }
 
-            if (!changed)
-            {
-                return ModuleResult.NoChange($"scoop package '{PackageName}' is already in the desired state.");
-            }
+        if (!changed)
+        {
+            return ModuleResult.NoChange(
+                $"scoop package '{PackageName}' is already in the desired state."
+            );
+        }
 
-            var arguments = new List<string> { shouldExist ? "install" : "uninstall" };
-            if (IsGlobal)
-            {
-                arguments.Add("--global");
-            }
+        var arguments = new List<string> { shouldExist ? "install" : "uninstall" };
+        if (IsGlobal)
+        {
+            arguments.Add("--global");
+        }
 
-            arguments.Add(PackageName);
+        arguments.Add(PackageName);
 
-            var result = await RunAsync(Command, arguments, cancellationToken);
-            if (result.ExitCode != 0)
-            {
-                return ModuleResult.Failure(SelectProcessError(result));
-            }
+        var result = await RunAsync(Command, arguments, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            return ModuleResult.Failure(SelectProcessError(result));
+        }
 
-            return ModuleResult.ChangedResult($"scoop package '{PackageName}' was updated.");
+        return ModuleResult.ChangedResult($"scoop package '{PackageName}' was updated.");
     }
 
     private static string NormalizeState(string? state) =>
         string.IsNullOrWhiteSpace(state) ? "present" : state.Trim().ToLowerInvariant();
 
-    private static string SelectProcessError((int ExitCode, string StandardOutput, string StandardError) result) =>
-        !string.IsNullOrWhiteSpace(result.StandardError)
-            ? result.StandardError.Trim()
-            : !string.IsNullOrWhiteSpace(result.StandardOutput)
-                ? result.StandardOutput.Trim()
-                : "scoop failed.";
+    private static string SelectProcessError(
+        (int ExitCode, string StandardOutput, string StandardError) result
+    ) =>
+        !string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardError.Trim()
+        : !string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardOutput.Trim()
+        : "scoop failed.";
 
     private static bool CommandExists(string commandName)
     {
@@ -103,11 +108,15 @@ public sealed class ScoopModule : ConfigModule
             return File.Exists(commandName);
         }
 
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
+            Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
         var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1")
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
+                ';',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
             : [string.Empty];
 
         foreach (var directory in pathEntries)
@@ -132,7 +141,8 @@ public sealed class ScoopModule : ConfigModule
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
         string fileName,
         IReadOnlyList<string> arguments,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var startInfo = new ProcessStartInfo
         {

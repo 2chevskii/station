@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-
 using Station.Abstractions.Interfaces;
 
 namespace Station.Abstractions.Models;
@@ -10,7 +9,8 @@ public static class ConfigValueUtilities
     public static ConfigValue EnsureValue(ConfigValue? value) => value ?? ConfigNull.Instance;
 
     public static bool IsTemplateMarkup(string value) =>
-        value.Contains("{{", StringComparison.Ordinal) || value.Contains("{%", StringComparison.Ordinal);
+        value.Contains("{{", StringComparison.Ordinal)
+        || value.Contains("{%", StringComparison.Ordinal);
 
     public static IEnumerable<string> SplitPath(string path) =>
         path.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -20,16 +20,23 @@ public static class ConfigValueUtilities
         var effectiveCurrent = EnsureValue(current);
         var effectiveIncoming = EnsureValue(incoming);
 
-        if (effectiveCurrent is ConfigObject currentObject && effectiveIncoming is ConfigObject incomingObject)
+        if (
+            effectiveCurrent is ConfigObject currentObject
+            && effectiveIncoming is ConfigObject incomingObject
+        )
         {
             var merged = currentObject.ToDictionary(
                 static pair => pair.Key,
                 static pair => pair.Value,
-                StringComparer.OrdinalIgnoreCase);
+                StringComparer.OrdinalIgnoreCase
+            );
 
             foreach (var (key, value) in incomingObject)
             {
-                merged[key] = Merge(merged.TryGetValue(key, out var existing) ? existing : null, value);
+                merged[key] = Merge(
+                    merged.TryGetValue(key, out var existing) ? existing : null,
+                    value
+                );
             }
 
             return new ConfigObject(merged);
@@ -42,7 +49,8 @@ public static class ConfigValueUtilities
         ConfigValue? value,
         VariableSet variables,
         ITemplateEngine? templateEngine = null,
-        string? sourceName = null)
+        string? sourceName = null
+    )
     {
         return ResolveValue(EnsureValue(value), variables, templateEngine, sourceName, []);
     }
@@ -51,7 +59,8 @@ public static class ConfigValueUtilities
         ConfigValue? value,
         VariableSet variables,
         ITemplateEngine? templateEngine = null,
-        string? sourceName = null)
+        string? sourceName = null
+    )
     {
         return ConvertToObjectGraph(ResolveValue(value, variables, templateEngine, sourceName));
     }
@@ -60,15 +69,18 @@ public static class ConfigValueUtilities
         ConfigValue? value,
         VariableSet variables,
         ITemplateEngine? templateEngine = null,
-        string? sourceName = null)
+        string? sourceName = null
+    )
     {
         return JsonSerializer.SerializeToNode(
-            ToObjectGraph(value, variables, templateEngine, sourceName));
+            ToObjectGraph(value, variables, templateEngine, sourceName)
+        );
     }
 
     public static IEnumerable<(string Path, ConfigValue Value)> EnumeratePaths(
         ConfigValue? value,
-        string path = "")
+        string path = ""
+    )
     {
         if (value is null || value is ConfigNull)
         {
@@ -98,21 +110,43 @@ public static class ConfigValueUtilities
         VariableSet variables,
         ITemplateEngine? templateEngine,
         string? sourceName,
-        List<string> resolutionStack)
+        List<string> resolutionStack
+    )
     {
         return value switch
         {
             ConfigNull => ConfigNull.Instance,
             ConfigScalar scalar => scalar,
-            VariableReference reference => ResolveReference(reference, variables, templateEngine, sourceName, resolutionStack),
+            VariableReference reference => ResolveReference(
+                reference,
+                variables,
+                templateEngine,
+                sourceName,
+                resolutionStack
+            ),
             TemplateMarkup markup => ResolveTemplate(markup, variables, templateEngine, sourceName),
-            ConfigArray array => new ConfigArray(array.Select(item =>
-                ResolveValue(item, variables, templateEngine, sourceName, resolutionStack))),
-            ConfigObject configObject => new ConfigObject(configObject.Select(pair =>
-                KeyValuePair.Create(
-                    pair.Key,
-                    ResolveValue(pair.Value, variables, templateEngine, sourceName, resolutionStack)))),
-            _ => throw new ConfigurationException($"Unsupported configuration value '{value.GetType().Name}'.")
+            ConfigArray array => new ConfigArray(
+                array.Select(item =>
+                    ResolveValue(item, variables, templateEngine, sourceName, resolutionStack)
+                )
+            ),
+            ConfigObject configObject => new ConfigObject(
+                configObject.Select(pair =>
+                    KeyValuePair.Create(
+                        pair.Key,
+                        ResolveValue(
+                            pair.Value,
+                            variables,
+                            templateEngine,
+                            sourceName,
+                            resolutionStack
+                        )
+                    )
+                )
+            ),
+            _ => throw new ConfigurationException(
+                $"Unsupported configuration value '{value.GetType().Name}'."
+            ),
         };
     }
 
@@ -121,13 +155,12 @@ public static class ConfigValueUtilities
         VariableSet variables,
         ITemplateEngine? templateEngine,
         string? sourceName,
-        List<string> resolutionStack)
+        List<string> resolutionStack
+    )
     {
         if (resolutionStack.Contains(reference.Path, StringComparer.OrdinalIgnoreCase))
         {
-            var cycle = string.Join(
-                " -> ",
-                resolutionStack.Append(reference.Path));
+            var cycle = string.Join(" -> ", resolutionStack.Append(reference.Path));
             throw new ConfigurationException($"Variable reference cycle detected: {cycle}.");
         }
 
@@ -151,14 +184,17 @@ public static class ConfigValueUtilities
         TemplateMarkup markup,
         VariableSet variables,
         ITemplateEngine? templateEngine,
-        string? sourceName)
+        string? sourceName
+    )
     {
         if (templateEngine is null)
         {
             return ConfigScalar.String(markup.TemplateText);
         }
 
-        return ConfigScalar.String(templateEngine.Render(markup.TemplateText, variables, sourceName));
+        return ConfigScalar.String(
+            templateEngine.Render(markup.TemplateText, variables, sourceName)
+        );
     }
 
     private static object? ConvertToObjectGraph(ConfigValue value) =>
@@ -170,9 +206,12 @@ public static class ConfigValueUtilities
             ConfigObject configObject => configObject.ToDictionary(
                 static pair => pair.Key,
                 static pair => ConvertToObjectGraph(pair.Value),
-                StringComparer.OrdinalIgnoreCase),
+                StringComparer.OrdinalIgnoreCase
+            ),
             VariableReference reference => reference.Path,
             TemplateMarkup markup => markup.TemplateText,
-            _ => throw new ConfigurationException($"Unsupported configuration value '{value.GetType().Name}'.")
+            _ => throw new ConfigurationException(
+                $"Unsupported configuration value '{value.GetType().Name}'."
+            ),
         };
 }

@@ -7,4 +7,5 @@ internal sealed record ModuleParameterSchema(
     IReadOnlyList<string> Aliases,
     bool Required,
     string? Description,
-    PropertyInfo Property);
+    PropertyInfo Property
+);

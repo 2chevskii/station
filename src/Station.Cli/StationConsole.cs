@@ -15,14 +15,13 @@ public sealed class StationConsole
 
     public static StationConsole CreateStandard() =>
         new(
-            AnsiConsole.Create(new AnsiConsoleSettings
-            {
-                Out = new AnsiConsoleOutput(Console.Out)
-            }),
-            AnsiConsole.Create(new AnsiConsoleSettings
-            {
-                Out = new AnsiConsoleOutput(Console.Error)
-            }));
+            AnsiConsole.Create(
+                new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Out) }
+            ),
+            AnsiConsole.Create(
+                new AnsiConsoleSettings { Out = new AnsiConsoleOutput(Console.Error) }
+            )
+        );
 
     public void WriteLogMessage(string message)
     {
@@ -75,7 +74,12 @@ public sealed class StationConsole
 
     private IAnsiConsole GetConsole(bool succeeded) => succeeded ? standardConsole : errorConsole;
 
-    private static void WriteSummary(IAnsiConsole console, bool succeeded, string message, string operation)
+    private static void WriteSummary(
+        IAnsiConsole console,
+        bool succeeded,
+        string message,
+        string operation
+    )
     {
         var status = succeeded ? "[green]Success[/]" : "[red]Failed[/]";
         var body = $"{status}\n{Markup.Escape(message)}";
@@ -84,7 +88,8 @@ public sealed class StationConsole
                 .Header(Markup.Escape(operation))
                 .Border(BoxBorder.Rounded)
                 .BorderStyle(new Style(succeeded ? Color.Green : Color.Red))
-                .Expand());
+                .Expand()
+        );
     }
 
     private static void WriteDiagnostics(IAnsiConsole console, IReadOnlyList<string> diagnostics)
@@ -118,7 +123,8 @@ public sealed class StationConsole
                 EscapeCell(task.ModuleName),
                 EscapeCell(string.IsNullOrWhiteSpace(task.RoleName) ? "root" : task.RoleName),
                 GetTaskStatusMarkup(task),
-                EscapeCell(task.Result.Message ?? string.Empty));
+                EscapeCell(task.Result.Message ?? string.Empty)
+            );
         }
 
         return table;
@@ -134,12 +140,16 @@ public sealed class StationConsole
 
         foreach (var plugin in plugins)
         {
-            var sourceKind = plugin.IsLocal ? "local" : plugin.CacheHit ? "cache" : "downloaded";
+            var sourceKind =
+                plugin.IsLocal ? "local"
+                : plugin.CacheHit ? "cache"
+                : "downloaded";
             table.AddRow(
                 EscapeCell(plugin.PluginName ?? plugin.Declaration),
                 EscapeCell(plugin.Version ?? "unknown"),
                 GetPluginSourceMarkup(sourceKind),
-                EscapeCell(plugin.PluginRoot));
+                EscapeCell(plugin.PluginRoot)
+            );
         }
 
         return table;
@@ -158,11 +168,7 @@ public sealed class StationConsole
     }
 
     private static Table CreateTable(string title) =>
-        new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Grey)
-            .Title(title)
-            .Expand();
+        new Table().Border(TableBorder.Rounded).BorderColor(Color.Grey).Title(title).Expand();
 
     private static Tree BuildExplainTree(ExplainNode plan)
     {
@@ -196,24 +202,21 @@ public sealed class StationConsole
             ExplainNodeKind.Detail => $"[silver]{Markup.Escape(node.Text)}[/]",
             ExplainNodeKind.Value => Markup.Escape(node.Text),
             ExplainNodeKind.Error => $"[red]{Markup.Escape(node.Text)}[/]",
-            _ => Markup.Escape(node.Text)
+            _ => Markup.Escape(node.Text),
         };
 
     private static string GetTaskStatusMarkup(EngineTaskRecord task) =>
-        task.Result.Failed
-            ? "[red]failed[/]"
-            : task.Result.Changed
-                ? "[yellow]changed[/]"
-                : task.Result.Skipped
-                    ? "[grey]skipped[/]"
-                    : "[green]ok[/]";
+        task.Result.Failed ? "[red]failed[/]"
+        : task.Result.Changed ? "[yellow]changed[/]"
+        : task.Result.Skipped ? "[grey]skipped[/]"
+        : "[green]ok[/]";
 
     private static string GetPluginSourceMarkup(string sourceKind) =>
         sourceKind switch
         {
             "local" => "[green]local[/]",
             "cache" => "[blue]cache[/]",
-            _ => "[yellow]downloaded[/]"
+            _ => "[yellow]downloaded[/]",
         };
 
     private static string EscapeCell(string? value) => Markup.Escape(value ?? string.Empty);

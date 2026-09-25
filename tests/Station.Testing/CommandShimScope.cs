@@ -11,8 +11,12 @@ public sealed class CommandShimScope : IDisposable
     public CommandShimScope()
     {
         originalPath = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        originalPathExt = Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1";
-        Environment.SetEnvironmentVariable("PATH", directory.Path + System.IO.Path.PathSeparator + originalPath);
+        originalPathExt =
+            Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1";
+        Environment.SetEnvironmentVariable(
+            "PATH",
+            directory.Path + System.IO.Path.PathSeparator + originalPath
+        );
         Environment.SetEnvironmentVariable("PATHEXT", ".CMD;.BAT;.EXE;.COM;.PS1");
     }
 
@@ -31,7 +35,8 @@ public sealed class CommandShimScope : IDisposable
         File.WriteAllText(scriptPath, body.Replace("\r\n", "\n"), Encoding.UTF8);
         return AddCommand(
             name,
-            $"powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0{name}.ps1\" %*");
+            $"powershell -NoProfile -ExecutionPolicy Bypass -File \"%~dp0{name}.ps1\" %*"
+        );
     }
 
     public void Dispose()

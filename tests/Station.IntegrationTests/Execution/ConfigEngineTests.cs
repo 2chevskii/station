@@ -12,14 +12,22 @@ public sealed class ConfigEngineTests
     public async Task Restore_returns_plugin_records_for_local_plugins()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
-        directory.WriteFile("station.yaml", """
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - plugin-role
             plugins:
               - demo_plugin
             vars: {}
-            """);
+            """
+        );
 
         var engine = new ConfigEngine();
         var result = await engine.RestoreAsync(directory.Path);
@@ -36,17 +44,25 @@ public sealed class ConfigEngineTests
     {
         using var directory = new TemporaryDirectory();
         using var source = new TemporaryDirectory();
-        var pluginRoot = PluginFixtureBuilder.CreatePlugin(source, "archive-plugin", "archive.plugin", "plugin-role");
+        var pluginRoot = PluginFixtureBuilder.CreatePlugin(
+            source,
+            "archive-plugin",
+            "archive.plugin",
+            "plugin-role"
+        );
         var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
         Directory.CreateDirectory(Path.GetDirectoryName(archivePath)!);
         ZipFile.CreateFromDirectory(pluginRoot, archivePath);
-        directory.WriteFile("station.yaml", """
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - plugin-role
             plugins:
               - demo_plugin.zip
             vars: {}
-            """);
+            """
+        );
 
         var engine = new ConfigEngine();
         var first = await engine.RestoreAsync(directory.Path);
@@ -64,23 +80,45 @@ public sealed class ConfigEngineTests
         using var packages = new TemporaryDirectory();
         await using var server = new LocalHttpServer();
 
-        var gitPluginRoot = PluginFixtureBuilder.CreatePlugin(packages, "git-plugin", "git.plugin", "git-role");
+        var gitPluginRoot = PluginFixtureBuilder.CreatePlugin(
+            packages,
+            "git-plugin",
+            "git.plugin",
+            "git-role"
+        );
         await InitializeGitRepositoryAsync(gitPluginRoot);
 
-        var urlPluginRoot = PluginFixtureBuilder.CreatePlugin(packages, "url-plugin", "url.plugin", "url-role");
+        var urlPluginRoot = PluginFixtureBuilder.CreatePlugin(
+            packages,
+            "url-plugin",
+            "url.plugin",
+            "url-role"
+        );
         var urlArchivePath = packages.GetPath("url-plugin.zip");
         ArchiveBuilder.CreateZip(urlPluginRoot, urlArchivePath);
 
-        var nugetPluginRoot = PluginFixtureBuilder.CreatePlugin(packages, "nuget-plugin", "nuget.plugin", "nuget-role");
+        var nugetPluginRoot = PluginFixtureBuilder.CreatePlugin(
+            packages,
+            "nuget-plugin",
+            "nuget.plugin",
+            "nuget-role"
+        );
         var nugetPackagePath = packages.GetPath("station.demo.plugin.1.2.3.nupkg");
         ArchiveBuilder.CreateZip(nugetPluginRoot, nugetPackagePath);
 
-        var npmPluginRoot = PluginFixtureBuilder.CreatePlugin(packages, "npm-plugin", "npm.plugin", "npm-role");
+        var npmPluginRoot = PluginFixtureBuilder.CreatePlugin(
+            packages,
+            "npm-plugin",
+            "npm.plugin",
+            "npm-role"
+        );
         var npmPackagePath = packages.GetPath("station-demo-plugin-2.0.0.zip");
         ArchiveBuilder.CreateZip(npmPluginRoot, npmPackagePath);
 
         server.AddFile("/packages/url-plugin.zip", await File.ReadAllBytesAsync(urlArchivePath));
-        server.AddJson("/nuget/index.json", $$"""
+        server.AddJson(
+            "/nuget/index.json",
+            $$"""
             {
               "resources": [
                 {
@@ -89,14 +127,23 @@ public sealed class ConfigEngineTests
                 }
               ]
             }
-            """);
-        server.AddJson("/flatcontainer/station.demo.plugin/index.json", """
+            """
+        );
+        server.AddJson(
+            "/flatcontainer/station.demo.plugin/index.json",
+            """
             {
               "versions": [ "1.2.3" ]
             }
-            """);
-        server.AddFile("/flatcontainer/station.demo.plugin/1.2.3/station.demo.plugin.1.2.3.nupkg", await File.ReadAllBytesAsync(nugetPackagePath));
-        server.AddJson("/npm/station-demo-plugin", $$"""
+            """
+        );
+        server.AddFile(
+            "/flatcontainer/station.demo.plugin/1.2.3/station.demo.plugin.1.2.3.nupkg",
+            await File.ReadAllBytesAsync(nugetPackagePath)
+        );
+        server.AddJson(
+            "/npm/station-demo-plugin",
+            $$"""
             {
               "dist-tags": {
                 "latest": "2.0.0"
@@ -109,11 +156,17 @@ public sealed class ConfigEngineTests
                 }
               }
             }
-            """);
-        server.AddFile("/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip", await File.ReadAllBytesAsync(npmPackagePath));
+            """
+        );
+        server.AddFile(
+            "/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip",
+            await File.ReadAllBytesAsync(npmPackagePath)
+        );
         server.Start();
 
-        directory.WriteFile("station.yaml", $$"""
+        directory.WriteFile(
+            "station.yaml",
+            $$"""
             roles:
               - git-role
               - url-role
@@ -133,29 +186,42 @@ public sealed class ConfigEngineTests
                 version: 2.0.0
                 registry: {{server.BaseUrl}}/npm
             vars: {}
-            """);
+            """
+        );
 
         var engine = new ConfigEngine();
         var result = await engine.RestoreAsync(directory.Path);
 
         result.Succeeded.Should().BeTrue();
         result.Plugins.Should().HaveCount(4);
-        result.Plugins.Select(plugin => plugin.PluginName).Should().BeEquivalentTo(["git.plugin", "url.plugin", "nuget.plugin", "npm.plugin"]);
+        result
+            .Plugins.Select(plugin => plugin.PluginName)
+            .Should()
+            .BeEquivalentTo(["git.plugin", "url.plugin", "nuget.plugin", "npm.plugin"]);
     }
 
     [Fact]
     public async Task Validate_resolves_plugin_roles_from_local_plugins()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role", includeModule: true);
-        directory.WriteFile("station.yaml", """
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role",
+            includeModule: true
+        );
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - plugin-role
             plugins:
               - demo_plugin
             vars:
               destination_path: OUTPUT.txt
-            """);
+            """
+        );
 
         var engine = new ConfigEngine();
         var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
@@ -168,45 +234,65 @@ public sealed class ConfigEngineTests
     public async Task Validate_fails_when_short_module_name_is_ambiguous()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role", includeModule: true);
-        directory.WriteFile("station.yaml", """
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role",
+            includeModule: true
+        );
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - base
             plugins:
               - demo_plugin
             vars:
               destination_path: OUTPUT.txt
-            """);
-        directory.WriteFile("roles/base/role.yaml", """
+            """
+        );
+        directory.WriteFile(
+            "roles/base/role.yaml",
+            """
             - script:
                 path: scripts/test.ps1
                 destination: "{{ destination_path }}"
-            """);
+            """
+        );
         directory.WriteFile("roles/base/scripts/test.ps1", "Write-Output '{\"changed\":false}'");
 
         var engine = new ConfigEngine();
         var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
 
         result.Succeeded.Should().BeFalse();
-        result.Diagnostics.Should().ContainSingle(x => x.Contains("ambiguous", StringComparison.OrdinalIgnoreCase));
+        result
+            .Diagnostics.Should()
+            .ContainSingle(x => x.Contains("ambiguous", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
     public async Task Explain_lists_tasks_parameters_and_variables()
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("station.yaml", """
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - base
             plugins: []
             vars:
               greeting: hello
-            """);
-        directory.WriteFile("roles/base/role.yaml", """
+            """
+        );
+        directory.WriteFile(
+            "roles/base/role.yaml",
+            """
             - template:
                 template: sample
                 destination: out/{{ greeting }}.txt
-            """);
+            """
+        );
         directory.WriteFile("roles/base/templates/sample.scriban", "{{ greeting }}");
 
         var engine = new ConfigEngine();
@@ -219,34 +305,49 @@ public sealed class ConfigEngineTests
         var taskNode = tasksSection.Children.Should().ContainSingle().Subject;
         taskNode.Text.Should().Be("base.tasks.1 [station.builtin.template]");
         taskNode.Children.Should().Contain(x => x.Text == "role: base");
-        taskNode.Children.Single(x => x.Text == "parameters")
-            .Children.Should().Contain(x => x.Text == "template = sample");
-        taskNode.Children.Single(x => x.Text == "variables")
-            .Children.Should().Contain(x => x.Text == "greeting = hello");
+        taskNode
+            .Children.Single(x => x.Text == "parameters")
+            .Children.Should()
+            .Contain(x => x.Text == "template = sample");
+        taskNode
+            .Children.Single(x => x.Text == "variables")
+            .Children.Should()
+            .Contain(x => x.Text == "greeting = hello");
     }
 
     [Fact]
     public async Task Validate_supports_javascript_roles_and_defaults()
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("station.yaml", """
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - base
             plugins: []
             vars:
               destination_path: OUTPUT.txt
-            """);
-        directory.WriteFile("vars/00-common.js", """
+            """
+        );
+        directory.WriteFile(
+            "vars/00-common.js",
+            """
             export default {
               source_name: 'sample.txt'
             };
-            """);
-        directory.WriteFile("roles/base/defaults.js", """
+            """
+        );
+        directory.WriteFile(
+            "roles/base/defaults.js",
+            """
             export default {
               destination_path: 'DEFAULT.txt'
             };
-            """);
-        directory.WriteFile("roles/base/role.js", """
+            """
+        );
+        directory.WriteFile(
+            "roles/base/role.js",
+            """
             import { copy } from 'station:modules/builtin';
             import { destination_path, source_name } from 'station:vars';
 
@@ -254,7 +355,8 @@ public sealed class ConfigEngineTests
               file: source_name,
               destination: destination_path
             });
-            """);
+            """
+        );
         directory.WriteFile("roles/base/files/sample.txt", "hello");
 
         var engine = new ConfigEngine();
@@ -268,14 +370,19 @@ public sealed class ConfigEngineTests
     public async Task Validate_supports_javascript_variable_references_inside_expressions()
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("station.yaml", """
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - base
             plugins: []
             vars:
               user_home: C:/Users/demo
-            """);
-        directory.WriteFile("roles/base/role.js", """
+            """
+        );
+        directory.WriteFile(
+            "roles/base/role.js",
+            """
             import { copy } from 'station:modules/builtin';
             import { user_home } from 'station:vars';
 
@@ -283,7 +390,8 @@ public sealed class ConfigEngineTests
               file: 'sample.txt',
               destination: `${user_home}/.config/my_config.json`
             });
-            """);
+            """
+        );
         directory.WriteFile("roles/base/files/sample.txt", "hello");
 
         var engine = new ConfigEngine();
@@ -297,15 +405,25 @@ public sealed class ConfigEngineTests
     public async Task Validate_resolves_plugin_roles_from_local_plugins_authored_in_javascript()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role", includeModule: true, useJavaScriptRole: true);
-        directory.WriteFile("station.yaml", """
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role",
+            includeModule: true,
+            useJavaScriptRole: true
+        );
+        directory.WriteFile(
+            "station.yaml",
+            """
             roles:
               - plugin-role
             plugins:
               - demo_plugin
             vars:
               destination_path: OUTPUT.txt
-            """);
+            """
+        );
 
         var engine = new ConfigEngine();
         var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);

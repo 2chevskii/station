@@ -16,11 +16,20 @@ public sealed class JavaScriptVariableDocumentLoader : IVariableDocumentLoader
     public bool Supports(ConfigArtifactKind kind, string fileName) =>
         kind switch
         {
-            ConfigArtifactKind.RootVarsEntry => fileName.EndsWith(".js", StringComparison.OrdinalIgnoreCase),
-            ConfigArtifactKind.RoleDefaults => string.Equals(fileName, "defaults.js", StringComparison.OrdinalIgnoreCase),
+            ConfigArtifactKind.RootVarsEntry => fileName.EndsWith(
+                ".js",
+                StringComparison.OrdinalIgnoreCase
+            ),
+            ConfigArtifactKind.RoleDefaults => string.Equals(
+                fileName,
+                "defaults.js",
+                StringComparison.OrdinalIgnoreCase
+            ),
             _ => false,
         };
 
-    public ConfigObject LoadVariables(ResolvedConfigArtifact artifact, ConfigEvaluationContext context) =>
-        runtime.LoadVariables(artifact, context);
+    public ConfigObject LoadVariables(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    ) => runtime.LoadVariables(artifact, context);
 }

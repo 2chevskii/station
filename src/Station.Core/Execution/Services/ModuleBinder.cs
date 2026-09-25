@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
 using Station.Core.Execution.Models;
@@ -18,7 +17,8 @@ internal sealed class ModuleBinder
         ModuleSchema schema,
         ModuleContext context,
         ConfigObject rawParameters,
-        bool allowDeferred)
+        bool allowDeferred
+    )
     {
         var diagnostics = new List<ModuleDiagnostic>();
         var boundParameters = new List<BoundParameterRecord>();
@@ -35,7 +35,8 @@ internal sealed class ModuleBinder
             var matches = rawEntries
                 .Where(entry =>
                     string.Equals(entry.Key, parameter.Name, StringComparison.OrdinalIgnoreCase)
-                    || parameter.Aliases.Contains(entry.Key, StringComparer.OrdinalIgnoreCase))
+                    || parameter.Aliases.Contains(entry.Key, StringComparer.OrdinalIgnoreCase)
+                )
                 .ToArray();
 
             if (matches.Length > 1)
@@ -108,7 +109,9 @@ internal sealed class ModuleBinder
         }
 
         return new ModuleBindingResult(
-            diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error) ? null : module,
+            diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                ? null
+                : module,
             diagnostics,
             boundParameters,
             boundParameters.Any(static parameter => parameter.IsDeferred)
@@ -120,21 +123,31 @@ internal sealed class ModuleBinder
         object? Value,
         bool IsDeferred,
         string DisplayValue,
-        ModuleDiagnostic? Diagnostic) BindValue(
+        ModuleDiagnostic? Diagnostic
+    ) BindValue(
         Type targetType,
         ConfigValue rawValue,
         VariableSet variables,
         Abstractions.Interfaces.ITemplateEngine templateEngine,
         string parameterName,
-        bool allowDeferred)
+        bool allowDeferred
+    )
     {
         try
         {
-            var resolvedValue = ConfigValueUtilities.ResolveValue(rawValue, variables, templateEngine, parameterName);
+            var resolvedValue = ConfigValueUtilities.ResolveValue(
+                rawValue,
+                variables,
+                templateEngine,
+                parameterName
+            );
             var convertedValue = ConvertValue(resolvedValue, targetType);
             return (true, convertedValue, false, FormatValue(convertedValue), null);
         }
-        catch (ConfigurationException exception) when (allowDeferred && exception.Message.Contains("render template", StringComparison.OrdinalIgnoreCase))
+        catch (ConfigurationException exception)
+            when (allowDeferred
+                && exception.Message.Contains("render template", StringComparison.OrdinalIgnoreCase)
+            )
         {
             return (
                 false,
@@ -147,7 +160,13 @@ internal sealed class ModuleBinder
                 )
             );
         }
-        catch (Exception exception) when (exception is ConfigurationException or FormatException or InvalidOperationException or JsonException)
+        catch (Exception exception)
+            when (exception
+                    is ConfigurationException
+                        or FormatException
+                        or InvalidOperationException
+                        or JsonException
+            )
         {
             return (
                 false,
@@ -168,7 +187,10 @@ internal sealed class ModuleBinder
             return value;
         }
 
-        if (targetType.FullName == "System.Text.Json.Nodes.JsonNode" || targetType.IsAssignableTo(typeof(System.Text.Json.Nodes.JsonNode)))
+        if (
+            targetType.FullName == "System.Text.Json.Nodes.JsonNode"
+            || targetType.IsAssignableTo(typeof(System.Text.Json.Nodes.JsonNode))
+        )
         {
             return ConfigValueUtilities.ToJsonNode(value, new VariableSet(new ConfigObject()));
         }
@@ -191,7 +213,9 @@ internal sealed class ModuleBinder
                 return stringValue;
             }
 
-            throw new ConfigurationException($"Expected a string but received '{value.GetType().Name}'.");
+            throw new ConfigurationException(
+                $"Expected a string but received '{value.GetType().Name}'."
+            );
         }
 
         if (value is ConfigScalar scalar)
@@ -200,10 +224,15 @@ internal sealed class ModuleBinder
         }
 
         return JsonSerializer.Deserialize(
-            JsonSerializer.Serialize(ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()))),
-            targetType,
-            JsonSerializerOptions)
-            ?? throw new ConfigurationException($"Failed to deserialize value for type '{targetType.Name}'.");
+                JsonSerializer.Serialize(
+                    ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()))
+                ),
+                targetType,
+                JsonSerializerOptions
+            )
+            ?? throw new ConfigurationException(
+                $"Failed to deserialize value for type '{targetType.Name}'."
+            );
     }
 
     private static object? ConvertScalarValue(ConfigScalar value, Type targetType)
@@ -247,8 +276,14 @@ internal sealed class ModuleBinder
             return Convert.ChangeType(value.Value, nonNullableType, CultureInfo.InvariantCulture);
         }
 
-        return JsonSerializer.Deserialize(JsonSerializer.Serialize(value.Value), targetType, JsonSerializerOptions)
-            ?? throw new ConfigurationException($"Failed to deserialize scalar value for type '{targetType.Name}'.");
+        return JsonSerializer.Deserialize(
+                JsonSerializer.Serialize(value.Value),
+                targetType,
+                JsonSerializerOptions
+            )
+            ?? throw new ConfigurationException(
+                $"Failed to deserialize scalar value for type '{targetType.Name}'."
+            );
     }
 
     private static string FormatValue(object? value) =>
@@ -257,6 +292,6 @@ internal sealed class ModuleBinder
             null => "<null>",
             string stringValue => stringValue,
             ConfigValue configValue => ConfigValueDisplay.Format(configValue),
-            _ => JsonSerializer.Serialize(value, JsonSerializerOptions)
+            _ => JsonSerializer.Serialize(value, JsonSerializerOptions),
         };
 }

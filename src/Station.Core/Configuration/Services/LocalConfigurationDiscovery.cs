@@ -9,8 +9,8 @@ internal sealed class LocalConfigurationDiscovery
     public IReadOnlyList<ResolvedRole> DiscoverLocalRoles(string configRoot)
     {
         var tree = treeDiscovery.Discover(configRoot);
-        return tree.LocalRoleDirectories
-            .Select(roleDirectory => new ResolvedRole(
+        return tree
+            .LocalRoleDirectories.Select(roleDirectory => new ResolvedRole(
                 "station.local",
                 roleDirectory.Name,
                 $"station.local.{roleDirectory.Name}",
@@ -23,8 +23,10 @@ internal sealed class LocalConfigurationDiscovery
     public IReadOnlyList<string> DiscoverLocalModulePaths(string configRoot)
     {
         var tree = treeDiscovery.Discover(configRoot);
-        return tree.LocalModuleDirectories
-            .Select(moduleRoot => Path.Combine(moduleRoot.FullPath, $"{moduleRoot.Name}.dll"))
+        return tree
+            .LocalModuleDirectories.Select(moduleRoot =>
+                Path.Combine(moduleRoot.FullPath, $"{moduleRoot.Name}.dll")
+            )
             .Where(File.Exists)
             .ToArray();
     }

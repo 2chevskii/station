@@ -28,15 +28,15 @@ public sealed class ConfigEngine
                 new ProcessRunner()
             ),
             new WindowsPrivilegeDetector(),
-            [])
-    {
-    }
+            []
+        ) { }
 
     internal ConfigEngine(
         ConfigLoader configLoader,
         PluginRestorer pluginRestorer,
         IPrivilegeDetector privilegeDetector,
-        IEnumerable<ModuleRegistration> builtInModules)
+        IEnumerable<ModuleRegistration> builtInModules
+    )
     {
         this.configLoader = configLoader;
         this.pluginRestorer = pluginRestorer;
@@ -48,7 +48,8 @@ public sealed class ConfigEngine
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         LoadedConfiguration configuration;
         try
@@ -64,7 +65,8 @@ public sealed class ConfigEngine
             configuration.ConfigRoot,
             configuration.PluginDeclarations,
             log,
-            cancellationToken);
+            cancellationToken
+        );
     }
 
     public async Task<EngineRunResult> RunAsync(
@@ -72,7 +74,8 @@ public sealed class ConfigEngine
         ExecutionMode mode,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (mode == ExecutionMode.Restore)
         {
@@ -91,25 +94,32 @@ public sealed class ConfigEngine
                 configuration.ConfigRoot,
                 configuration.PluginDeclarations,
                 log,
-                cancellationToken);
+                cancellationToken
+            );
 
             if (!restoreResult.Succeeded)
             {
-                return new EngineRunResult(mode, false, restoreResult.Message, restoreResult.Diagnostics, []);
+                return new EngineRunResult(
+                    mode,
+                    false,
+                    restoreResult.Message,
+                    restoreResult.Diagnostics,
+                    []
+                );
             }
 
             moduleCatalog = ModuleCatalog.Create(
                 builtInModules,
                 configLoader.DiscoverLocalModulePaths(configuration.ConfigRoot),
-                restoreResult.RestoredPlugins);
+                restoreResult.RestoredPlugins
+            );
 
             var roleCatalog = RoleCatalog.Create(
                 configLoader.DiscoverLocalRoles(configuration.ConfigRoot),
-                restoreResult.RestoredPlugins);
+                restoreResult.RestoredPlugins
+            );
 
-            var resolvedRoles = configuration.RequestedRoles
-                .Select(roleCatalog.Resolve)
-                .ToArray();
+            var resolvedRoles = configuration.RequestedRoles.Select(roleCatalog.Resolve).ToArray();
             var roleTasks = resolvedRoles
                 .SelectMany(role => configLoader.LoadRoleTasks(role, configuration.RootVariables))
                 .ToArray();
@@ -146,7 +156,12 @@ public sealed class ConfigEngine
                 task.RoleName,
                 task.RoleRoot,
                 task.Variables,
-                ModuleArtifactFactory.Create(configuration.ConfigRoot, task.RoleRoot, task.Variables, templateEngine),
+                ModuleArtifactFactory.Create(
+                    configuration.ConfigRoot,
+                    task.RoleRoot,
+                    task.Variables,
+                    templateEngine
+                ),
                 templateEngine,
                 isElevated,
                 TimeProvider.System
@@ -203,7 +218,8 @@ public sealed class ConfigEngine
 
             if (inspection.RequiredPrivilege == PrivilegeRequirement.Administrator && !isElevated)
             {
-                var message = $"The task '{task.Name}' requires elevation. Rerun the command from an elevated terminal.";
+                var message =
+                    $"The task '{task.Name}' requires elevation. Rerun the command from an elevated terminal.";
                 diagnostics.Add($"{task.Name}: error: {message}");
                 if (mode == ExecutionMode.Validate)
                 {
@@ -228,11 +244,20 @@ public sealed class ConfigEngine
             catch (Exception exception)
             {
                 var message = $"{task.Name}: execution failed: {exception.Message}";
-                records.Add(new EngineTaskRecord(task.Name, resolvedModule.FullName, task.RoleName, ModuleResult.Failure(message)));
+                records.Add(
+                    new EngineTaskRecord(
+                        task.Name,
+                        resolvedModule.FullName,
+                        task.RoleName,
+                        ModuleResult.Failure(message)
+                    )
+                );
                 return new EngineRunResult(mode, false, message, [message], records);
             }
 
-            records.Add(new EngineTaskRecord(task.Name, resolvedModule.FullName, task.RoleName, result));
+            records.Add(
+                new EngineTaskRecord(task.Name, resolvedModule.FullName, task.RoleName, result)
+            );
 
             if (result.Failed)
             {
@@ -241,21 +266,32 @@ public sealed class ConfigEngine
                     false,
                     result.Message ?? $"{task.Name} failed.",
                     [result.Message ?? $"{task.Name} failed."],
-                    records);
+                    records
+                );
             }
         }
 
         if (mode == ExecutionMode.Validate)
         {
-            return diagnostics.Any(static item => item.Contains(": error:", StringComparison.OrdinalIgnoreCase))
+            return diagnostics.Any(static item =>
+                item.Contains(": error:", StringComparison.OrdinalIgnoreCase)
+            )
                 ? new EngineRunResult(mode, false, "Validation failed.", diagnostics, [])
-                : new EngineRunResult(mode, true, $"Validated {tasks.Count} task(s).", diagnostics, []);
+                : new EngineRunResult(
+                    mode,
+                    true,
+                    $"Validated {tasks.Count} task(s).",
+                    diagnostics,
+                    []
+                );
         }
 
         var successMessage = mode switch
         {
-            ExecutionMode.Check => $"Check completed. {records.Count(static record => record.Result.Changed)} task(s) would change.",
-            ExecutionMode.Apply => $"Apply completed. {records.Count(static record => record.Result.Changed)} task(s) changed.",
+            ExecutionMode.Check =>
+                $"Check completed. {records.Count(static record => record.Result.Changed)} task(s) would change.",
+            ExecutionMode.Apply =>
+                $"Apply completed. {records.Count(static record => record.Result.Changed)} task(s) changed.",
             _ => $"Completed {records.Count} task(s).",
         };
 
@@ -266,7 +302,8 @@ public sealed class ConfigEngine
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         LoadedConfiguration configuration;
         PluginRestoreResult restoreResult;
@@ -280,25 +317,31 @@ public sealed class ConfigEngine
                 configuration.ConfigRoot,
                 configuration.PluginDeclarations,
                 log,
-                cancellationToken);
+                cancellationToken
+            );
 
             if (!restoreResult.Succeeded)
             {
-                return new ExplainResult(false, restoreResult.Message, restoreResult.Diagnostics, null);
+                return new ExplainResult(
+                    false,
+                    restoreResult.Message,
+                    restoreResult.Diagnostics,
+                    null
+                );
             }
 
             moduleCatalog = ModuleCatalog.Create(
                 builtInModules,
                 configLoader.DiscoverLocalModulePaths(configuration.ConfigRoot),
-                restoreResult.RestoredPlugins);
+                restoreResult.RestoredPlugins
+            );
 
             var roleCatalog = RoleCatalog.Create(
                 configLoader.DiscoverLocalRoles(configuration.ConfigRoot),
-                restoreResult.RestoredPlugins);
+                restoreResult.RestoredPlugins
+            );
 
-            var resolvedRoles = configuration.RequestedRoles
-                .Select(roleCatalog.Resolve)
-                .ToArray();
+            var resolvedRoles = configuration.RequestedRoles.Select(roleCatalog.Resolve).ToArray();
             var roleTasks = resolvedRoles
                 .SelectMany(role => configLoader.LoadRoleTasks(role, configuration.RootVariables))
                 .ToArray();
@@ -313,15 +356,18 @@ public sealed class ConfigEngine
         var diagnostics = new List<string>();
         var rootChildren = new List<ExplainNode>
         {
-            CreateVariableSection("variables", configuration.RootVariables)
+            CreateVariableSection("variables", configuration.RootVariables),
         };
 
         if (tasks.Count == 0)
         {
-            rootChildren.Add(new ExplainNode(
-                "tasks",
-                ExplainNodeKind.Section,
-                [new ExplainNode("<none>", ExplainNodeKind.Value, [])]));
+            rootChildren.Add(
+                new ExplainNode(
+                    "tasks",
+                    ExplainNodeKind.Section,
+                    [new ExplainNode("<none>", ExplainNodeKind.Value, [])]
+                )
+            );
         }
         else
         {
@@ -337,10 +383,19 @@ public sealed class ConfigEngine
                 catch (ConfigurationException exception)
                 {
                     diagnostics.Add($"{task.Name}: error: {exception.Message}");
-                    taskNodes.Add(new ExplainNode(
-                        $"{task.Name} [{task.ModuleName}]",
-                        ExplainNodeKind.Task,
-                        [new ExplainNode($"error: {exception.Message}", ExplainNodeKind.Error, [])]));
+                    taskNodes.Add(
+                        new ExplainNode(
+                            $"{task.Name} [{task.ModuleName}]",
+                            ExplainNodeKind.Task,
+                            [
+                                new ExplainNode(
+                                    $"error: {exception.Message}",
+                                    ExplainNodeKind.Error,
+                                    []
+                                ),
+                            ]
+                        )
+                    );
                     continue;
                 }
 
@@ -352,7 +407,12 @@ public sealed class ConfigEngine
                     task.RoleName,
                     task.RoleRoot,
                     task.Variables,
-                    ModuleArtifactFactory.Create(configuration.ConfigRoot, task.RoleRoot, task.Variables, templateEngine),
+                    ModuleArtifactFactory.Create(
+                        configuration.ConfigRoot,
+                        task.RoleRoot,
+                        task.Variables,
+                        templateEngine
+                    ),
                     templateEngine,
                     isElevated: false,
                     TimeProvider.System
@@ -371,7 +431,7 @@ public sealed class ConfigEngine
 
                 var taskChildren = new List<ExplainNode>
                 {
-                    new($"role: {task.RoleName ?? "root"}", ExplainNodeKind.Detail, [])
+                    new($"role: {task.RoleName ?? "root"}", ExplainNodeKind.Detail, []),
                 };
 
                 var parameterNodes = new List<ExplainNode>();
@@ -383,18 +443,29 @@ public sealed class ConfigEngine
                 {
                     foreach (var parameter in binding.Parameters)
                     {
-                        var suffix = parameter.IsDeferred ? " (deferred)" : parameter.IsDefaultValue ? " (default)" : string.Empty;
-                        parameterNodes.Add(new ExplainNode(
-                            $"{parameter.Name} = {parameter.DisplayValue}{suffix}",
-                            ExplainNodeKind.Value,
-                            []));
+                        var suffix =
+                            parameter.IsDeferred ? " (deferred)"
+                            : parameter.IsDefaultValue ? " (default)"
+                            : string.Empty;
+                        parameterNodes.Add(
+                            new ExplainNode(
+                                $"{parameter.Name} = {parameter.DisplayValue}{suffix}",
+                                ExplainNodeKind.Value,
+                                []
+                            )
+                        );
                     }
                 }
 
-                taskChildren.Add(new ExplainNode("parameters", ExplainNodeKind.Section, parameterNodes));
+                taskChildren.Add(
+                    new ExplainNode("parameters", ExplainNodeKind.Section, parameterNodes)
+                );
 
                 var variableNodes = new List<ExplainNode>();
-                var variablePaths = task.Variables.EnumeratePaths().OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase).ToArray();
+                var variablePaths = task
+                    .Variables.EnumeratePaths()
+                    .OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
                 if (variablePaths.Length == 0)
                 {
                     variableNodes.Add(new ExplainNode("<none>", ExplainNodeKind.Value, []));
@@ -403,25 +474,34 @@ public sealed class ConfigEngine
                 {
                     foreach (var variable in variablePaths)
                     {
-                        variableNodes.Add(new ExplainNode(
-                            $"{variable.Path} = {ConfigValueDisplay.Format(variable.Value)}",
-                            ExplainNodeKind.Value,
-                            []));
+                        variableNodes.Add(
+                            new ExplainNode(
+                                $"{variable.Path} = {ConfigValueDisplay.Format(variable.Value)}",
+                                ExplainNodeKind.Value,
+                                []
+                            )
+                        );
                     }
                 }
 
-                taskChildren.Add(new ExplainNode("variables", ExplainNodeKind.Section, variableNodes));
-                taskNodes.Add(new ExplainNode(
-                    $"{task.Name} [{resolvedModule.FullName}]",
-                    ExplainNodeKind.Task,
-                    taskChildren));
+                taskChildren.Add(
+                    new ExplainNode("variables", ExplainNodeKind.Section, variableNodes)
+                );
+                taskNodes.Add(
+                    new ExplainNode(
+                        $"{task.Name} [{resolvedModule.FullName}]",
+                        ExplainNodeKind.Task,
+                        taskChildren
+                    )
+                );
             }
 
             rootChildren.Add(new ExplainNode("tasks", ExplainNodeKind.Section, taskNodes));
         }
 
         var succeeded = diagnostics.All(static diagnostic =>
-            !diagnostic.Contains(": error:", StringComparison.OrdinalIgnoreCase));
+            !diagnostic.Contains(": error:", StringComparison.OrdinalIgnoreCase)
+        );
         return new ExplainResult(
             succeeded,
             $"Explained {tasks.Count} task(s).",
@@ -444,20 +524,29 @@ public sealed class ConfigEngine
 
     private static ExplainNode CreateVariableSection(string title, VariableSet variables)
     {
-        var values = variables.EnumeratePaths().OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase).ToArray();
+        var values = variables
+            .EnumeratePaths()
+            .OrderBy(static item => item.Path, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         if (values.Length == 0)
         {
-            return new ExplainNode(title, ExplainNodeKind.Section, [new ExplainNode("<none>", ExplainNodeKind.Value, [])]);
+            return new ExplainNode(
+                title,
+                ExplainNodeKind.Section,
+                [new ExplainNode("<none>", ExplainNodeKind.Value, [])]
+            );
         }
 
         return new ExplainNode(
             title,
             ExplainNodeKind.Section,
-            values.Select(static value =>
-                    new ExplainNode(
-                        $"{value.Path} = {ConfigValueDisplay.Format(value.Value)}",
-                        ExplainNodeKind.Value,
-                        []))
-                .ToArray());
+            values
+                .Select(static value => new ExplainNode(
+                    $"{value.Path} = {ConfigValueDisplay.Format(value.Value)}",
+                    ExplainNodeKind.Value,
+                    []
+                ))
+                .ToArray()
+        );
     }
 }

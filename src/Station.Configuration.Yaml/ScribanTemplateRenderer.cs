@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
-using Station.Abstractions.Interfaces;
 using Scriban;
 using Scriban.Parsing;
 using Scriban.Runtime;
+using Station.Abstractions.Interfaces;
 using Station.Abstractions.Models;
 
 namespace Station.Configuration.Yaml;
@@ -15,11 +15,7 @@ public sealed class ScribanTemplateRenderer : ITemplateEngine
         Template
     >(StringComparer.Ordinal);
 
-    public string Render(
-        string template,
-        VariableSet variables,
-        string? sourceName = null
-    )
+    public string Render(string template, VariableSet variables, string? sourceName = null)
     {
         var compiledTemplate = cache.GetOrAdd(template, ParseTemplate);
         var context = new TemplateContext();

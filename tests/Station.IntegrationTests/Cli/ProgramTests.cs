@@ -12,7 +12,9 @@ public sealed class ProgramTests
         var result = await RunCliAsync("--help");
 
         result.ExitCode.Should().Be(0);
-        result.StandardOutput.Should().ContainAll("restore", "explain", "validate", "check", "apply");
+        result
+            .StandardOutput.Should()
+            .ContainAll("restore", "explain", "validate", "check", "apply");
     }
 
     [Fact]
@@ -27,7 +29,11 @@ public sealed class ProgramTests
         result.StandardOutput.Should().Contain("tasks");
     }
 
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunCliAsync(params string[] arguments)
+    private static async Task<(
+        int ExitCode,
+        string StandardOutput,
+        string StandardError
+    )> RunCliAsync(params string[] arguments)
     {
         var stationCliAssembly = typeof(StationConsole).Assembly.Location;
         var startInfo = new ProcessStartInfo
@@ -54,7 +60,9 @@ public sealed class ProgramTests
     private static string FindRepositoryRoot()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Station.slnx")))
+        while (
+            directory is not null && !File.Exists(Path.Combine(directory.FullName, "Station.slnx"))
+        )
         {
             directory = directory.Parent;
         }

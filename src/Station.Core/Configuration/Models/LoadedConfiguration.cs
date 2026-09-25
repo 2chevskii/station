@@ -5,4 +5,5 @@ public sealed record LoadedConfiguration(
     VariableSet RootVariables,
     IReadOnlyList<PluginDeclaration> PluginDeclarations,
     IReadOnlyList<string> RequestedRoles,
-    IReadOnlyList<LoadedTask> RootTasks);
+    IReadOnlyList<LoadedTask> RootTasks
+);

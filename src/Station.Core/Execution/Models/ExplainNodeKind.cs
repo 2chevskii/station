@@ -7,5 +7,5 @@ public enum ExplainNodeKind
     Task,
     Detail,
     Value,
-    Error
+    Error,
 }

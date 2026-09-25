@@ -5,4 +5,5 @@ internal sealed record BoundParameterRecord(
     string DisplayValue,
     bool IsDeferred,
     bool IsDefaultValue,
-    string? SourceName);
+    string? SourceName
+);

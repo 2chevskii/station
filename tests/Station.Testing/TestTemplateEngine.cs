@@ -18,10 +18,14 @@ public sealed class TestTemplateEngine : ITemplateEngine
                 "{{ " + path + " }}",
                 value switch
                 {
-                    ConfigScalar scalar => Convert.ToString(scalar.Value, System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+                    ConfigScalar scalar => Convert.ToString(
+                        scalar.Value,
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ) ?? string.Empty,
                     _ => variables.Get<string>(path) ?? string.Empty,
                 },
-                StringComparison.Ordinal);
+                StringComparison.Ordinal
+            );
         }
 
         return rendered;

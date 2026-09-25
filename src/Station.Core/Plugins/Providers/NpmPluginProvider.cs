@@ -15,7 +15,8 @@ internal sealed class NpmPluginProvider : IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var registry = string.IsNullOrWhiteSpace(declaration.Registry)
             ? "https://registry.npmjs.org/"
@@ -23,7 +24,10 @@ internal sealed class NpmPluginProvider : IPluginProvider
 
         return await infrastructure.RestoreToCacheAsync(
             configRoot,
-            declaration with { Registry = registry },
+            declaration with
+            {
+                Registry = registry,
+            },
             log,
             cancellationToken,
             async tempRoot =>
@@ -45,7 +49,8 @@ internal sealed class NpmPluginProvider : IPluginProvider
                     );
                 }
 
-                var tarballUrl = metadata["versions"]?[resolvedVersion]?["dist"]?["tarball"]?.GetValue<string>();
+                var tarballUrl = metadata["versions"]
+                    ?[resolvedVersion]?["dist"]?["tarball"]?.GetValue<string>();
                 if (string.IsNullOrWhiteSpace(tarballUrl))
                 {
                     throw new ConfigurationException(
@@ -69,7 +74,8 @@ internal sealed class NpmPluginProvider : IPluginProvider
 
     private static async Task<JsonObject> GetMetadataAsync(
         string metadataUrl,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var client = new HttpClient();
         return await client.GetFromJsonAsync<JsonObject>(metadataUrl, cancellationToken)

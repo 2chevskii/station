@@ -5,4 +5,5 @@ public sealed record ResolvedRole(
     string ShortName,
     string FullName,
     string RoleRoot,
-    DiscoveredDirectory RoleDirectory);
+    DiscoveredDirectory RoleDirectory
+);

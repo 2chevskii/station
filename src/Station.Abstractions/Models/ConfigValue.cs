@@ -25,9 +25,7 @@ public sealed record ConfigArray : ConfigValue, IReadOnlyList<ConfigValue>
     private readonly IReadOnlyList<ConfigValue> items;
 
     public ConfigArray()
-        : this(Array.Empty<ConfigValue>())
-    {
-    }
+        : this(Array.Empty<ConfigValue>()) { }
 
     public ConfigArray(IEnumerable<ConfigValue> items)
     {
@@ -48,16 +46,15 @@ public sealed record ConfigObject : ConfigValue, IReadOnlyDictionary<string, Con
     private readonly IReadOnlyDictionary<string, ConfigValue> properties;
 
     public ConfigObject()
-        : this(Array.Empty<KeyValuePair<string, ConfigValue>>())
-    {
-    }
+        : this(Array.Empty<KeyValuePair<string, ConfigValue>>()) { }
 
     public ConfigObject(IEnumerable<KeyValuePair<string, ConfigValue>> properties)
     {
         this.properties = properties.ToDictionary(
             static pair => pair.Key,
             static pair => ConfigValueUtilities.EnsureValue(pair.Value),
-            StringComparer.OrdinalIgnoreCase);
+            StringComparer.OrdinalIgnoreCase
+        );
     }
 
     public ConfigValue this[string key] => properties[key];

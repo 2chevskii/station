@@ -12,14 +12,23 @@ internal static class ConfigValueDisplay
             null or ConfigNull => "<null>",
             VariableReference reference => $"<ref: {reference.Path}>",
             TemplateMarkup markup => markup.TemplateText,
-            ConfigScalar { Kind: ConfigScalarKind.String, Value: string stringValue } => stringValue,
-            ConfigScalar scalar => Convert.ToString(scalar.Value, System.Globalization.CultureInfo.InvariantCulture) ?? scalar.Value.ToString() ?? string.Empty,
+            ConfigScalar { Kind: ConfigScalarKind.String, Value: string stringValue } =>
+                stringValue,
+            ConfigScalar scalar => Convert.ToString(
+                scalar.Value,
+                System.Globalization.CultureInfo.InvariantCulture
+            )
+                ?? scalar.Value.ToString()
+                ?? string.Empty,
             ConfigArray array => JsonSerializer.Serialize(array.Select(FormatObjectGraphValue)),
-            ConfigObject configObject => JsonSerializer.Serialize(configObject.ToDictionary(
-                static pair => pair.Key,
-                static pair => FormatObjectGraphValue(pair.Value),
-                StringComparer.OrdinalIgnoreCase)),
-            _ => value.ToString() ?? string.Empty
+            ConfigObject configObject => JsonSerializer.Serialize(
+                configObject.ToDictionary(
+                    static pair => pair.Key,
+                    static pair => FormatObjectGraphValue(pair.Value),
+                    StringComparer.OrdinalIgnoreCase
+                )
+            ),
+            _ => value.ToString() ?? string.Empty,
         };
     }
 
@@ -34,7 +43,8 @@ internal static class ConfigValueDisplay
             ConfigObject configObject => configObject.ToDictionary(
                 static pair => pair.Key,
                 static pair => FormatObjectGraphValue(pair.Value),
-                StringComparer.OrdinalIgnoreCase),
-            _ => value.ToString()
+                StringComparer.OrdinalIgnoreCase
+            ),
+            _ => value.ToString(),
         };
 }

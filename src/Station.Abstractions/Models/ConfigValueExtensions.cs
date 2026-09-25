@@ -10,10 +10,14 @@ public static class ConfigValueExtensions
         {
             ConfigNull => default,
             ConfigScalar scalar when scalar.Value is T typedValue => typedValue,
-            ConfigScalar scalar => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(scalar.Value)),
+            ConfigScalar scalar => JsonSerializer.Deserialize<T>(
+                JsonSerializer.Serialize(scalar.Value)
+            ),
             _ => JsonSerializer.Deserialize<T>(
                 JsonSerializer.Serialize(
-                    ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()))))
+                    ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()))
+                )
+            ),
         };
     }
 }

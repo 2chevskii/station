@@ -9,4 +9,5 @@ public sealed record LoadedTask(
     string TaskRoot,
     string? RoleName,
     string? RoleRoot,
-    VariableSet Variables);
+    VariableSet Variables
+);

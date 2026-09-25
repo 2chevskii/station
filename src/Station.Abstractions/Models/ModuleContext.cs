@@ -16,7 +16,8 @@ public sealed class ModuleContext
         ModuleArtifactSet artifacts,
         ITemplateEngine templateEngine,
         bool isElevated,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider
+    )
     {
         Mode = mode;
         TaskName = taskName;

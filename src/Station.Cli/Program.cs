@@ -1,10 +1,9 @@
-using Station.Abstractions;
-using Station.Core;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-
 using Spectre.Console;
+using Station.Abstractions;
 using Station.Abstractions.Enums;
+using Station.Core;
 using Station.Core.Execution;
 using Station.Core.Execution.Models;
 using Station.Core.Execution.Services;
@@ -28,9 +27,15 @@ var setOption = new Option<string[]>("--set")
 var rootCommand = new RootCommand("Manage local workstation configuration.");
 rootCommand.Subcommands.Add(CreateRestoreCommand());
 rootCommand.Subcommands.Add(CreateExplainCommand());
-rootCommand.Subcommands.Add(CreateCommand("validate", "Validate config and plugins.", ExecutionMode.Validate));
-rootCommand.Subcommands.Add(CreateCommand("check", "Dry-run the selected configuration.", ExecutionMode.Check));
-rootCommand.Subcommands.Add(CreateCommand("apply", "Apply the selected configuration.", ExecutionMode.Apply));
+rootCommand.Subcommands.Add(
+    CreateCommand("validate", "Validate config and plugins.", ExecutionMode.Validate)
+);
+rootCommand.Subcommands.Add(
+    CreateCommand("check", "Dry-run the selected configuration.", ExecutionMode.Check)
+);
+rootCommand.Subcommands.Add(
+    CreateCommand("apply", "Apply the selected configuration.", ExecutionMode.Apply)
+);
 
 return await rootCommand.Parse(args).InvokeAsync();
 
@@ -39,42 +44,53 @@ Command CreateRestoreCommand()
     var command = new Command("restore", "Resolve and cache declared plugins.");
     command.Options.Add(configOption);
     command.Options.Add(setOption);
-    command.SetAction(async (parseResult, cancellationToken) =>
-    {
-        var configRoot = parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
-        var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
-        var engine = new ConfigEngine();
-        var result = await engine.RestoreAsync(
-            configRoot,
-            cliVariables,
-            stationConsole.WriteLogMessage,
-            cancellationToken);
+    command.SetAction(
+        async (parseResult, cancellationToken) =>
+        {
+            var configRoot =
+                parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+            var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
+            var engine = new ConfigEngine();
+            var result = await engine.RestoreAsync(
+                configRoot,
+                cliVariables,
+                stationConsole.WriteLogMessage,
+                cancellationToken
+            );
 
-        stationConsole.WriteRestoreResult(result);
-        return result.Succeeded ? 0 : 1;
-    });
+            stationConsole.WriteRestoreResult(result);
+            return result.Succeeded ? 0 : 1;
+        }
+    );
     return command;
 }
 
 Command CreateExplainCommand()
 {
-    var command = new Command("explain", "Show the static task plan, bound parameters, and visible variables.");
+    var command = new Command(
+        "explain",
+        "Show the static task plan, bound parameters, and visible variables."
+    );
     command.Options.Add(configOption);
     command.Options.Add(setOption);
-    command.SetAction(async (parseResult, cancellationToken) =>
-    {
-        var configRoot = parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
-        var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
-        var engine = new ConfigEngine();
-        var result = await engine.ExplainAsync(
-            configRoot,
-            cliVariables,
-            stationConsole.WriteLogMessage,
-            cancellationToken);
+    command.SetAction(
+        async (parseResult, cancellationToken) =>
+        {
+            var configRoot =
+                parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+            var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
+            var engine = new ConfigEngine();
+            var result = await engine.ExplainAsync(
+                configRoot,
+                cliVariables,
+                stationConsole.WriteLogMessage,
+                cancellationToken
+            );
 
-        stationConsole.WriteExplainResult(result);
-        return result.Succeeded ? 0 : 1;
-    });
+            stationConsole.WriteExplainResult(result);
+            return result.Succeeded ? 0 : 1;
+        }
+    );
     return command;
 }
 
@@ -83,12 +99,18 @@ Command CreateCommand(string name, string description, ExecutionMode mode)
     var command = new Command(name, description);
     command.Options.Add(configOption);
     command.Options.Add(setOption);
-    command.SetAction((parseResult, cancellationToken) =>
-        ExecuteCommandAsync(parseResult, mode, cancellationToken));
+    command.SetAction(
+        (parseResult, cancellationToken) =>
+            ExecuteCommandAsync(parseResult, mode, cancellationToken)
+    );
     return command;
 }
 
-async Task<int> ExecuteCommandAsync(ParseResult parseResult, ExecutionMode mode, CancellationToken cancellationToken)
+async Task<int> ExecuteCommandAsync(
+    ParseResult parseResult,
+    ExecutionMode mode,
+    CancellationToken cancellationToken
+)
 {
     var configRoot = parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
     var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
@@ -99,7 +121,8 @@ async Task<int> ExecuteCommandAsync(ParseResult parseResult, ExecutionMode mode,
         mode,
         cliVariables,
         stationConsole.WriteLogMessage,
-        cancellationToken);
+        cancellationToken
+    );
 
     stationConsole.WriteResult(result);
     return result.Succeeded ? 0 : 1;
@@ -114,7 +137,8 @@ static IReadOnlyDictionary<string, string> ParseCliVariables(string[]? values)
         if (separatorIndex <= 0 || separatorIndex == value.Length - 1)
         {
             throw new InvalidOperationException(
-                $"Invalid '--set' value '{value}'. Expected the form key=value.");
+                $"Invalid '--set' value '{value}'. Expected the form key=value."
+            );
         }
 
         var key = value[..separatorIndex].Trim();
@@ -122,7 +146,8 @@ static IReadOnlyDictionary<string, string> ParseCliVariables(string[]? values)
         if (string.IsNullOrWhiteSpace(key))
         {
             throw new InvalidOperationException(
-                $"Invalid '--set' value '{value}'. Variable name must not be empty.");
+                $"Invalid '--set' value '{value}'. Variable name must not be empty."
+            );
         }
 
         variables[key] = entryValue;

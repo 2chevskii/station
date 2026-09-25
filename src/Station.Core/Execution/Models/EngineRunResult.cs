@@ -7,7 +7,8 @@ public sealed record EngineRunResult(
     bool Succeeded,
     string Message,
     IReadOnlyList<string> Diagnostics,
-    IReadOnlyList<EngineTaskRecord> Tasks)
+    IReadOnlyList<EngineTaskRecord> Tasks
+)
 {
     public int ChangedCount => Tasks.Count(static task => task.Result.Changed);
 }

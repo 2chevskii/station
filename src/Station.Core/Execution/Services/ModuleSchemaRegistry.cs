@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-
 using Station.Abstractions.Attributes;
 using Station.Core.Execution.Models;
 
@@ -21,24 +20,30 @@ internal static class ModuleSchemaRegistry
             );
         }
 
-        var attribute = moduleType.GetCustomAttribute<ModuleAttribute>()
+        var attribute =
+            moduleType.GetCustomAttribute<ModuleAttribute>()
             ?? throw new ConfigurationException(
                 $"Module type '{moduleType.FullName}' must declare [{nameof(ModuleAttribute)}]."
             );
 
-        var constructor = moduleType.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-            .SingleOrDefault(ctor =>
-            {
-                var parameters = ctor.GetParameters();
-                return parameters.Length == 1 && parameters[0].ParameterType == typeof(ModuleContext);
-            })
+        var constructor =
+            moduleType
+                .GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .SingleOrDefault(ctor =>
+                {
+                    var parameters = ctor.GetParameters();
+                    return parameters.Length == 1
+                        && parameters[0].ParameterType == typeof(ModuleContext);
+                })
             ?? throw new ConfigurationException(
                 $"Module type '{moduleType.FullName}' must expose a single public constructor accepting {nameof(ModuleContext)}."
             );
 
         var parameters = moduleType
             .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Select(property => (Property: property, Attribute: property.GetCustomAttribute<ParameterAttribute>()))
+            .Select(property =>
+                (Property: property, Attribute: property.GetCustomAttribute<ParameterAttribute>())
+            )
             .Where(static item => item.Attribute is not null)
             .Select(item =>
             {
@@ -84,7 +89,13 @@ internal static class ModuleSchemaRegistry
             );
         }
 
-        return new ModuleSchema(moduleType, attribute.Name, attribute.Description, constructor, parameters);
+        return new ModuleSchema(
+            moduleType,
+            attribute.Name,
+            attribute.Description,
+            constructor,
+            parameters
+        );
     }
 
     private static string ToCamelCase(string value) =>

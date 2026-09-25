@@ -8,40 +8,46 @@ public static class PluginFixtureBuilder
         string pluginName,
         string roleName,
         bool includeModule = false,
-        bool useJavaScriptRole = false)
+        bool useJavaScriptRole = false
+    )
     {
         var pluginRoot = root.GetPath(pluginDirectoryName);
         Directory.CreateDirectory(pluginRoot);
 
         var moduleList = includeModule ? "  - script" : string.Empty;
-        root.WriteFile($"{pluginDirectoryName}/plugin-manifest.yaml", $$"""
+        root.WriteFile(
+            $"{pluginDirectoryName}/plugin-manifest.yaml",
+            $$"""
             name: {{pluginName}}
             version: 1.0.0
             roles:
               - {{roleName}}
             modules:
             {{moduleList}}
-            """);
+            """
+        );
 
         var moduleReference = includeModule ? $"{pluginName}.script" : "script";
         var roleContents = useJavaScriptRole
             ? """
-            import { script } from 'station:modules/builtin';
+                import { script } from 'station:modules/builtin';
 
-            task('plugin script', '__MODULE_REFERENCE__', {
-              path: 'scripts/sample.ps1'
-            });
-            """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal)
+                task('plugin script', '__MODULE_REFERENCE__', {
+                  path: 'scripts/sample.ps1'
+                });
+                """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal)
             : """
-            - __MODULE_REFERENCE__:
-                path: scripts/sample.ps1
-            """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal);
+                - __MODULE_REFERENCE__:
+                    path: scripts/sample.ps1
+                """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal);
         root.WriteFile(
             $"{pluginDirectoryName}/roles/{roleName}/{(useJavaScriptRole ? "role.js" : "role.yaml")}",
-            roleContents);
+            roleContents
+        );
         root.WriteFile(
             $"{pluginDirectoryName}/roles/{roleName}/scripts/sample.ps1",
-            "Write-Output '{\"changed\":false,\"message\":\"ok\"}'");
+            "Write-Output '{\"changed\":false,\"message\":\"ok\"}'"
+        );
 
         if (includeModule)
         {

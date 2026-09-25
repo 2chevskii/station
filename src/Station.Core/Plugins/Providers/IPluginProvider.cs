@@ -14,5 +14,6 @@ internal interface IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 }

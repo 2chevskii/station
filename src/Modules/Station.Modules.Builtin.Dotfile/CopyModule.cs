@@ -11,9 +11,7 @@ public sealed class CopyModule : ConfigModule
     private static readonly UTF8Encoding Utf8WithoutBom = new(false);
 
     public CopyModule(ModuleContext context)
-        : base(context)
-    {
-    }
+        : base(context) { }
 
     [Parameter("file", Required = true)]
     public string FileName { get; set; } = string.Empty;
@@ -24,7 +22,9 @@ public sealed class CopyModule : ConfigModule
     [Parameter]
     public bool Backup { get; set; } = true;
 
-    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
+    public override ValueTask<ModuleInspectionResult> InspectAsync(
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -36,7 +36,9 @@ public sealed class CopyModule : ConfigModule
         }
         catch (ConfigurationException exception)
         {
-            return ValueTask.FromResult(ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message)));
+            return ValueTask.FromResult(
+                ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message))
+            );
         }
     }
 
@@ -56,12 +58,16 @@ public sealed class CopyModule : ConfigModule
             {
                 return changed
                     ? ModuleResult.ChangedResult($"File '{destinationPath}' would change.")
-                    : ModuleResult.NoChange($"File '{destinationPath}' is already in the desired state.");
+                    : ModuleResult.NoChange(
+                        $"File '{destinationPath}' is already in the desired state."
+                    );
             }
 
             if (!changed)
             {
-                return ModuleResult.NoChange($"File '{destinationPath}' is already in the desired state.");
+                return ModuleResult.NoChange(
+                    $"File '{destinationPath}' is already in the desired state."
+                );
             }
 
             await WriteBytesAsync(destinationPath, desiredBytes, cancellationToken);
@@ -73,7 +79,11 @@ public sealed class CopyModule : ConfigModule
         }
     }
 
-    private async Task WriteBytesAsync(string destinationPath, byte[] desiredBytes, CancellationToken cancellationToken)
+    private async Task WriteBytesAsync(
+        string destinationPath,
+        byte[] desiredBytes,
+        CancellationToken cancellationToken
+    )
     {
         var parentDirectory = Path.GetDirectoryName(destinationPath);
         if (!string.IsNullOrWhiteSpace(parentDirectory))
@@ -110,6 +120,7 @@ public sealed class CopyModule : ConfigModule
         }.Where(static path => !string.IsNullOrWhiteSpace(path));
 
         return protectedRoots.Any(root =>
-            resolved.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase));
+            resolved.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase)
+        );
     }
 }

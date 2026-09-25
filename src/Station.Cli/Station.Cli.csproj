@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
-    <ProjectReference Include="..\Station.Core\Station.Core.csproj" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference
+      Include="..\Station.Core\Station.Core.csproj"
+      SkipGetTargetFrameworkProperties="true"
+    />
   </ItemGroup>
 
   <PropertyGroup>
@@ -16,5 +18,4 @@
     <PackageReference Include="Spectre.Console" />
     <PackageReference Include="System.CommandLine" />
   </ItemGroup>
-
 </Project>

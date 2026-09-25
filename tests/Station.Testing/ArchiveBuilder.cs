@@ -25,7 +25,13 @@ public static class ArchiveBuilder
         using var stream = File.Create(archivePath);
         using var writer = new TarWriter(stream, TarEntryFormat.Ustar, leaveOpen: false);
 
-        foreach (var directory in Directory.GetDirectories(sourceDirectory, "*", SearchOption.AllDirectories))
+        foreach (
+            var directory in Directory.GetDirectories(
+                sourceDirectory,
+                "*",
+                SearchOption.AllDirectories
+            )
+        )
         {
             var relativePath = Path.GetRelativePath(sourceDirectory, directory).Replace('\\', '/');
             writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, relativePath));

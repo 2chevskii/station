@@ -16,7 +16,8 @@ internal sealed class NuGetPluginProvider : IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var feed = string.IsNullOrWhiteSpace(declaration.Feed)
             ? "https://api.nuget.org/v3/index.json"
@@ -24,7 +25,10 @@ internal sealed class NuGetPluginProvider : IPluginProvider
 
         return await infrastructure.RestoreToCacheAsync(
             configRoot,
-            declaration with { Feed = feed },
+            declaration with
+            {
+                Feed = feed,
+            },
             log,
             cancellationToken,
             async tempRoot =>
@@ -37,11 +41,13 @@ internal sealed class NuGetPluginProvider : IPluginProvider
                 var resolvedVersion = declaration.Version;
                 if (string.IsNullOrWhiteSpace(resolvedVersion))
                 {
-                    var versionsUri = $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/index.json";
+                    var versionsUri =
+                        $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/index.json";
                     var versionsNode = await GetVersionsAsync(versionsUri, cancellationToken);
 
                     resolvedVersion = versionsNode["versions"] is JsonArray versionsArray
-                        ? versionsArray.Select(node => node?.GetValue<string>())
+                        ? versionsArray
+                            .Select(node => node?.GetValue<string>())
                             .Where(static value => !string.IsNullOrWhiteSpace(value))
                             .Select(static value => NuGetVersion.Parse(value!))
                             .OrderByDescending(static version => version)
@@ -73,7 +79,8 @@ internal sealed class NuGetPluginProvider : IPluginProvider
 
     private static async Task<JsonObject> GetVersionsAsync(
         string versionsUri,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var client = new HttpClient();
         return await client.GetFromJsonAsync<JsonObject>(versionsUri, cancellationToken)

@@ -18,7 +18,10 @@ public sealed class YamlRoleDocumentLoader : IRoleDocumentLoader
         kind == ConfigArtifactKind.RoleTasks
         && string.Equals(fileName, "role.yaml", StringComparison.OrdinalIgnoreCase);
 
-    public ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
+    public ConfigArray LoadRoleTasks(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    )
     {
         var value = ConfigValueFactory.FromClrValue(yamlReader.LoadObject(artifact.FullPath));
         return ConfigValueFactory.RequireArray(value, artifact.DisplayName);

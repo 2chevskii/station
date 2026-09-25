@@ -1,5 +1,4 @@
 using System.Runtime.Loader;
-
 using Station.Core.Configuration.Models;
 using Station.Core.Execution.Models;
 using Station.Modules.Builtin.Apt;
@@ -17,7 +16,8 @@ internal sealed class ModuleCatalog
 
     private ModuleCatalog(
         IReadOnlyDictionary<string, ResolvedModule> modulesByFullName,
-        IReadOnlyDictionary<string, IReadOnlyList<ResolvedModule>> modulesByShortName)
+        IReadOnlyDictionary<string, IReadOnlyList<ResolvedModule>> modulesByShortName
+    )
     {
         this.modulesByFullName = modulesByFullName;
         this.modulesByShortName = modulesByShortName;
@@ -26,7 +26,8 @@ internal sealed class ModuleCatalog
     public static ModuleCatalog Create(
         IEnumerable<ModuleRegistration>? additionalBuiltInModules,
         IEnumerable<string> localModulePaths,
-        IEnumerable<ResolvedPluginManifest> plugins)
+        IEnumerable<ResolvedPluginManifest> plugins
+    )
     {
         var resolvedModules = new List<ResolvedModule>();
 
@@ -35,11 +36,14 @@ internal sealed class ModuleCatalog
             var schema = ModuleSchemaRegistry.Get(registration.ModuleType);
             ValidateShortName(schema.Name, $"built-in module '{schema.Name}'");
 
-            resolvedModules.Add(new ResolvedModule(
-                registration.ProviderName,
-                schema.Name,
-                $"{registration.ProviderName}.{schema.Name}",
-                schema));
+            resolvedModules.Add(
+                new ResolvedModule(
+                    registration.ProviderName,
+                    schema.Name,
+                    $"{registration.ProviderName}.{schema.Name}",
+                    schema
+                )
+            );
         }
 
         foreach (var modulePath in localModulePaths)
@@ -52,33 +56,40 @@ internal sealed class ModuleCatalog
         {
             foreach (var shortName in plugin.Modules)
             {
-                var modulePath = Path.Combine(plugin.PluginRoot, "modules", shortName, $"{shortName}.dll");
+                var modulePath = Path.Combine(
+                    plugin.PluginRoot,
+                    "modules",
+                    shortName,
+                    $"{shortName}.dll"
+                );
                 resolvedModules.Add(LoadModuleFromAssembly(modulePath, plugin.Name, shortName));
             }
         }
 
         var modulesByFullName = resolvedModules.ToDictionary(
             module => module.FullName,
-            StringComparer.OrdinalIgnoreCase);
+            StringComparer.OrdinalIgnoreCase
+        );
         var modulesByShortName = resolvedModules
             .GroupBy(module => module.ShortName, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(
                 group => group.Key,
                 group => (IReadOnlyList<ResolvedModule>)group.ToArray(),
-                StringComparer.OrdinalIgnoreCase);
+                StringComparer.OrdinalIgnoreCase
+            );
 
         return new ModuleCatalog(modulesByFullName, modulesByShortName);
     }
 
     private static IReadOnlyList<ModuleRegistration> CreateDefaultBuiltIns() =>
-    [
-        new("station.builtin", typeof(AptModule)),
-        new("station.builtin", typeof(CopyModule)),
-        new("station.builtin", typeof(TemplateModule)),
-        new("station.builtin", typeof(ScriptModule)),
-        new("station.builtin", typeof(ScoopModule)),
-        new("station.builtin", typeof(WingetModule)),
-    ];
+        [
+            new("station.builtin", typeof(AptModule)),
+            new("station.builtin", typeof(CopyModule)),
+            new("station.builtin", typeof(TemplateModule)),
+            new("station.builtin", typeof(ScriptModule)),
+            new("station.builtin", typeof(ScoopModule)),
+            new("station.builtin", typeof(WingetModule)),
+        ];
 
     public ResolvedModule Resolve(string name)
     {
@@ -95,13 +106,18 @@ internal sealed class ModuleCatalog
         if (shortNameMatches.Count > 1)
         {
             throw new ConfigurationException(
-                $"Module '{name}' is ambiguous. Use one of: {string.Join(", ", shortNameMatches.Select(static module => module.FullName))}.");
+                $"Module '{name}' is ambiguous. Use one of: {string.Join(", ", shortNameMatches.Select(static module => module.FullName))}."
+            );
         }
 
         return shortNameMatches[0];
     }
 
-    private static ResolvedModule LoadModuleFromAssembly(string assemblyPath, string providerName, string shortName)
+    private static ResolvedModule LoadModuleFromAssembly(
+        string assemblyPath,
+        string providerName,
+        string shortName
+    )
     {
         if (!File.Exists(assemblyPath))
         {
@@ -110,17 +126,22 @@ internal sealed class ModuleCatalog
 
         ValidateShortName(shortName, $"module '{shortName}'");
 
-        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(assemblyPath));
+        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(
+            Path.GetFullPath(assemblyPath)
+        );
         var discoveredModules = assembly
             .GetExportedTypes()
-            .Where(static type => type is { IsAbstract: false, IsInterface: false } &&
-                typeof(ConfigModule).IsAssignableFrom(type))
+            .Where(static type =>
+                type is { IsAbstract: false, IsInterface: false }
+                && typeof(ConfigModule).IsAssignableFrom(type)
+            )
             .ToArray();
 
         if (discoveredModules.Length != 1)
         {
             throw new ConfigurationException(
-                $"Module assembly '{assemblyPath}' must contain exactly one public {nameof(ConfigModule)} implementation.");
+                $"Module assembly '{assemblyPath}' must contain exactly one public {nameof(ConfigModule)} implementation."
+            );
         }
 
         var schema = ModuleSchemaRegistry.Get(discoveredModules[0]);
@@ -128,7 +149,8 @@ internal sealed class ModuleCatalog
         if (!string.Equals(schema.Name, shortName, StringComparison.OrdinalIgnoreCase))
         {
             throw new ConfigurationException(
-                $"Module assembly '{assemblyPath}' is expected to export '{shortName}', but its descriptor name is '{schema.Name}'.");
+                $"Module assembly '{assemblyPath}' is expected to export '{shortName}', but its descriptor name is '{schema.Name}'."
+            );
         }
 
         return new ResolvedModule(providerName, shortName, $"{providerName}.{shortName}", schema);
@@ -136,10 +158,12 @@ internal sealed class ModuleCatalog
 
     private static void ValidateShortName(string shortName, string owner)
     {
-        if (string.IsNullOrWhiteSpace(shortName) ||
-            shortName.Contains('.') ||
-            shortName.Contains(Path.DirectorySeparatorChar) ||
-            shortName.Contains(Path.AltDirectorySeparatorChar))
+        if (
+            string.IsNullOrWhiteSpace(shortName)
+            || shortName.Contains('.')
+            || shortName.Contains(Path.DirectorySeparatorChar)
+            || shortName.Contains(Path.AltDirectorySeparatorChar)
+        )
         {
             throw new ConfigurationException($"{owner} must have a valid short name.");
         }

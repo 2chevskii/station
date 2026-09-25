@@ -12,20 +12,27 @@ public sealed class ScriptModuleTests
     public async Task Execute_runs_script_and_parses_json_result()
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("role/scripts/sample.ps1", """
+        directory.WriteFile(
+            "role/scripts/sample.ps1",
+            """
             param([string]$requestPath)
             $request = Get-Content $requestPath | ConvertFrom-Json
             @{ changed = $true; message = "Hello $($request.variables.name)" } | ConvertTo-Json -Compress
-            """);
-        var variables = new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
-        {
-            ["name"] = ConfigScalar.String("Alice"),
-        }));
-        var module = new ScriptModule(TestModuleContextFactory.Create(
-            directory.Path,
-            directory.GetPath("role"),
-            variables,
-            mode: ExecutionMode.Apply))
+            """
+        );
+        var variables = new VariableSet(
+            new ConfigObject(
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+            )
+        );
+        var module = new ScriptModule(
+            TestModuleContextFactory.Create(
+                directory.Path,
+                directory.GetPath("role"),
+                variables,
+                mode: ExecutionMode.Apply
+            )
+        )
         {
             ScriptPath = "scripts/sample.ps1",
         };
@@ -47,7 +54,9 @@ public sealed class ScriptModuleTests
 
         async Task<ModuleResult> ExecuteAsync(string scriptName)
         {
-            var module = new ScriptModule(TestModuleContextFactory.Create(directory.Path, directory.GetPath("role")))
+            var module = new ScriptModule(
+                TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
+            )
             {
                 ScriptPath = $"scripts/{scriptName}.ps1",
             };
@@ -65,22 +74,34 @@ public sealed class ScriptModuleTests
         using var directory = new TemporaryDirectory();
         directory.WriteFile("role/scripts/sample.ps1", "Write-Output '{\"changed\":false}'");
 
-        var missingScript = new ScriptModule(TestModuleContextFactory.Create(directory.Path, directory.GetPath("role")))
+        var missingScript = new ScriptModule(
+            TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
+        )
         {
             ScriptPath = "scripts/missing.ps1",
         };
-        var missingRunner = new ScriptModule(TestModuleContextFactory.Create(directory.Path, directory.GetPath("role")))
+        var missingRunner = new ScriptModule(
+            TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
+        )
         {
             ScriptPath = "scripts/sample.ps1",
             Runner = "definitely-missing-runner",
         };
-        var escapedPath = new ScriptModule(TestModuleContextFactory.Create(directory.Path, directory.GetPath("role")))
+        var escapedPath = new ScriptModule(
+            TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
+        )
         {
             ScriptPath = "..\\outside.ps1",
         };
 
         (await missingScript.InspectAsync(CancellationToken.None)).IsValid.Should().BeFalse();
-        (await missingRunner.InspectAsync(CancellationToken.None)).Diagnostics.Should().ContainSingle(x => x.Message.Contains("not available", StringComparison.OrdinalIgnoreCase));
-        (await escapedPath.ExecuteAsync(CancellationToken.None)).Message.Should().Contain("must stay within the task root");
+        (await missingRunner.InspectAsync(CancellationToken.None))
+            .Diagnostics.Should()
+            .ContainSingle(x =>
+                x.Message.Contains("not available", StringComparison.OrdinalIgnoreCase)
+            );
+        (await escapedPath.ExecuteAsync(CancellationToken.None))
+            .Message.Should()
+            .Contain("must stay within the task root");
     }
 }

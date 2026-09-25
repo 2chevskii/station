@@ -13,7 +13,8 @@ internal sealed class LocalPluginProvider : IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var pluginsRoot = infrastructure.GetPluginsDirectory(configRoot);
         var candidate = infrastructure.ResolveLocalPluginCandidate(pluginsRoot, declaration.Name!);

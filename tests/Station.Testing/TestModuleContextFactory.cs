@@ -16,14 +16,16 @@ public static class TestModuleContextFactory
         TimeProvider? timeProvider = null,
         string taskName = "test task",
         string? roleName = "base",
-        string? roleRoot = null)
+        string? roleRoot = null
+    )
     {
         templateEngine ??= new TestTemplateEngine();
         variables ??= new VariableSet(new ConfigObject());
         artifacts ??= new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
             new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase));
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+        );
 
         return new ModuleContext(
             mode,
@@ -36,6 +38,7 @@ public static class TestModuleContextFactory
             artifacts,
             templateEngine,
             isElevated,
-            timeProvider ?? TimeProvider.System);
+            timeProvider ?? TimeProvider.System
+        );
     }
 }

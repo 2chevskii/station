@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
     <ProjectReference Include="..\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj" />
     <ProjectReference Include="..\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj" />

@@ -13,7 +13,8 @@ public sealed class ManagedTemplate
         string name,
         string sourcePath,
         VariableSet variables,
-        ITemplateEngine templateEngine)
+        ITemplateEngine templateEngine
+    )
     {
         Name = name;
         SourcePath = sourcePath;

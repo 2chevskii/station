@@ -14,7 +14,8 @@ internal sealed class GitPluginProvider : IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return await infrastructure.RestoreToCacheAsync(
             configRoot,
@@ -49,7 +50,10 @@ internal sealed class GitPluginProvider : IPluginProvider
                     if (!checkoutResult.Succeeded)
                     {
                         throw new ConfigurationException(
-                            infrastructure.SelectProcessError(checkoutResult, "git checkout failed.")
+                            infrastructure.SelectProcessError(
+                                checkoutResult,
+                                "git checkout failed."
+                            )
                         );
                     }
                 }

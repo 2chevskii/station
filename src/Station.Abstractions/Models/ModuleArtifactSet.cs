@@ -4,12 +4,16 @@ public sealed class ModuleArtifactSet
 {
     private readonly IReadOnlyDictionary<string, ManagedFile> filesByName;
     private readonly IReadOnlyDictionary<string, ManagedTemplate> templatesByExactName;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<ManagedTemplate>> templatesByLogicalName;
+    private readonly IReadOnlyDictionary<
+        string,
+        IReadOnlyList<ManagedTemplate>
+    > templatesByLogicalName;
 
     public ModuleArtifactSet(
         IReadOnlyDictionary<string, ManagedFile> filesByName,
         IReadOnlyDictionary<string, ManagedTemplate> templatesByExactName,
-        IReadOnlyDictionary<string, IReadOnlyList<ManagedTemplate>> templatesByLogicalName)
+        IReadOnlyDictionary<string, IReadOnlyList<ManagedTemplate>> templatesByLogicalName
+    )
     {
         this.filesByName = filesByName;
         this.templatesByExactName = templatesByExactName;
@@ -36,7 +40,9 @@ public sealed class ModuleArtifactSet
             return template;
         }
 
-        throw new ConfigurationException(error ?? $"Template '{name}' is not available in the module context.");
+        throw new ConfigurationException(
+            error ?? $"Template '{name}' is not available in the module context."
+        );
     }
 
     public bool TryGetTemplate(string name, out ManagedTemplate template, out string? error)
@@ -54,7 +60,10 @@ public sealed class ModuleArtifactSet
             return false;
         }
 
-        if (!templatesByLogicalName.TryGetValue(normalizedName, out var matches) || matches.Count == 0)
+        if (
+            !templatesByLogicalName.TryGetValue(normalizedName, out var matches)
+            || matches.Count == 0
+        )
         {
             template = null!;
             error = $"Template '{name}' is not available in the module context.";
@@ -78,6 +87,5 @@ public sealed class ModuleArtifactSet
         name.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase)
         || name.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase);
 
-    private static string NormalizeName(string name) =>
-        name.Replace('\\', '/').TrimStart('/');
+    private static string NormalizeName(string name) => name.Replace('\\', '/').TrimStart('/');
 }

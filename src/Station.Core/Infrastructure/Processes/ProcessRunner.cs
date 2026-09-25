@@ -18,12 +18,16 @@ public sealed class ProcessRunner : IProcessRunner
             return File.Exists(commandName);
         }
 
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
+            Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
 
         var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1")
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
+                ';',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
             : [string.Empty];
 
         foreach (var directory in pathEntries)
@@ -47,7 +51,10 @@ public sealed class ProcessRunner : IProcessRunner
         return false;
     }
 
-    public async Task<ProcessResult> RunAsync(ProcessCommand command, CancellationToken cancellationToken)
+    public async Task<ProcessResult> RunAsync(
+        ProcessCommand command,
+        CancellationToken cancellationToken
+    )
     {
         var startInfo = new ProcessStartInfo
         {

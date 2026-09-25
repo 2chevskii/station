@@ -26,20 +26,30 @@ public sealed class ModuleArtifactsTests
         var path = directory.GetPath("templates", "sample.scriban");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, "hello {{ name }}");
-        var variables = new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
-        {
-            ["name"] = ConfigScalar.String("Alice"),
-        }));
+        var variables = new VariableSet(
+            new ConfigObject(
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+            )
+        );
         var engine = new TestTemplateEngine();
         var template = new ManagedTemplate("sample.scriban", path, variables, engine);
 
         template.GetRawText().Should().Be("hello {{ name }}");
         template.GetRenderedText().Should().Be("hello Alice");
         template.GetRenderedText().Should().Be("hello Alice");
-        template.Render(new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
-        {
-            ["name"] = ConfigScalar.String("Bob"),
-        }))).Should().Be("hello Bob");
+        template
+            .Render(
+                new VariableSet(
+                    new ConfigObject(
+                        new Dictionary<string, ConfigValue>
+                        {
+                            ["name"] = ConfigScalar.String("Bob"),
+                        }
+                    )
+                )
+            )
+            .Should()
+            .Be("hello Bob");
 
         engine.Calls.Should().HaveCount(2);
     }
@@ -55,7 +65,8 @@ public sealed class ModuleArtifactsTests
             "nested/app.scriban",
             templatePath,
             new VariableSet(new ConfigObject()),
-            new TestTemplateEngine());
+            new TestTemplateEngine()
+        );
         var artifacts = new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase)
             {
@@ -68,7 +79,8 @@ public sealed class ModuleArtifactsTests
             new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["nested/app"] = [template],
-            });
+            }
+        );
 
         artifacts.GetRequiredFile("\\nested\\file.txt").Name.Should().Be("nested/file.txt");
         artifacts.GetRequiredTemplate("/nested/app").Name.Should().Be("nested/app.scriban");
@@ -81,12 +93,14 @@ public sealed class ModuleArtifactsTests
             "app.scriban",
             Path.GetTempFileName(),
             new VariableSet(new ConfigObject()),
-            new TestTemplateEngine());
+            new TestTemplateEngine()
+        );
         var templateB = new ManagedTemplate(
             "app.sbn",
             Path.GetTempFileName(),
             new VariableSet(new ConfigObject()),
-            new TestTemplateEngine());
+            new TestTemplateEngine()
+        );
         var artifacts = new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
             new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase)
@@ -97,7 +111,8 @@ public sealed class ModuleArtifactsTests
             new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["app"] = [templateA, templateB],
-            });
+            }
+        );
 
         var success = artifacts.TryGetTemplate("app", out _, out var error);
 

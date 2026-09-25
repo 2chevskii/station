@@ -9,7 +9,8 @@ internal sealed class RoleCatalog
 
     private RoleCatalog(
         IReadOnlyDictionary<string, ResolvedRole> rolesByFullName,
-        IReadOnlyDictionary<string, IReadOnlyList<ResolvedRole>> rolesByShortName)
+        IReadOnlyDictionary<string, IReadOnlyList<ResolvedRole>> rolesByShortName
+    )
     {
         this.rolesByFullName = rolesByFullName;
         this.rolesByShortName = rolesByShortName;
@@ -17,30 +18,39 @@ internal sealed class RoleCatalog
 
     public static RoleCatalog Create(
         IEnumerable<ResolvedRole> localRoles,
-        IEnumerable<ResolvedPluginManifest> plugins)
+        IEnumerable<ResolvedPluginManifest> plugins
+    )
     {
         var roles = new List<ResolvedRole>(localRoles);
 
         foreach (var plugin in plugins)
         {
-            roles.AddRange(plugin.Roles.Select(shortName => new ResolvedRole(
-                plugin.Name,
-                shortName,
-                $"{plugin.Name}.{shortName}",
-                Path.Combine(plugin.PluginRoot, "roles", shortName),
-                plugin.Tree.RolesRoot?.Directories.First(directory =>
-                    string.Equals(directory.Name, shortName, StringComparison.OrdinalIgnoreCase))
-                ?? throw new ConfigurationException(
-                    $"Plugin '{plugin.Name}' exports role '{shortName}', but its role directory is missing."))));
+            roles.AddRange(
+                plugin.Roles.Select(shortName => new ResolvedRole(
+                    plugin.Name,
+                    shortName,
+                    $"{plugin.Name}.{shortName}",
+                    Path.Combine(plugin.PluginRoot, "roles", shortName),
+                    plugin.Tree.RolesRoot?.Directories.First(directory =>
+                        string.Equals(directory.Name, shortName, StringComparison.OrdinalIgnoreCase)
+                    )
+                        ?? throw new ConfigurationException(
+                            $"Plugin '{plugin.Name}' exports role '{shortName}', but its role directory is missing."
+                        )
+                ))
+            );
         }
 
         return new RoleCatalog(
             roles.ToDictionary(role => role.FullName, StringComparer.OrdinalIgnoreCase),
-            roles.GroupBy(role => role.ShortName, StringComparer.OrdinalIgnoreCase)
+            roles
+                .GroupBy(role => role.ShortName, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(
                     group => group.Key,
                     group => (IReadOnlyList<ResolvedRole>)group.ToArray(),
-                    StringComparer.OrdinalIgnoreCase));
+                    StringComparer.OrdinalIgnoreCase
+                )
+        );
     }
 
     public ResolvedRole Resolve(string name)
@@ -58,7 +68,8 @@ internal sealed class RoleCatalog
         if (shortNameMatches.Count > 1)
         {
             throw new ConfigurationException(
-                $"Role '{name}' is ambiguous. Use one of: {string.Join(", ", shortNameMatches.Select(static role => role.FullName))}.");
+                $"Role '{name}' is ambiguous. Use one of: {string.Join(", ", shortNameMatches.Select(static role => role.FullName))}."
+            );
         }
 
         return shortNameMatches[0];

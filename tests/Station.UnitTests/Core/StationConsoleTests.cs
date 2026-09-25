@@ -25,12 +25,23 @@ public sealed class StationConsoleTests
                     "Install scoop package",
                     "builtin.scoop",
                     null,
-                    ModuleResult.ChangedResult("Package would be installed"))
-            ]);
+                    ModuleResult.ChangedResult("Package would be installed")
+                ),
+            ]
+        );
 
         console.WriteResult(result);
 
-        standard.Output.Should().ContainAll("Success", "Install scoop package", "changed", "Diagnostics", "warn", "Summary");
+        standard
+            .Output.Should()
+            .ContainAll(
+                "Success",
+                "Install scoop package",
+                "changed",
+                "Diagnostics",
+                "warn",
+                "Summary"
+            );
         error.Output.Should().BeEmpty();
     }
 
@@ -51,9 +62,11 @@ public sealed class StationConsoleTests
                     "1.2.3",
                     "C:\\cache\\example",
                     CacheHit: true,
-                    IsLocal: false)
+                    IsLocal: false
+                ),
             ],
-            []);
+            []
+        );
 
         console.WriteRestoreResult(result);
 
@@ -84,16 +97,35 @@ public sealed class StationConsoleTests
                                 ExplainNodeKind.Task,
                                 [
                                     new ExplainNode("role: base", ExplainNodeKind.Detail, []),
-                                    new ExplainNode("parameters", ExplainNodeKind.Section, [
-                                        new ExplainNode("template = sample", ExplainNodeKind.Value, [])
-                                    ])
-                                ])
-                        ])
-                ]));
+                                    new ExplainNode(
+                                        "parameters",
+                                        ExplainNodeKind.Section,
+                                        [
+                                            new ExplainNode(
+                                                "template = sample",
+                                                ExplainNodeKind.Value,
+                                                []
+                                            ),
+                                        ]
+                                    ),
+                                ]
+                            ),
+                        ]
+                    ),
+                ]
+            )
+        );
 
         console.WriteExplainResult(result);
 
-        standard.Output.Should().ContainAll("station", "tasks", "base.tasks.1 [station.builtin.template]", "template = sample");
+        standard
+            .Output.Should()
+            .ContainAll(
+                "station",
+                "tasks",
+                "base.tasks.1 [station.builtin.template]",
+                "template = sample"
+            );
         error.Output.Should().BeEmpty();
     }
 }

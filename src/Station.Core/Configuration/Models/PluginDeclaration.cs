@@ -9,4 +9,5 @@ public sealed record PluginDeclaration(
     string? Id = null,
     string? Version = null,
     string? Feed = null,
-    string? Registry = null);
+    string? Registry = null
+);

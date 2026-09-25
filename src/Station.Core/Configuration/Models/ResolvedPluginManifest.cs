@@ -6,4 +6,5 @@ public sealed record ResolvedPluginManifest(
     string PluginRoot,
     DiscoveredConfigTree Tree,
     IReadOnlyList<string> Roles,
-    IReadOnlyList<string> Modules);
+    IReadOnlyList<string> Modules
+);

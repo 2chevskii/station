@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
@@ -17,5 +16,4 @@
     <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj" />
     <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj" />
   </ItemGroup>
-
 </Project>

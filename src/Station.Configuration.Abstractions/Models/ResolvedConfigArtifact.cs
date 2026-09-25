@@ -6,4 +6,5 @@ public sealed record ResolvedConfigArtifact(
     string DisplayName,
     string OwningRoot,
     string? RoleName,
-    string LoaderId);
+    string LoaderId
+);

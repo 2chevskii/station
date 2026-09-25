@@ -6,4 +6,5 @@ public sealed record PluginRestoreRecord(
     string? Version,
     string PluginRoot,
     bool CacheHit,
-    bool IsLocal);
+    bool IsLocal
+);

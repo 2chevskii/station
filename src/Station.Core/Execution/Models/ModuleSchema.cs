@@ -7,4 +7,5 @@ internal sealed record ModuleSchema(
     string Name,
     string? Description,
     ConstructorInfo Constructor,
-    IReadOnlyList<ModuleParameterSchema> Parameters);
+    IReadOnlyList<ModuleParameterSchema> Parameters
+);

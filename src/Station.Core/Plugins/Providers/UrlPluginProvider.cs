@@ -13,7 +13,8 @@ internal sealed class UrlPluginProvider : IPluginProvider
         PluginDeclaration declaration,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         return await infrastructure.RestoreToCacheAsync(
             configRoot,

@@ -8,8 +8,10 @@ internal sealed class PluginProviderRegistry
 
     public PluginProviderRegistry(IEnumerable<IPluginProvider>? providers = null)
     {
-        providersByName = (providers ?? CreateDefaults())
-            .ToDictionary(provider => provider.Name, StringComparer.OrdinalIgnoreCase);
+        providersByName = (providers ?? CreateDefaults()).ToDictionary(
+            provider => provider.Name,
+            StringComparer.OrdinalIgnoreCase
+        );
     }
 
     public IPluginProvider Resolve(string providerName)
@@ -23,11 +25,11 @@ internal sealed class PluginProviderRegistry
     }
 
     private static IReadOnlyList<IPluginProvider> CreateDefaults() =>
-    [
-        new LocalPluginProvider(),
-        new GitPluginProvider(),
-        new UrlPluginProvider(),
-        new NuGetPluginProvider(),
-        new NpmPluginProvider(),
-    ];
+        [
+            new LocalPluginProvider(),
+            new GitPluginProvider(),
+            new UrlPluginProvider(),
+            new NuGetPluginProvider(),
+            new NpmPluginProvider(),
+        ];
 }

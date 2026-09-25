@@ -5,7 +5,9 @@ namespace Station.Testing;
 
 public sealed class LocalHttpServer : IAsyncDisposable
 {
-    private readonly Dictionary<string, ResponseDefinition> responses = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ResponseDefinition> responses = new(
+        StringComparer.OrdinalIgnoreCase
+    );
     private readonly CancellationTokenSource cancellationTokenSource = new();
     private readonly HttpListener listener = new();
     private Task? serverTask;
@@ -21,10 +23,16 @@ public sealed class LocalHttpServer : IAsyncDisposable
     public string BaseUrl => $"http://127.0.0.1:{Port}";
 
     public void AddJson(string path, string json) =>
-        responses[NormalizePath(path)] = new ResponseDefinition("application/json", Encoding.UTF8.GetBytes(json));
+        responses[NormalizePath(path)] = new ResponseDefinition(
+            "application/json",
+            Encoding.UTF8.GetBytes(json)
+        );
 
-    public void AddFile(string path, byte[] content, string contentType = "application/octet-stream") =>
-        responses[NormalizePath(path)] = new ResponseDefinition(contentType, content);
+    public void AddFile(
+        string path,
+        byte[] content,
+        string contentType = "application/octet-stream"
+    ) => responses[NormalizePath(path)] = new ResponseDefinition(contentType, content);
 
     public void Start()
     {
@@ -46,12 +54,8 @@ public sealed class LocalHttpServer : IAsyncDisposable
             {
                 await serverTask;
             }
-            catch (HttpListenerException)
-            {
-            }
-            catch (OperationCanceledException)
-            {
-            }
+            catch (HttpListenerException) { }
+            catch (OperationCanceledException) { }
         }
 
         listener.Close();
@@ -82,7 +86,10 @@ public sealed class LocalHttpServer : IAsyncDisposable
                 context.Response.StatusCode = (int)HttpStatusCode.OK;
                 context.Response.ContentType = response.ContentType;
                 context.Response.ContentLength64 = response.Content.Length;
-                await context.Response.OutputStream.WriteAsync(response.Content, cancellationTokenSource.Token);
+                await context.Response.OutputStream.WriteAsync(
+                    response.Content,
+                    cancellationTokenSource.Token
+                );
             }
             else
             {

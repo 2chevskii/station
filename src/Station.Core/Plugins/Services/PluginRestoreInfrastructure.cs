@@ -24,7 +24,8 @@ internal sealed class PluginRestoreInfrastructure
 
     public PluginRestoreInfrastructure(
         LocalConfigurationDiscovery localConfigurationDiscovery,
-        IProcessRunner processRunner)
+        IProcessRunner processRunner
+    )
     {
         this.localConfigurationDiscovery = localConfigurationDiscovery;
         this.processRunner = processRunner;
@@ -42,7 +43,8 @@ internal sealed class PluginRestoreInfrastructure
         CancellationToken cancellationToken,
         Func<string, Task<string>> restoreIntoTempAsync,
         bool isLocal = false,
-        string? cacheKeyOverride = null)
+        string? cacheKeyOverride = null
+    )
     {
         var cacheRoot = GetCacheRoot(configRoot);
         Directory.CreateDirectory(cacheRoot);
@@ -84,7 +86,8 @@ internal sealed class PluginRestoreInfrastructure
     public async Task DownloadFileAsync(
         string url,
         string destinationPath,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using var response = await HttpClient.GetAsync(
             url,
@@ -139,14 +142,17 @@ internal sealed class PluginRestoreInfrastructure
 
     public async Task<string> ResolveNuGetPackageBaseAddressAsync(
         string feed,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        var serviceIndex = await HttpClient.GetFromJsonAsync<JsonObject>(feed, cancellationToken)
+        var serviceIndex =
+            await HttpClient.GetFromJsonAsync<JsonObject>(feed, cancellationToken)
             ?? throw new ConfigurationException(
                 $"NuGet feed '{feed}' returned an empty service index."
             );
 
-        var resources = serviceIndex["resources"] as JsonArray
+        var resources =
+            serviceIndex["resources"] as JsonArray
             ?? throw new ConfigurationException(
                 $"NuGet feed '{feed}' did not expose any resources."
             );
@@ -176,11 +182,7 @@ internal sealed class PluginRestoreInfrastructure
         {
             entry.WriteToDirectory(
                 destinationRoot,
-                new ExtractionOptions
-                {
-                    ExtractFullPath = true,
-                    Overwrite = true,
-                }
+                new ExtractionOptions { ExtractFullPath = true, Overwrite = true }
             );
         }
     }
@@ -270,11 +272,7 @@ internal sealed class PluginRestoreInfrastructure
         Directory.CreateDirectory(destinationRoot);
 
         foreach (
-            var directory in Directory.GetDirectories(
-                sourceRoot,
-                "*",
-                SearchOption.AllDirectories
-            )
+            var directory in Directory.GetDirectories(sourceRoot, "*", SearchOption.AllDirectories)
         )
         {
             var relativePath = Path.GetRelativePath(sourceRoot, directory);

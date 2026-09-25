@@ -16,16 +16,23 @@ internal sealed class PluginManifestLoader
         : this(
             yamlReader,
             new ConfigArtifactResolver(
-                [new YamlRoleDocumentLoader(yamlReader), new JavaScriptRoleDocumentLoader(new JavaScriptConfigRuntime())],
-                [new YamlVariableDocumentLoader(yamlReader), new JavaScriptVariableDocumentLoader(new JavaScriptConfigRuntime())]),
-            new ConfigTreeDiscovery())
-    {
-    }
+                [
+                    new YamlRoleDocumentLoader(yamlReader),
+                    new JavaScriptRoleDocumentLoader(new JavaScriptConfigRuntime()),
+                ],
+                [
+                    new YamlVariableDocumentLoader(yamlReader),
+                    new JavaScriptVariableDocumentLoader(new JavaScriptConfigRuntime()),
+                ]
+            ),
+            new ConfigTreeDiscovery()
+        ) { }
 
     public PluginManifestLoader(
         YamlConfigurationReader yamlReader,
         ConfigArtifactResolver artifactResolver,
-        ConfigTreeDiscovery treeDiscovery)
+        ConfigTreeDiscovery treeDiscovery
+    )
     {
         this.yamlReader = yamlReader;
         this.artifactResolver = artifactResolver;
@@ -76,7 +83,8 @@ internal sealed class PluginManifestLoader
         foreach (var role in roles)
         {
             var roleDirectory = tree.RolesRoot?.Directories.FirstOrDefault(directory =>
-                string.Equals(directory.Name, role, StringComparison.OrdinalIgnoreCase));
+                string.Equals(directory.Name, role, StringComparison.OrdinalIgnoreCase)
+            );
             if (roleDirectory is null)
             {
                 throw new ConfigurationException(
@@ -89,7 +97,12 @@ internal sealed class PluginManifestLoader
 
         foreach (var module in modules)
         {
-            var modulePath = Path.Combine(fullPluginRoot, ModulesDirectoryName, module, $"{module}.dll");
+            var modulePath = Path.Combine(
+                fullPluginRoot,
+                ModulesDirectoryName,
+                module,
+                $"{module}.dll"
+            );
             if (!File.Exists(modulePath))
             {
                 throw new ConfigurationException(
@@ -104,7 +117,8 @@ internal sealed class PluginManifestLoader
     private static IReadOnlyList<string> NormalizeExportList(
         IEnumerable<string>? values,
         string propertyName,
-        string sourceName)
+        string sourceName
+    )
     {
         var exports = (values ?? [])
             .Select(value => value?.Trim())

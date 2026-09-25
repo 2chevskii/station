@@ -15,10 +15,11 @@ public sealed class TemplateModuleTests
         var templatePath = directory.GetPath("role", "templates", "app.scriban");
         Directory.CreateDirectory(Path.GetDirectoryName(templatePath)!);
         await File.WriteAllTextAsync(templatePath, "hello {{ name }}");
-        var variables = new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
-        {
-            ["name"] = ConfigScalar.String("Alice"),
-        }));
+        var variables = new VariableSet(
+            new ConfigObject(
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+            )
+        );
         var engine = new TestTemplateEngine();
         var artifacts = new ModuleArtifactSet(
             new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
@@ -29,27 +30,34 @@ public sealed class TemplateModuleTests
             new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["app"] = [new ManagedTemplate("app.scriban", templatePath, variables, engine)],
-            });
+            }
+        );
         var destination = directory.GetPath("out.txt");
 
-        var checkModule = new TemplateModule(TestModuleContextFactory.Create(
-            directory.Path,
-            directory.GetPath("role"),
-            variables,
-            artifacts,
-            engine,
-            ExecutionMode.Check))
+        var checkModule = new TemplateModule(
+            TestModuleContextFactory.Create(
+                directory.Path,
+                directory.GetPath("role"),
+                variables,
+                artifacts,
+                engine,
+                ExecutionMode.Check
+            )
+        )
         {
             TemplateName = "app",
             Destination = destination,
         };
-        var applyModule = new TemplateModule(TestModuleContextFactory.Create(
-            directory.Path,
-            directory.GetPath("role"),
-            variables,
-            artifacts,
-            engine,
-            ExecutionMode.Apply))
+        var applyModule = new TemplateModule(
+            TestModuleContextFactory.Create(
+                directory.Path,
+                directory.GetPath("role"),
+                variables,
+                artifacts,
+                engine,
+                ExecutionMode.Apply
+            )
+        )
         {
             TemplateName = "app",
             Destination = destination,
@@ -68,10 +76,11 @@ public sealed class TemplateModuleTests
         var templatePath = directory.GetPath("role", "templates", "app.scriban");
         Directory.CreateDirectory(Path.GetDirectoryName(templatePath)!);
         await File.WriteAllTextAsync(templatePath, "hello {{ name }}");
-        var variables = new VariableSet(new ConfigObject(new Dictionary<string, ConfigValue>
-        {
-            ["name"] = ConfigScalar.String("Alice"),
-        }));
+        var variables = new VariableSet(
+            new ConfigObject(
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+            )
+        );
         var engine = new TestTemplateEngine();
         var template = new ManagedTemplate("app.scriban", templatePath, variables, engine);
         var artifacts = new ModuleArtifactSet(
@@ -83,17 +92,23 @@ public sealed class TemplateModuleTests
             new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["app"] = [template],
-            });
+            }
+        );
         var destination = directory.GetPath("out.txt");
         await File.WriteAllTextAsync(destination, "old");
-        var module = new TemplateModule(TestModuleContextFactory.Create(
-            directory.Path,
-            directory.GetPath("role"),
-            variables,
-            artifacts,
-            engine,
-            ExecutionMode.Apply,
-            timeProvider: new FakeTimeProvider(new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero))))
+        var module = new TemplateModule(
+            TestModuleContextFactory.Create(
+                directory.Path,
+                directory.GetPath("role"),
+                variables,
+                artifacts,
+                engine,
+                ExecutionMode.Apply,
+                timeProvider: new FakeTimeProvider(
+                    new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero)
+                )
+            )
+        )
         {
             TemplateName = "app",
             Destination = destination,

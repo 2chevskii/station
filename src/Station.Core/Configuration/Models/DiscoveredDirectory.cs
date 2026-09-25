@@ -7,7 +7,8 @@ public sealed class DiscoveredDirectory
         string name,
         string relativePath,
         IReadOnlyList<DiscoveredDirectory> directories,
-        IReadOnlyList<DiscoveredFile> files)
+        IReadOnlyList<DiscoveredFile> files
+    )
     {
         FullPath = fullPath;
         Name = name;
@@ -29,14 +30,16 @@ public sealed class DiscoveredDirectory
     public bool TryGetDirectory(string name, out DiscoveredDirectory? directory)
     {
         directory = Directories.FirstOrDefault(candidate =>
-            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)
+        );
         return directory is not null;
     }
 
     public bool TryGetFile(string name, out DiscoveredFile? file)
     {
         file = Files.FirstOrDefault(candidate =>
-            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)
+        );
         return file is not null;
     }
 }

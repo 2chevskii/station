@@ -8,11 +8,16 @@ internal static class ModuleArtifactFactory
         string configRoot,
         string? roleRoot,
         VariableSet variables,
-        ITemplateEngine templateRenderer)
+        ITemplateEngine templateRenderer
+    )
     {
         var files = new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase);
-        var exactTemplates = new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase);
-        var logicalTemplates = new Dictionary<string, List<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase);
+        var exactTemplates = new Dictionary<string, ManagedTemplate>(
+            StringComparer.OrdinalIgnoreCase
+        );
+        var logicalTemplates = new Dictionary<string, List<ManagedTemplate>>(
+            StringComparer.OrdinalIgnoreCase
+        );
 
         AddScope(configRoot);
         if (!string.IsNullOrWhiteSpace(roleRoot))
@@ -35,7 +40,9 @@ internal static class ModuleArtifactFactory
             var filesRoot = Path.Combine(root, "files");
             if (Directory.Exists(filesRoot))
             {
-                foreach (var filePath in Directory.GetFiles(filesRoot, "*", SearchOption.AllDirectories))
+                foreach (
+                    var filePath in Directory.GetFiles(filesRoot, "*", SearchOption.AllDirectories)
+                )
                 {
                     var logicalName = Normalize(Path.GetRelativePath(filesRoot, filePath));
                     files[logicalName] = new ManagedFile(logicalName, filePath);
@@ -58,11 +65,17 @@ internal static class ModuleArtifactFactory
                 {
                     SourcePath = path,
                     ExactName = Normalize(Path.GetRelativePath(templatesRoot, path)),
-                    LogicalName = Normalize(RemoveTemplateExtension(Path.GetRelativePath(templatesRoot, path))),
+                    LogicalName = Normalize(
+                        RemoveTemplateExtension(Path.GetRelativePath(templatesRoot, path))
+                    ),
                 })
                 .ToArray();
 
-            foreach (var logicalName in templatesInScope.Select(static item => item.LogicalName).Distinct(StringComparer.OrdinalIgnoreCase))
+            foreach (
+                var logicalName in templatesInScope
+                    .Select(static item => item.LogicalName)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+            )
             {
                 if (logicalTemplates.TryGetValue(logicalName, out var previousMatches))
                 {
@@ -110,6 +123,5 @@ internal static class ModuleArtifactFactory
         return path;
     }
 
-    private static string Normalize(string path) =>
-        path.Replace('\\', '/').TrimStart('/');
+    private static string Normalize(string path) => path.Replace('\\', '/').TrimStart('/');
 }

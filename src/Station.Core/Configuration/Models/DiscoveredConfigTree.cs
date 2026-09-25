@@ -11,4 +11,5 @@ public sealed record DiscoveredConfigTree(
     DiscoveredDirectory? PluginsRoot,
     DiscoveredDirectory? ModulesRoot,
     IReadOnlyList<DiscoveredDirectory> LocalRoleDirectories,
-    IReadOnlyList<DiscoveredDirectory> LocalModuleDirectories);
+    IReadOnlyList<DiscoveredDirectory> LocalModuleDirectories
+);

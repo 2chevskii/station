@@ -27,15 +27,19 @@ public sealed class YamlConfigurationReader
             null => null,
             DateTime dateTime => dateTime.ToString("O", CultureInfo.InvariantCulture),
             IDictionary<object, object> dictionary => dictionary.ToDictionary(
-                pair => Convert.ToString(pair.Key, CultureInfo.InvariantCulture)
+                pair =>
+                    Convert.ToString(pair.Key, CultureInfo.InvariantCulture)
                     ?? throw new ConfigurationException("YAML mapping keys must be scalar values."),
                 pair => NormalizeYamlValue(pair.Value),
-                StringComparer.OrdinalIgnoreCase),
+                StringComparer.OrdinalIgnoreCase
+            ),
             IDictionary<string, object> dictionary => dictionary.ToDictionary(
                 pair => pair.Key,
                 pair => NormalizeYamlValue(pair.Value),
-                StringComparer.OrdinalIgnoreCase),
-            IEnumerable<object?> list when value is not string => list.Select(NormalizeYamlValue).ToList(),
+                StringComparer.OrdinalIgnoreCase
+            ),
+            IEnumerable<object?> list when value is not string => list.Select(NormalizeYamlValue)
+                .ToList(),
             _ => value,
         };
 

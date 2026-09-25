@@ -40,7 +40,8 @@ internal sealed class ConfigTreeDiscovery
             pluginsRoot,
             modulesRoot,
             rolesRoot?.Directories ?? [],
-            modulesRoot?.Directories ?? []);
+            modulesRoot?.Directories ?? []
+        );
     }
 
     private static DiscoveredDirectory DiscoverDirectory(string fullPath, string relativePath)
@@ -48,7 +49,9 @@ internal sealed class ConfigTreeDiscovery
         var directories = Directory
             .GetDirectories(fullPath)
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
-            .Select(path => DiscoverDirectory(path, CombineRelative(relativePath, Path.GetFileName(path))))
+            .Select(path =>
+                DiscoverDirectory(path, CombineRelative(relativePath, Path.GetFileName(path)))
+            )
             .ToArray();
 
         var files = Directory
@@ -57,7 +60,8 @@ internal sealed class ConfigTreeDiscovery
             .Select(path => new DiscoveredFile(
                 path,
                 Path.GetFileName(path),
-                CombineRelative(relativePath, Path.GetFileName(path))))
+                CombineRelative(relativePath, Path.GetFileName(path))
+            ))
             .ToArray();
 
         return new DiscoveredDirectory(
@@ -65,7 +69,8 @@ internal sealed class ConfigTreeDiscovery
             Path.GetFileName(fullPath),
             relativePath,
             directories,
-            files);
+            files
+        );
     }
 
     private static string CombineRelative(string parent, string name) =>

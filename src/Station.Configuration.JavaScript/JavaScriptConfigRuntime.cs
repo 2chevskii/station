@@ -1,8 +1,6 @@
 using System.Text;
 using System.Text.Json;
-
 using Jint;
-
 using Station.Abstractions.Models;
 using Station.Configuration.Abstractions;
 
@@ -20,50 +18,70 @@ public sealed class JavaScriptConfigRuntime
         "apt",
     ];
 
-    public ConfigObject LoadVariables(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
+    public ConfigObject LoadVariables(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    )
     {
         var engine = CreateEngine(artifact, context);
         var module = engine.Modules.Import(GetImportSpecifier(artifact));
         var exportValue = module.Get("default").ToObject();
         return ConfigValueFactory.RequireObject(
             ConfigValueFactory.FromClrValue(exportValue),
-            artifact.DisplayName);
+            artifact.DisplayName
+        );
     }
 
-    public ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
+    public ConfigArray LoadRoleTasks(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    )
     {
         var taskRegistrations = new List<object?>();
         var engine = CreateEngine(artifact, context);
         engine.SetValue(
             "task",
-            new Func<object?, object?, object?, object?>((first, second, third) =>
-            {
-                RegisterTask(taskRegistrations, first, second, third, artifact);
-                return null;
-            }));
+            new Func<object?, object?, object?, object?>(
+                (first, second, third) =>
+                {
+                    RegisterTask(taskRegistrations, first, second, third, artifact);
+                    return null;
+                }
+            )
+        );
 
         engine.Modules.Import(GetImportSpecifier(artifact));
-        return new ConfigArray(taskRegistrations.Select(static item =>
-            ConfigValueFactory.FromClrValue(item)));
+        return new ConfigArray(
+            taskRegistrations.Select(static item => ConfigValueFactory.FromClrValue(item))
+        );
     }
 
-    private static Engine CreateEngine(ResolvedConfigArtifact artifact, ConfigEvaluationContext context)
+    private static Engine CreateEngine(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    )
     {
-        var moduleRoot = Path.GetDirectoryName(artifact.FullPath)
+        var moduleRoot =
+            Path.GetDirectoryName(artifact.FullPath)
             ?? throw new ConfigurationException(
-                $"Could not determine the directory for '{artifact.FullPath}'.");
-        var engine = new Engine(options => options
-            .EnableModules(moduleRoot, restrictToBasePath: false)
-            .LimitMemory(4_000_000)
-            .MaxStatements(10_000)
-            .TimeoutInterval(TimeSpan.FromSeconds(2)));
+                $"Could not determine the directory for '{artifact.FullPath}'."
+            );
+        var engine = new Engine(options =>
+            options
+                .EnableModules(moduleRoot, restrictToBasePath: false)
+                .LimitMemory(4_000_000)
+                .MaxStatements(10_000)
+                .TimeoutInterval(TimeSpan.FromSeconds(2))
+        );
 
         engine.Modules.Add(
             "station:vars",
-            builder => builder.AddSource(BuildVarsModuleSource(context.VisibleVariables)));
+            builder => builder.AddSource(BuildVarsModuleSource(context.VisibleVariables))
+        );
         engine.Modules.Add(
             "station:modules/builtin",
-            builder => builder.AddSource(BuildBuiltinModuleSource()));
+            builder => builder.AddSource(BuildBuiltinModuleSource())
+        );
         return engine;
     }
 
@@ -75,7 +93,8 @@ public sealed class JavaScriptConfigRuntime
         var builder = new StringBuilder();
         foreach (var module in BuiltInModules)
         {
-            builder.Append("export const ")
+            builder
+                .Append("export const ")
                 .Append(module)
                 .Append(" = ")
                 .Append(JsonSerializer.Serialize(module))
@@ -108,13 +127,15 @@ public sealed class JavaScriptConfigRuntime
                 return this.toString();
               }
             }
-            """);
+            """
+        );
         builder.AppendLine("const __ref = path => new StationVariableReference(path);");
         builder.AppendLine("const __default = {};");
 
         foreach (var (key, value) in variables.Root)
         {
-            builder.Append("__default[")
+            builder
+                .Append("__default[")
                 .Append(JsonSerializer.Serialize(key))
                 .Append("] = ")
                 .Append(BuildVarsValueExpression(key, value))
@@ -122,7 +143,8 @@ public sealed class JavaScriptConfigRuntime
 
             if (IsValidIdentifier(key))
             {
-                builder.Append("export const ")
+                builder
+                    .Append("export const ")
                     .Append(key)
                     .Append(" = __ref(")
                     .Append(JsonSerializer.Serialize(key))
@@ -139,7 +161,8 @@ public sealed class JavaScriptConfigRuntime
         if (value is ConfigObject configObject)
         {
             var children = configObject.Select(pair =>
-                $"{JsonSerializer.Serialize(pair.Key)}: {BuildVarsValueExpression($"{path}.{pair.Key}", pair.Value)}");
+                $"{JsonSerializer.Serialize(pair.Key)}: {BuildVarsValueExpression($"{path}.{pair.Key}", pair.Value)}"
+            );
             return $"{{ {string.Join(", ", children)} }}";
         }
 
@@ -158,8 +181,9 @@ public sealed class JavaScriptConfigRuntime
             return false;
         }
 
-        return value.Skip(1).All(static character =>
-            char.IsLetterOrDigit(character) || character is '_' or '$');
+        return value
+            .Skip(1)
+            .All(static character => char.IsLetterOrDigit(character) || character is '_' or '$');
     }
 
     private static void RegisterTask(
@@ -167,7 +191,8 @@ public sealed class JavaScriptConfigRuntime
         object? first,
         object? second,
         object? third,
-        ResolvedConfigArtifact artifact)
+        ResolvedConfigArtifact artifact
+    )
     {
         string? explicitName = null;
         object? moduleReference;
@@ -189,13 +214,15 @@ public sealed class JavaScriptConfigRuntime
         if (string.IsNullOrWhiteSpace(moduleName))
         {
             throw new ConfigurationException(
-                $"JavaScript role file '{artifact.FullPath}' called task(...) with an invalid module reference.");
+                $"JavaScript role file '{artifact.FullPath}' called task(...) with an invalid module reference."
+            );
         }
 
         if (parametersObject is not IDictionary<string, object?> parameters)
         {
             throw new ConfigurationException(
-                $"JavaScript role file '{artifact.FullPath}' called task(...) with a non-object parameters value.");
+                $"JavaScript role file '{artifact.FullPath}' called task(...) with a non-object parameters value."
+            );
         }
 
         var task = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);

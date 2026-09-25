@@ -7,14 +7,14 @@ public sealed class TemporaryDirectory : IDisposable
         Path = System.IO.Path.Combine(
             System.IO.Path.GetTempPath(),
             "station-tests",
-            Guid.NewGuid().ToString("N"));
+            Guid.NewGuid().ToString("N")
+        );
         Directory.CreateDirectory(Path);
     }
 
     public string Path { get; }
 
-    public string GetPath(params string[] segments) =>
-        System.IO.Path.Combine([Path, .. segments]);
+    public string GetPath(params string[] segments) => System.IO.Path.Combine([Path, .. segments]);
 
     public void WriteFile(string relativePath, string contents)
     {

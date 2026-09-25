@@ -16,7 +16,8 @@ internal sealed class PluginRestorer
         PluginManifestLoader pluginManifestLoader,
         LocalConfigurationDiscovery localConfigurationDiscovery,
         IProcessRunner processRunner,
-        IEnumerable<IPluginProvider>? providers = null)
+        IEnumerable<IPluginProvider>? providers = null
+    )
     {
         this.pluginManifestLoader = pluginManifestLoader;
         restoreInfrastructure = new PluginRestoreInfrastructure(
@@ -30,7 +31,8 @@ internal sealed class PluginRestorer
         string configRoot,
         IReadOnlyList<PluginDeclaration> declarations,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (declarations.Count == 0)
         {

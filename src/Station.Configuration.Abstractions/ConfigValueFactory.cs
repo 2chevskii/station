@@ -10,8 +10,10 @@ public static class ConfigValueFactory
         {
             null => ConfigNull.Instance,
             ConfigValue configValue => configValue,
-            IDictionary<string, object?> mapping when TryCreateVariableReference(mapping, out var reference) => reference,
-            string stringValue => detectTemplateMarkup && ConfigValueUtilities.IsTemplateMarkup(stringValue)
+            IDictionary<string, object?> mapping
+                when TryCreateVariableReference(mapping, out var reference) => reference,
+            string stringValue => detectTemplateMarkup
+            && ConfigValueUtilities.IsTemplateMarkup(stringValue)
                 ? new TemplateMarkup(stringValue)
                 : ConfigScalar.String(stringValue),
             bool boolValue => ConfigScalar.Boolean(boolValue),
@@ -25,36 +27,52 @@ public static class ConfigValueFactory
             float floatValue => ConfigScalar.Float(floatValue),
             double doubleValue => ConfigScalar.Float(doubleValue),
             decimal decimalValue => ConfigScalar.Float((double)decimalValue),
-            IDictionary<string, object?> mapping => new ConfigObject(mapping.Select(pair =>
-                KeyValuePair.Create(pair.Key, FromClrValue(pair.Value, detectTemplateMarkup)))),
-            IDictionary<object, object?> objectMapping => new ConfigObject(objectMapping.Select(pair =>
-                KeyValuePair.Create(
-                    Convert.ToString(pair.Key) ?? throw new ConfigurationException("Mapping keys must be strings."),
-                    FromClrValue(pair.Value, detectTemplateMarkup)))),
-            IEnumerable<object?> list when value is not string => new ConfigArray(list.Select(item =>
-                FromClrValue(item, detectTemplateMarkup))),
-            _ => throw new ConfigurationException($"Unsupported configuration value '{value.GetType().Name}'.")
+            IDictionary<string, object?> mapping => new ConfigObject(
+                mapping.Select(pair =>
+                    KeyValuePair.Create(pair.Key, FromClrValue(pair.Value, detectTemplateMarkup))
+                )
+            ),
+            IDictionary<object, object?> objectMapping => new ConfigObject(
+                objectMapping.Select(pair =>
+                    KeyValuePair.Create(
+                        Convert.ToString(pair.Key)
+                            ?? throw new ConfigurationException("Mapping keys must be strings."),
+                        FromClrValue(pair.Value, detectTemplateMarkup)
+                    )
+                )
+            ),
+            IEnumerable<object?> list when value is not string => new ConfigArray(
+                list.Select(item => FromClrValue(item, detectTemplateMarkup))
+            ),
+            _ => throw new ConfigurationException(
+                $"Unsupported configuration value '{value.GetType().Name}'."
+            ),
         };
     }
 
     private static bool TryCreateVariableReference(
         IDictionary<string, object?> mapping,
-        out VariableReference reference)
+        out VariableReference reference
+    )
     {
-        if (mapping.Count == 1
+        if (
+            mapping.Count == 1
             && mapping.TryGetValue("__stationVariableReference", out var pathValue)
             && pathValue is string legacyPath
-            && !string.IsNullOrWhiteSpace(legacyPath))
+            && !string.IsNullOrWhiteSpace(legacyPath)
+        )
         {
             reference = new VariableReference(legacyPath);
             return true;
         }
 
-        if (mapping.TryGetValue("$type", out var typeValue)
+        if (
+            mapping.TryGetValue("$type", out var typeValue)
             && string.Equals(typeValue?.ToString(), "variable_reference", StringComparison.Ordinal)
             && mapping.TryGetValue("name", out var nameValue)
             && nameValue is string path
-            && !string.IsNullOrWhiteSpace(path))
+            && !string.IsNullOrWhiteSpace(path)
+        )
         {
             reference = new VariableReference(path);
             return true;
@@ -71,7 +89,9 @@ public static class ConfigValueFactory
             return configObject;
         }
 
-        throw new ConfigurationException($"Variables from '{sourceName}' must contain a top-level mapping.");
+        throw new ConfigurationException(
+            $"Variables from '{sourceName}' must contain a top-level mapping."
+        );
     }
 
     public static ConfigArray RequireArray(ConfigValue value, string sourceName)
@@ -81,6 +101,8 @@ public static class ConfigValueFactory
             return configArray;
         }
 
-        throw new ConfigurationException($"Role file '{sourceName}' must contain a top-level task list.");
+        throw new ConfigurationException(
+            $"Role file '{sourceName}' must contain a top-level task list."
+        );
     }
 }

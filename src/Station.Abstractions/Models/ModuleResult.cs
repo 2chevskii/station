@@ -7,7 +7,8 @@ public sealed record ModuleResult(
     bool Failed = false,
     bool Skipped = false,
     string? Message = null,
-    JsonObject? Outputs = null)
+    JsonObject? Outputs = null
+)
 {
     public JsonObject OutputsOrEmpty => Outputs ?? [];
 

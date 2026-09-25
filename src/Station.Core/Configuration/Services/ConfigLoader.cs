@@ -17,9 +17,7 @@ public sealed class ConfigLoader
     private readonly YamlConfigurationReader yamlReader;
 
     public ConfigLoader()
-        : this(new ScribanTemplateRenderer())
-    {
-    }
+        : this(new ScribanTemplateRenderer()) { }
 
     internal ConfigLoader(ITemplateEngine templateEngine)
     {
@@ -40,18 +38,25 @@ public sealed class ConfigLoader
         variableScopeLoader = new VariableScopeLoader(artifactResolver, variableLoaders);
         taskLoader = new TaskLoader(templateEngine, artifactResolver, roleLoaders);
         pluginDeclarationParser = new PluginDeclarationParser();
-        pluginManifestLoader = new PluginManifestLoader(yamlReader, (ConfigArtifactResolver)artifactResolver, configTreeDiscovery);
+        pluginManifestLoader = new PluginManifestLoader(
+            yamlReader,
+            (ConfigArtifactResolver)artifactResolver,
+            configTreeDiscovery
+        );
         localDiscovery = new LocalConfigurationDiscovery();
     }
 
     public LoadedConfiguration Load(
         string configRoot,
-        IReadOnlyDictionary<string, string>? cliVariables = null)
+        IReadOnlyDictionary<string, string>? cliVariables = null
+    )
     {
         var tree = configTreeDiscovery.Discover(configRoot);
         if (tree.RootManifest is null)
         {
-            throw new ConfigurationException($"Missing root manifest '{Path.Combine(Path.GetFullPath(configRoot), "station.yaml")}'.");
+            throw new ConfigurationException(
+                $"Missing root manifest '{Path.Combine(Path.GetFullPath(configRoot), "station.yaml")}'."
+            );
         }
 
         var manifestPath = tree.RootManifest.FullPath;
@@ -80,9 +85,7 @@ public sealed class ConfigLoader
         );
     }
 
-    public IReadOnlyList<LoadedTask> LoadRoleTasks(
-        ResolvedRole role,
-        VariableSet rootVariables)
+    public IReadOnlyList<LoadedTask> LoadRoleTasks(ResolvedRole role, VariableSet rootVariables)
     {
         return taskLoader.LoadRoleTasks(
             role,
@@ -108,7 +111,8 @@ internal static class ConfigLoaderValueHelpers
     public static IReadOnlyList<string> GetRequiredStringList(
         this IDictionary<string, object?> mapping,
         string propertyName,
-        string sourceName)
+        string sourceName
+    )
     {
         var values = mapping.GetOptionalList(propertyName);
         if (values is null || values.Count == 0)
@@ -127,7 +131,8 @@ internal static class ConfigLoaderValueHelpers
 
     public static IReadOnlyList<object?>? GetOptionalList(
         this IDictionary<string, object?> mapping,
-        string propertyName)
+        string propertyName
+    )
     {
         if (!mapping.TryGetValue(propertyName, out var value) || value is null)
         {
@@ -141,7 +146,8 @@ internal static class ConfigLoaderValueHelpers
 
     public static IDictionary<string, object?>? GetOptionalMapping(
         this IDictionary<string, object?> mapping,
-        string propertyName)
+        string propertyName
+    )
     {
         if (!mapping.TryGetValue(propertyName, out var value) || value is null)
         {
@@ -155,7 +161,8 @@ internal static class ConfigLoaderValueHelpers
     public static string RequireString(
         this IDictionary<string, object?> mapping,
         string propertyName,
-        string sourceName)
+        string sourceName
+    )
     {
         if (
             !mapping.TryGetValue(propertyName, out var value)
@@ -172,12 +179,13 @@ internal static class ConfigLoaderValueHelpers
 
     public static string? GetOptionalString(
         this IDictionary<string, object?> mapping,
-        string propertyName)
+        string propertyName
+    )
     {
         return
             mapping.TryGetValue(propertyName, out var value)
             && !string.IsNullOrWhiteSpace(value?.ToString())
-                ? value!.ToString()
-                : null;
+            ? value!.ToString()
+            : null;
     }
 }

@@ -1,5 +1,4 @@
 using System.Text.Json;
-
 using Station.Abstractions.Interfaces;
 
 namespace Station.Abstractions.Models;
@@ -14,7 +13,9 @@ public sealed class VariableSet
     public ConfigObject Root { get; }
 
     public VariableSet CreateOverlay(ConfigObject? overlay) =>
-        overlay is null ? new VariableSet(Root) : new((ConfigObject)ConfigValueUtilities.Merge(Root, overlay));
+        overlay is null
+            ? new VariableSet(Root)
+            : new((ConfigObject)ConfigValueUtilities.Merge(Root, overlay));
 
     public bool Contains(string path) => TryGetRaw(path, out _);
 
@@ -54,7 +55,10 @@ public sealed class VariableSet
         ConfigValue current = Root;
         foreach (var segment in ConfigValueUtilities.SplitPath(path))
         {
-            if (current is not ConfigObject configObject || !configObject.TryGetValue(segment, out current))
+            if (
+                current is not ConfigObject configObject
+                || !configObject.TryGetValue(segment, out current)
+            )
             {
                 value = ConfigNull.Instance;
                 return false;
@@ -65,11 +69,14 @@ public sealed class VariableSet
         return true;
     }
 
-    public object? ToObjectGraph(ITemplateEngine? templateEngine = null, string? sourceName = null) =>
-        ConfigValueUtilities.ToObjectGraph(Root, this, templateEngine, sourceName);
+    public object? ToObjectGraph(
+        ITemplateEngine? templateEngine = null,
+        string? sourceName = null
+    ) => ConfigValueUtilities.ToObjectGraph(Root, this, templateEngine, sourceName);
 
     public IEnumerable<(string Path, ConfigValue Value)> EnumeratePaths() =>
-        ConfigValueUtilities.EnumeratePaths(Root)
+        ConfigValueUtilities
+            .EnumeratePaths(Root)
             .Where(static item => !string.IsNullOrWhiteSpace(item.Path));
 
     private static T? ConvertTo<T>(ConfigValue value)
@@ -79,7 +86,10 @@ public sealed class VariableSet
             return default;
         }
 
-        var objectGraph = ConfigValueUtilities.ToObjectGraph(value, new VariableSet(new ConfigObject()));
+        var objectGraph = ConfigValueUtilities.ToObjectGraph(
+            value,
+            new VariableSet(new ConfigObject())
+        );
         if (objectGraph is null)
         {
             return default;

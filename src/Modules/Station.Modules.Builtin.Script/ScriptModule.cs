@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
@@ -14,9 +13,7 @@ namespace Station.Modules.Builtin.Script;
 public sealed class ScriptModule : ConfigModule
 {
     public ScriptModule(ModuleContext context)
-        : base(context)
-    {
-    }
+        : base(context) { }
 
     [Parameter("path", Required = true)]
     public string ScriptPath { get; set; } = string.Empty;
@@ -27,7 +24,9 @@ public sealed class ScriptModule : ConfigModule
     [Parameter]
     public bool RequiresAdmin { get; set; }
 
-    public override ValueTask<ModuleInspectionResult> InspectAsync(CancellationToken cancellationToken)
+    public override ValueTask<ModuleInspectionResult> InspectAsync(
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -35,14 +34,20 @@ public sealed class ScriptModule : ConfigModule
             if (!File.Exists(scriptPath))
             {
                 return ValueTask.FromResult(
-                    ModuleInspectionResult.Failure(new ModuleDiagnostic($"Script '{scriptPath}' does not exist.")));
+                    ModuleInspectionResult.Failure(
+                        new ModuleDiagnostic($"Script '{scriptPath}' does not exist.")
+                    )
+                );
             }
 
             var runner = Runner.ToLowerInvariant();
             if (!CommandExists(runner))
             {
                 return ValueTask.FromResult(
-                    ModuleInspectionResult.Failure(new ModuleDiagnostic($"Runner '{runner}' is not available on PATH.")));
+                    ModuleInspectionResult.Failure(
+                        new ModuleDiagnostic($"Runner '{runner}' is not available on PATH.")
+                    )
+                );
             }
 
             var privilege = RequiresAdmin
@@ -53,7 +58,9 @@ public sealed class ScriptModule : ConfigModule
         }
         catch (ConfigurationException exception)
         {
-            return ValueTask.FromResult(ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message)));
+            return ValueTask.FromResult(
+                ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message))
+            );
         }
     }
 
@@ -64,7 +71,11 @@ public sealed class ScriptModule : ConfigModule
             var scriptPath = ResolveScriptPath();
             var requestPayload = CreatePayload();
             var requestFilePath = Path.GetTempFileName();
-            await File.WriteAllTextAsync(requestFilePath, requestPayload.ToJsonString(), cancellationToken);
+            await File.WriteAllTextAsync(
+                requestFilePath,
+                requestPayload.ToJsonString(),
+                cancellationToken
+            );
 
             try
             {
@@ -77,7 +88,8 @@ public sealed class ScriptModule : ConfigModule
                     {
                         ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath,
                     },
-                    cancellationToken);
+                    cancellationToken
+                );
                 if (result.ExitCode != 0)
                 {
                     return ModuleResult.Failure(SelectProcessError(result));
@@ -106,12 +118,15 @@ public sealed class ScriptModule : ConfigModule
         JsonObject payload;
         try
         {
-            payload = JsonNode.Parse(stdout)?.AsObject()
+            payload =
+                JsonNode.Parse(stdout)?.AsObject()
                 ?? throw new JsonException("Output was not a JSON object.");
         }
         catch (JsonException exception)
         {
-            return ModuleResult.Failure($"Script module returned invalid JSON: {exception.Message}");
+            return ModuleResult.Failure(
+                $"Script module returned invalid JSON: {exception.Message}"
+            );
         }
 
         var changed = payload["changed"]?.GetValue<bool>() ?? false;
@@ -129,10 +144,12 @@ public sealed class ScriptModule : ConfigModule
             ["mode"] = Context.Mode.ToString().ToLowerInvariant(),
             ["taskName"] = Context.TaskName,
             ["roleName"] = Context.RoleName,
-            ["variables"] = ConfigValueUtilities.ToJsonNode(
-                Context.Variables.Root,
-                Context.Variables,
-                Context.TemplateEngine) ?? new JsonObject(),
+            ["variables"] =
+                ConfigValueUtilities.ToJsonNode(
+                    Context.Variables.Root,
+                    Context.Variables,
+                    Context.TemplateEngine
+                ) ?? new JsonObject(),
         };
 
     private string ResolveScriptPath()
@@ -147,12 +164,12 @@ public sealed class ScriptModule : ConfigModule
         return fullPath;
     }
 
-    private static string SelectProcessError((int ExitCode, string StandardOutput, string StandardError) result) =>
-        !string.IsNullOrWhiteSpace(result.StandardError)
-            ? result.StandardError.Trim()
-            : !string.IsNullOrWhiteSpace(result.StandardOutput)
-                ? result.StandardOutput.Trim()
-                : "Script execution failed.";
+    private static string SelectProcessError(
+        (int ExitCode, string StandardOutput, string StandardError) result
+    ) =>
+        !string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardError.Trim()
+        : !string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardOutput.Trim()
+        : "Script execution failed.";
 
     private static bool CommandExists(string commandName)
     {
@@ -161,11 +178,15 @@ public sealed class ScriptModule : ConfigModule
             return false;
         }
 
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty)
-            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
+            Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
         var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1")
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
+                ';',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
             : [string.Empty];
 
         foreach (var directory in pathEntries)
@@ -192,7 +213,8 @@ public sealed class ScriptModule : ConfigModule
         IReadOnlyList<string> arguments,
         string workingDirectory,
         IReadOnlyDictionary<string, string?> environment,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var startInfo = new ProcessStartInfo
         {

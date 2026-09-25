@@ -10,10 +10,13 @@ public sealed class ProcessRunnerTests
     public async Task CommandExists_and_RunAsync_use_path_and_environment()
     {
         using var shims = new CommandShimScope();
-        var commandPath = shims.AddPowerShellCommand("echoargs", """
+        var commandPath = shims.AddPowerShellCommand(
+            "echoargs",
+            """
             Write-Output $env:TEST_VALUE
             Write-Output ($args -join ' ')
-            """);
+            """
+        );
 
         var runner = new ProcessRunner();
 
@@ -26,8 +29,10 @@ public sealed class ProcessRunnerTests
                 commandPath,
                 ["hello", "world"],
                 Environment.CurrentDirectory,
-                new Dictionary<string, string?> { ["TEST_VALUE"] = "value" }),
-            CancellationToken.None);
+                new Dictionary<string, string?> { ["TEST_VALUE"] = "value" }
+            ),
+            CancellationToken.None
+        );
 
         result.ExitCode.Should().Be(0);
         result.StandardOutput.Should().ContainAll("value", "hello world");

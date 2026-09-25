@@ -17,6 +17,8 @@ public sealed class JavaScriptRoleDocumentLoader : IRoleDocumentLoader
         kind == ConfigArtifactKind.RoleTasks
         && string.Equals(fileName, "role.js", StringComparison.OrdinalIgnoreCase);
 
-    public ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context) =>
-        runtime.LoadRoleTasks(artifact, context);
+    public ConfigArray LoadRoleTasks(
+        ResolvedConfigArtifact artifact,
+        ConfigEvaluationContext context
+    ) => runtime.LoadRoleTasks(artifact, context);
 }
