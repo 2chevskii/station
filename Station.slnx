@@ -1,9 +1,39 @@
 <Solution>
   <Folder Name="/common/">
     <File Path="Directory.Packages.props" />
+    <File Path="dotnet-tools.json" />
+    <File Path="global.json" />
+    <File Path="NuGet.Config" />
   </Folder>
-  <Folder Name="/examples/" />
-  <Folder Name="/misc/" />
+  <Folder Name="/examples/workstation/">
+    <File Path="examples/workstation/station.yaml" />
+  </Folder>
+  <Folder Name="/examples/workstation/roles/">
+    <File Path="examples/workstation/roles/git/defaults.yaml" />
+    <File Path="examples/workstation/roles/git/files/git/.gitignore_global" />
+    <File Path="examples/workstation/roles/git/role.yaml" />
+    <File Path="examples/workstation/roles/git/templates/git/.gitconfig.scriban" />
+    <File Path="examples/workstation/roles/jsexample/defaults.js" />
+    <File Path="examples/workstation/roles/jsexample/role.js" />
+    <File Path="examples/workstation/roles/shell/defaults.yaml" />
+    <File Path="examples/workstation/roles/shell/role.yaml" />
+    <File Path="examples/workstation/roles/shell/templates/powershell/Microsoft.PowerShell_profile.ps1.scriban" />
+    <File Path="examples/workstation/roles/shell/templates/starship/starship.toml.scriban" />
+    <File Path="examples/workstation/roles/terminal/defaults.yaml" />
+    <File Path="examples/workstation/roles/terminal/role.yaml" />
+    <File Path="examples/workstation/roles/terminal/templates/windows-terminal/settings.json.scriban" />
+  </Folder>
+  <Folder Name="/examples/workstation/vars/">
+    <File Path="examples/workstation/vars/00-common.yaml" />
+    <File Path="examples/workstation/vars/10-workstation.yaml" />
+  </Folder>
+
+  <Folder Name="/misc/">
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="README.md" />
+    <File Path="schema.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Station.Abstractions/Station.Abstractions.csproj" />
     <Project Path="src/Station.Configuration.Abstractions/Station.Configuration.Abstractions.csproj" />
