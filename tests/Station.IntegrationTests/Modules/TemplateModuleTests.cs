@@ -1,8 +1,9 @@
 using FluentAssertions;
+
+using Station.Abstractions.Artifacts;
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
 using Station.Modules.Builtin.Dotfile;
 using Station.Testing;
 
@@ -16,32 +17,36 @@ public sealed class TemplateModuleTests
     public async Task Execute_is_idempotent_for_template_module()
     {
         using var directory = new TemporaryDirectory();
-        var templatePath = directory.GetPath("role", "templates", "app.scriban");
+        var templatePath = directory.GetPath( "role", "templates", "app.scriban" );
         templatePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        await templatePath.AsAbsolutePath().WriteAllTextAsync("hello {{ name }}");
+        await templatePath.AsAbsolutePath().WriteAllTextAsync( "hello {{ name }}" );
         var variables = new VariableSet(
             new ConfigObject(
-                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String( "Alice" ) }
             )
         );
         var engine = new TestTemplateEngine();
         var artifacts = new ModuleArtifactSet(
-            new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, ManagedFile>( StringComparer.OrdinalIgnoreCase ),
+            new Dictionary<string, ManagedTemplate>( StringComparer.OrdinalIgnoreCase )
             {
-                ["app.scriban"] = new("app.scriban", templatePath, variables, engine),
+                ["app.scriban"] = new ManagedTemplate(
+                    "app.scriban",
+                    templatePath,
+                    variables,
+                    engine ),
             },
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>( StringComparer.OrdinalIgnoreCase )
             {
-                ["app"] = [new ManagedTemplate("app.scriban", templatePath, variables, engine)],
+                ["app"] = [new ManagedTemplate( "app.scriban", templatePath, variables, engine )],
             }
         );
-        var destination = directory.GetPath("out.txt");
+        var destination = directory.GetPath( "out.txt" );
 
         var checkModule = new TemplateModule(
             TestModuleContextFactory.Create(
                 directory.Path,
-                directory.GetPath("role"),
+                directory.GetPath( "role" ),
                 variables,
                 artifacts,
                 engine,
@@ -55,7 +60,7 @@ public sealed class TemplateModuleTests
         var applyModule = new TemplateModule(
             TestModuleContextFactory.Create(
                 directory.Path,
-                directory.GetPath("role"),
+                directory.GetPath( "role" ),
                 variables,
                 artifacts,
                 engine
@@ -66,48 +71,48 @@ public sealed class TemplateModuleTests
             Destination = destination,
         };
 
-        (await checkModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await applyModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await destination.AsAbsolutePath().ReadAllTextAsync()).Should().Be("hello Alice");
-        (await checkModule.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
+        (await checkModule.ExecuteAsync( CancellationToken.None )).Changed.Should().BeTrue();
+        (await applyModule.ExecuteAsync( CancellationToken.None )).Changed.Should().BeTrue();
+        (await destination.AsAbsolutePath().ReadAllTextAsync()).Should().Be( "hello Alice" );
+        (await checkModule.ExecuteAsync( CancellationToken.None )).Changed.Should().BeFalse();
     }
 
     [Fact]
     public async Task Execute_creates_backup_when_content_changes()
     {
         using var directory = new TemporaryDirectory();
-        var templatePath = directory.GetPath("role", "templates", "app.scriban");
+        var templatePath = directory.GetPath( "role", "templates", "app.scriban" );
         templatePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        await templatePath.AsAbsolutePath().WriteAllTextAsync("hello {{ name }}");
+        await templatePath.AsAbsolutePath().WriteAllTextAsync( "hello {{ name }}" );
         var variables = new VariableSet(
             new ConfigObject(
-                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String( "Alice" ) }
             )
         );
         var engine = new TestTemplateEngine();
-        var template = new ManagedTemplate("app.scriban", templatePath, variables, engine);
+        var template = new ManagedTemplate( "app.scriban", templatePath, variables, engine );
         var artifacts = new ModuleArtifactSet(
-            new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, ManagedFile>( StringComparer.OrdinalIgnoreCase ),
+            new Dictionary<string, ManagedTemplate>( StringComparer.OrdinalIgnoreCase )
             {
                 ["app.scriban"] = template,
             },
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>( StringComparer.OrdinalIgnoreCase )
             {
                 ["app"] = [template],
             }
         );
-        var destination = directory.GetPath("out.txt");
-        await destination.AsAbsolutePath().WriteAllTextAsync("old");
+        var destination = directory.GetPath( "out.txt" );
+        await destination.AsAbsolutePath().WriteAllTextAsync( "old" );
         var module = new TemplateModule(
             TestModuleContextFactory.Create(
                 directory.Path,
-                directory.GetPath("role"),
+                directory.GetPath( "role" ),
                 variables,
                 artifacts,
                 engine,
                 timeProvider: new FakeTimeProvider(
-                    new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero)
+                    new DateTimeOffset( 2026, 4, 12, 9, 10, 11, TimeSpan.Zero )
                 )
             )
         )
@@ -117,7 +122,7 @@ public sealed class TemplateModuleTests
             Backup = true,
         };
 
-        var result = await module.ExecuteAsync(CancellationToken.None);
+        var result = await module.ExecuteAsync( CancellationToken.None );
 
         result.Changed.Should().BeTrue();
         (destination + ".bak.20260412091011").AsAbsolutePath().ExistsFile().Should().BeTrue();

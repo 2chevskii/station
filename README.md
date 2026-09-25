@@ -118,14 +118,17 @@ station check        --config <dir> [--set key=value ...] [--plugin-cache-dir <p
 station apply        --config <dir> [--set key=value ...] [--plugin-cache-dir <path>]
 ```
 
-- `restore` resolves plugin requirements and caches remote and local archive plugins under `<root>/.station/plugin_cache/<manifest.name>/<manifest.version>/`
+- `restore` resolves plugin requirements and caches remote and local archive plugins under
+  `<root>/.station/plugin_cache/<manifest.name>/<manifest.version>/`
 - `explain` prints an ASCII plan of tasks, bound parameters, and currently visible variables
-- `list roles` and `list modules` restore declared plugins and show all available names, descriptions, and sources without running tasks
+- `list roles` and `list modules` restore declared plugins and show all available names,
+  descriptions, and sources without running tasks
 - `validate` restores plugins if needed, resolves roles/modules, and runs inspection
 - `check` performs the same validation and runs dry-run execution
 - `apply` mutates the machine in declared order
 
-`Station.Core` groups configuration, execution, and plugin restoration by responsibility. Plugin source strategies live under `Station.Plugins/Providers`.
+`Station.Core` groups configuration, execution, and plugin restoration by responsibility. Plugin
+source strategies live under `Station.Plugins/Providers`.
 
 ## Config root
 
@@ -152,7 +155,8 @@ plugins/
   my_plugin.zip
 ```
 
-`station.yaml` is currently the YAML serialization of the in-memory root config object. The internal model is format-agnostic, so YAML is only the first supported authoring format.
+`station.yaml` is currently the YAML serialization of the in-memory root config object. The internal
+model is format-agnostic, so YAML is only the first supported authoring format.
 
 Top-level fields:
 
@@ -161,7 +165,9 @@ Top-level fields:
 - `vars`: mapping of root variable overrides
 - `tasks`: ordered root-level tasks that run before roles
 
-A role may declare `description` in an object-form `role.yaml`. Listing shows `—` when a role has no description. Module descriptions come from `[Module]` attributes. Sources identify the provider and the role directory or module assembly.
+A role may declare `description` in an object-form `role.yaml`. Listing shows `—` when a role has no
+description. Module descriptions come from `[Module]` attributes. Sources identify the provider and
+the role directory or module assembly.
 
 Example:
 
@@ -226,7 +232,8 @@ Supported files/directories today:
     destination: C:\Users\demo\.gitignore_global
 ```
 
-It can also be an object with a required `tasks` list, an optional `description`, and optional `defaults`:
+It can also be an object with a required `tasks` list, an optional `description`, and optional
+`defaults`:
 
 ```yaml
 description: Configure Git preferences.
@@ -238,7 +245,8 @@ tasks:
       destination: "{{ git_config_path }}"
 ```
 
-Inline `defaults` merge with `defaults.yaml` and take precedence over matching values in that file. Root variables and their overrides retain higher precedence.
+Inline `defaults` merge with `defaults.yaml` and take precedence over matching values in that file.
+Root variables and their overrides retain higher precedence.
 
 Rules:
 
@@ -252,7 +260,8 @@ Rules:
 - module parameters are declared with `[Parameter]` attributes and validated before execution
 - variable scopes remain typed in memory; environment and CLI overrides are added as string overlays
 - string values in config and templates use Scriban syntax such as `{{ user_name }}`
-- templates live under `templates/` and are addressed by logical name; `template: git/.gitconfig` resolves `templates/git/.gitconfig.scriban|.sbn`
+- templates live under `templates/` and are addressed by logical name; `template: git/.gitconfig`
+  resolves `templates/git/.gitconfig.scriban|.sbn`
 - files and templates in a role override artifacts with the same logical name from the config root
 
 ## Modules
@@ -302,9 +311,12 @@ Rules:
 
 - `name` is the provider namespace
 - `roles` contains short names
-- `modules` selects public `ConfigModule` types with `<assembly path relative to plugin root>:<fully qualified type name>`; several entries may select types from one DLL
+- `modules` selects public `ConfigModule` types with
+  `<assembly path relative to plugin root>:<fully qualified type name>`; several entries may select
+  types from one DLL
 - the module's short name comes from its `[Module]` attribute
-- legacy short module entries still resolve `modules/<ModuleName>/<ModuleName>.dll` when that DLL contains one module type
+- legacy short module entries still resolve `modules/<ModuleName>/<ModuleName>.dll` when that DLL
+  contains one module type
 - exported role path: `roles/<RoleName>/role.yaml`
 - exported module assembly must exist inside the plugin root
 - if both manifest extensions exist, loading fails
@@ -313,7 +325,8 @@ Rules:
 ### Plugin providers
 
 Supported requirement styles.
-Internally, plugin restore is implemented through provider strategies rather than a central provider enum switch:
+Internally, plugin restore is implemented through provider strategies rather than a central provider
+enum switch:
 
 Local:
 
@@ -371,17 +384,24 @@ Remote and local archive plugins are restored into:
 <root>/.station/plugin_cache/<manifest.name>/<manifest.version>/<plugin contents>
 ```
 
-Set `vars.plugin_cache_dir` in `station.yaml`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR` in the environment, or `--plugin-cache-dir <path>` to change the cache root. `--set plugin_cache_dir=<path>` also works. A relative path is resolved from the config root. The priority is command-line flag, `--set`, environment variable, then configuration variables. Local plugin directories are used directly and are unaffected.
+Set `vars.plugin_cache_dir` in `station.yaml`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR` in the
+environment, or `--plugin-cache-dir <path>` to change the cache root.
+`--set plugin_cache_dir=<path>` also works. A relative path is resolved from the config root. The
+priority is command-line flag, `--set`, environment variable, then configuration variables. Local
+plugin directories are used directly and are unaffected.
 
 ## Test architecture
 
 - `tests/Station.UnitTests` contains fast public-surface unit tests on xUnit v3 + MTP v2
-- `tests/Station.IntegrationTests` exercises the CLI, engine, plugin restore, modules, and process integration
+- `tests/Station.IntegrationTests` exercises the CLI, engine, plugin restore, modules, and process
+  integration
 - `tests/Station.Testing` contains shared helpers and isolation fixtures
 - assertions use FluentAssertions
-- integration tests use temporary directories, local HTTP fixtures, and explicit command shims so they do not depend on the real workstation filesystem or real `winget`/`scoop`/`wsl` executables
+- integration tests use temporary directories, local HTTP fixtures, and explicit command shims so
+  they do not depend on the real workstation filesystem or real `winget`/`scoop`/`wsl` executables
 - GitHub Actions publishes Cobertura coverage, HTML coverage output, TRX, and CTRF JSON artifacts
 
 ## Example root
 
-See [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation) for a sample config root that matches the current target structure.
+See [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation)
+for a sample config root that matches the current target structure.

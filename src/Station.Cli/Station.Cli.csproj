@@ -1,24 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference
-      Include="..\Station.Core\Station.Core.csproj"
-      SkipGetTargetFrameworkProperties="true"
-    />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference
+                Include="..\Station.Core\Station.Core.csproj"
+                SkipGetTargetFrameworkProperties="true"
+        />
+    </ItemGroup>
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <UseAppHost>false</UseAppHost>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <UseAppHost>false</UseAppHost>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="System.CommandLine" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="TruePath" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Spectre.Console"/>
+        <PackageReference Include="System.CommandLine"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="TruePath"/>
+    </ItemGroup>
 </Project>

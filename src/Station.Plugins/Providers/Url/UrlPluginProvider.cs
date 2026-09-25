@@ -17,11 +17,11 @@ internal sealed class UrlPluginProvider : IPluginProvider
         CancellationToken cancellationToken
     )
     {
-        return infrastructure.StageAsync(async tempRoot =>
+        return infrastructure.StageAsync( async tempRoot =>
         {
             var archivePath = (
                 tempRoot.AsAbsolutePath()
-                / new Uri(requirement.Url!).AbsolutePath.AsLocalPath().FileName
+                / new Uri( requirement.Url! ).AbsolutePath.AsLocalPath().FileName
             ).Value;
             await infrastructure.DownloadFileAsync(
                 requirement.Url!,
@@ -30,9 +30,9 @@ internal sealed class UrlPluginProvider : IPluginProvider
             );
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive(archivePath, extractRoot);
+            infrastructure.ExtractArchive( archivePath, extractRoot );
             return extractRoot;
-        });
+        } );
     }
 
     public RestoredPluginLocation Restore(
@@ -41,8 +41,6 @@ internal sealed class UrlPluginProvider : IPluginProvider
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
-    )
-    {
-        return infrastructure.RestoreToCache(configRoot, requirement, source, log);
-    }
+    ) =>
+        infrastructure.RestoreToCache( configRoot, requirement, source, log );
 }

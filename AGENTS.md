@@ -1,11 +1,13 @@
 # AGENTS
 
-This repository contains `Station`, a local desired-state workstation configuration tool implemented in .NET.
+This repository contains `Station`, a local desired-state workstation configuration tool implemented
+in .NET.
 
 ## Current architecture
 
 - `Station.Abstractions`
-  Shared contracts and path conversion helpers. Module projects are allowed to depend on this project.
+  Shared contracts and path conversion helpers. Module projects are allowed to depend on this
+  project.
 - `Station.Core`
   Orchestration plus internal `Configuration`, `Execution`, and plugin manifest validation.
   Group related records, contracts, and behavior by domain responsibility. Keep discovery,
@@ -14,17 +16,20 @@ This repository contains `Station`, a local desired-state workstation configurat
 - `Station.Plugins.Abstractions`
   Plugin requirement and manifest document contracts shared by Core and plugin restoration.
 - `Station.Plugins`
-  Plugin source restoration, caching, and provider implementations. This project must not depend on Core.
+  Plugin source restoration, caching, and provider implementations. This project must not depend on
+  Core.
 - `Station.Utilities`
   Shared process execution used by Core and Plugins.
 - `Station.Configuration.Abstractions`
-  Shared configuration document contracts, artifact records, and value conversion used by format loaders and Core.
+  Shared configuration document contracts, artifact records, and value conversion used by format
+  loaders and Core.
 - `Station.Configuration.Yaml`
   YAML document loading and Scriban template rendering.
 - `Station.Configuration.JavaScript`
   JavaScript document loading and runtime.
 - `Station.Modules.*`
-  Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on `Station.Core`.
+  Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on
+  `Station.Core`.
 - `Station.Cli`
   Thin command-line frontend.
 
@@ -34,23 +39,27 @@ This repository contains `Station`, a local desired-state workstation configurat
 - Do not reintroduce task-level `target` into core execution.
 - Do not move builtin modules back into `Core`.
 - Do not run modifying git operations in parallel.
-  This includes commands such as `git add`, `git commit`, `git mv`, `git rm`, `git checkout`, `git switch`, and similar index- or ref-mutating operations.
+  This includes commands such as `git add`, `git commit`, `git mv`, `git rm`, `git checkout`,
+  `git switch`, and similar index- or ref-mutating operations.
   Run those sequentially to avoid `index.lock` races.
-- Do not run `dotnet build`, `dotnet test`, or `dotnet restore` in parallel on overlapping or transitively related projects.
+- Do not run `dotnet build`, `dotnet test`, or `dotnet restore` in parallel on overlapping or
+  transitively related projects.
   Build/test/restore commands may race on shared `obj/` and `bin/` outputs or on restore state.
-  Run them sequentially whenever the target projects share dependencies, outputs, or a common solution graph.
+  Run them sequentially whenever the target projects share dependencies, outputs, or a common
+  solution graph.
 - Keep the task model Ansible-like:
-  - optional `name`
-  - exactly one module key at task root
-  - module parameters nested under that key
-- Keep the in-memory .NET object model as the source of truth. YAML is only one serialization format.
+    - optional `name`
+    - exactly one module key at task root
+    - module parameters nested under that key
+- Keep the in-memory .NET object model as the source of truth. YAML is only one serialization
+  format.
 - Plugin identity comes from `manifest.yaml|yml`, not from the requirement string.
 - Keep plugin restore provider-specific behavior behind separate provider implementations.
 - Keep large loaders split by responsibility. Do not collapse `ConfigLoader` back into a monolith.
 - Role/module resolution rules:
-  - every artifact has an FQN
-  - short names are convenience only when unambiguous
-  - role and module namespaces are separate
+    - every artifact has an FQN
+    - short names are convenience only when unambiguous
+    - role and module namespaces are separate
 
 ## Config model
 
@@ -64,7 +73,8 @@ Root config currently supports:
 Role layout currently supports:
 
 - `defaults.yaml`
-- `role.yaml` as a task array or an object with required `tasks` and optional `description` and `defaults`
+- `role.yaml` as a task array or an object with required `tasks` and optional `description` and
+  `defaults`
 - `files/`
 - `templates/`
 
@@ -87,7 +97,8 @@ roles/<RoleName>/role.yaml
 modules/<ModuleName>/<ModuleName>.dll
 ```
 
-Plugin manifests may also export modules as `<relative assembly path>:<fully qualified type name>`, including multiple types from one DLL. The module name comes from `[Module]`.
+Plugin manifests may also export modules as `<relative assembly path>:<fully qualified type name>`,
+including multiple types from one DLL. The module name comes from `[Module]`.
 
 ## Plugin restore
 
@@ -105,7 +116,9 @@ Remote and local archive plugins are cached under:
 <root>/.station/plugin_cache/<manifest.name>/<manifest.version>/<plugin contents>
 ```
 
-The cache root can be overridden by `vars.plugin_cache_dir`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR`, `--set plugin_cache_dir=<path>`, or `--plugin-cache-dir <path>` in that precedence order from lowest to highest. Relative paths resolve from the config root.
+The cache root can be overridden by `vars.plugin_cache_dir`, `CONFIG_TOOL_VAR_PLUGIN_CACHE_DIR`,
+`--set plugin_cache_dir=<path>`, or `--plugin-cache-dir <path>` in that precedence order from lowest
+to highest. Relative paths resolve from the config root.
 
 `restore` is explicit in CLI, and `validate/check/apply` perform implicit restore.
 
@@ -114,7 +127,8 @@ The cache root can be overridden by `vars.plugin_cache_dir`, `CONFIG_TOOL_VAR_PL
 - Modules are declared with `[Module]` attributes, not descriptor properties.
 - Module parameters are declared with `[Parameter]` attributes and bound by the engine.
 - Modules receive constructor-injected `ModuleContext`.
-- Builtin file-oriented modules are `copy` and `template`; do not reintroduce the old `dotfile` module.
+- Builtin file-oriented modules are `copy` and `template`; do not reintroduce the old `dotfile`
+  module.
 
 ## Verification expectations
 
@@ -140,4 +154,5 @@ dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config exampl
 
 ## Example root
 
-Use [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation) as the canonical example of the current target config structure.
+Use [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation)
+as the canonical example of the current target config structure.

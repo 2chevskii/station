@@ -1,9 +1,9 @@
 namespace Station.Abstractions.Modules;
 
-[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+[AttributeUsage( AttributeTargets.Class, Inherited = false )]
 public sealed class ModuleAttribute : Attribute
 {
-    public ModuleAttribute(string name, string? description = null)
+    public ModuleAttribute( string name, string? description = null )
     {
         Name = name;
         Description = description;

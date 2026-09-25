@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <IsPackable>true</IsPackable>
-    <PackageId>Station.Abstractions</PackageId>
-    <Description>Abstractions for station modules.</Description>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="TruePath" />
-    <PackageReference Include="TruePath.SystemIo" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>true</IsPackable>
+        <PackageId>Station.Abstractions</PackageId>
+        <Description>Abstractions for station modules.</Description>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="TruePath"/>
+        <PackageReference Include="TruePath.SystemIo"/>
+    </ItemGroup>
 </Project>

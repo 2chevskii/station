@@ -1,8 +1,11 @@
 using System.Diagnostics;
+
 using FluentAssertions;
+
 using Station.Abstractions.FileSystem;
 using Station.Cli;
 using Station.Testing;
+
 using TruePath;
 using TruePath.SystemIo;
 
@@ -13,12 +16,12 @@ public sealed class ProgramTests
     [Fact]
     public async Task Help_command_returns_zero_and_lists_commands()
     {
-        var result = await RunCliAsync("--help");
+        var result = await RunCliAsync( "--help" );
 
-        result.ExitCode.Should().Be(0);
+        result.ExitCode.Should().Be( 0 );
         result
             .StandardOutput.Should()
-            .ContainAll("restore", "explain", "list", "validate", "check", "apply");
+            .ContainAll( "restore", "explain", "list", "validate", "check", "apply" );
     }
 
     [Fact]
@@ -26,11 +29,11 @@ public sealed class ProgramTests
     {
         var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync("explain", "--config", configRoot);
+        var result = await RunCliAsync( "explain", "--config", configRoot );
 
-        result.ExitCode.Should().Be(0);
-        result.StandardOutput.Should().Contain("station");
-        result.StandardOutput.Should().Contain("tasks");
+        result.ExitCode.Should().Be( 0 );
+        result.StandardOutput.Should().Contain( "station" );
+        result.StandardOutput.Should().Contain( "tasks" );
     }
 
     [Fact]
@@ -38,15 +41,12 @@ public sealed class ProgramTests
     {
         var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync("list", "roles", "--config", configRoot);
+        var result = await RunCliAsync( "list", "roles", "--config", configRoot );
 
-        result.ExitCode.Should().Be(0);
-        result.StandardOutput.Should().ContainAll(
-            "station.local.git",
-            "Configures Git",
-            "preferences and user",
-            "Source"
-        );
+        result.ExitCode.Should().Be( 0 );
+        result
+            .StandardOutput.Should()
+            .ContainAll( "station.local.git", "Configures Git", "preferences and user", "Source" );
     }
 
     [Fact]
@@ -54,14 +54,12 @@ public sealed class ProgramTests
     {
         var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync("list", "modules", "--config", configRoot);
+        var result = await RunCliAsync( "list", "modules", "--config", configRoot );
 
-        result.ExitCode.Should().Be(0);
-        result.StandardOutput.Should().ContainAll(
-            "station.builtin.copy",
-            "Copies a file",
-            "station.builtin"
-        );
+        result.ExitCode.Should().Be( 0 );
+        result
+            .StandardOutput.Should()
+            .ContainAll( "station.builtin.copy", "Copies a file", "station.builtin" );
     }
 
     [Fact]
@@ -75,11 +73,11 @@ public sealed class ProgramTests
             "archive.plugin",
             "plugin-role"
         );
-        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        var archivePath = directory.GetPath( "plugins", "demo_plugin.zip" );
         archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n");
-        var cacheDirectory = directory.GetPath("external-cache");
+        ArchiveBuilder.CreateZip( pluginRoot, archivePath );
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n" );
+        var cacheDirectory = directory.GetPath( "external-cache" );
 
         var result = await RunCliAsync(
             "restore",
@@ -89,18 +87,22 @@ public sealed class ProgramTests
             cacheDirectory
         );
 
-        result.ExitCode.Should().Be(0);
-        directory.GetPath("external-cache", "archive.plugin", "1.0.0", "manifest.yaml")
-            .AsAbsolutePath().ExistsFile().Should().BeTrue();
+        result.ExitCode.Should().Be( 0 );
+        directory
+            .GetPath( "external-cache", "archive.plugin", "1.0.0", "manifest.yaml" )
+            .AsAbsolutePath()
+            .ExistsFile()
+            .Should()
+            .BeTrue();
     }
 
     private static async Task<(
         int ExitCode,
         string StandardOutput,
         string StandardError
-    )> RunCliAsync(params string[] arguments)
+        )> RunCliAsync( params string[] arguments )
     {
-        var stationCliAssembly = typeof(StationConsole).Assembly.Location;
+        var stationCliAssembly = typeof( StationConsole ).Assembly.Location;
         var startInfo = new ProcessStartInfo
         {
             FileName = "dotnet",
@@ -109,13 +111,11 @@ public sealed class ProgramTests
             UseShellExecute = false,
             WorkingDirectory = FindRepositoryRoot(),
         };
-        startInfo.ArgumentList.Add(stationCliAssembly);
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
+        startInfo.ArgumentList.Add( stationCliAssembly );
+        foreach ( var argument in arguments )
+            startInfo.ArgumentList.Add( argument );
 
-        using var process = Process.Start(startInfo)!;
+        using var process = Process.Start( startInfo )!;
         var stdoutTask = process.StandardOutput.ReadToEndAsync();
         var stderrTask = process.StandardError.ReadToEndAsync();
         await process.WaitForExitAsync();
@@ -125,12 +125,10 @@ public sealed class ProgramTests
     private static string FindRepositoryRoot()
     {
         AbsolutePath? directory = AppContext.BaseDirectory.AsAbsolutePath();
-        while (directory is { } current && !(current / "Station.slnx").ExistsFile())
-        {
+        while ( directory is { } current && !(current / "Station.slnx").ExistsFile() )
             directory = current.Parent;
-        }
 
         return directory?.Value
-            ?? throw new InvalidOperationException("Could not locate the repository root.");
+               ?? throw new InvalidOperationException( "Could not locate the repository root." );
     }
 }

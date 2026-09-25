@@ -2,7 +2,7 @@ namespace Station.Abstractions.Modules;
 
 public abstract class ConfigModule
 {
-    protected ConfigModule(ModuleContext context)
+    protected ConfigModule( ModuleContext context )
     {
         Context = context;
     }
@@ -11,7 +11,7 @@ public abstract class ConfigModule
 
     public virtual ValueTask<ModuleInspectionResult> InspectAsync(
         CancellationToken cancellationToken
-    ) => ValueTask.FromResult(ModuleInspectionResult.Success());
+    ) => ValueTask.FromResult( ModuleInspectionResult.Success() );
 
-    public abstract ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken);
+    public abstract ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken );
 }

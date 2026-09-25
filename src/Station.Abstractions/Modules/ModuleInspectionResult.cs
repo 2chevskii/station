@@ -7,11 +7,12 @@ public sealed record ModuleInspectionResult(
 {
     public static ModuleInspectionResult Success(
         PrivilegeRequirement requiredPrivilege = PrivilegeRequirement.User
-    ) => new(requiredPrivilege, Array.Empty<ModuleDiagnostic>());
+    ) =>
+        new ModuleInspectionResult( requiredPrivilege, Array.Empty<ModuleDiagnostic>() );
 
-    public static ModuleInspectionResult Failure(params ModuleDiagnostic[] diagnostics) =>
-        new(PrivilegeRequirement.User, diagnostics);
+    public static ModuleInspectionResult Failure( params ModuleDiagnostic[] diagnostics ) =>
+        new ModuleInspectionResult( PrivilegeRequirement.User, diagnostics );
 
     public bool IsValid =>
-        Diagnostics.All(static diagnostic => diagnostic.Severity != DiagnosticSeverity.Error);
+        Diagnostics.All( static diagnostic => diagnostic.Severity != DiagnosticSeverity.Error );
 }

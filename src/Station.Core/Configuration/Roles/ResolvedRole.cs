@@ -1,4 +1,5 @@
 using Station.Core.Configuration.Discovery;
+
 namespace Station.Core.Configuration.Roles;
 
 public sealed record ResolvedRole(

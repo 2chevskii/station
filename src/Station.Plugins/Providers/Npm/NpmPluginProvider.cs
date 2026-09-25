@@ -21,47 +21,41 @@ internal sealed class NpmPluginProvider : IPluginProvider
         CancellationToken cancellationToken
     )
     {
-        var registry = string.IsNullOrWhiteSpace(requirement.Registry)
+        var registry = string.IsNullOrWhiteSpace( requirement.Registry )
             ? "https://registry.npmjs.org/"
             : requirement.Registry!;
 
-        return infrastructure.StageAsync(async tempRoot =>
+        return infrastructure.StageAsync( async tempRoot =>
         {
-            var metadataUrl = $"{registry.TrimEnd('/')}/{Uri.EscapeDataString(requirement.Id!)}";
-            var metadata = await GetMetadataAsync(metadataUrl, cancellationToken);
+            var metadataUrl = $"{registry.TrimEnd( '/' )}/{Uri.EscapeDataString( requirement.Id! )}";
+            var metadata = await GetMetadataAsync( metadataUrl, cancellationToken );
 
             var resolvedVersion = requirement.Version;
-            if (string.IsNullOrWhiteSpace(resolvedVersion))
-            {
+            if ( string.IsNullOrWhiteSpace( resolvedVersion ) )
                 resolvedVersion = metadata["dist-tags"]?["latest"]?.GetValue<string>();
-            }
 
-            if (string.IsNullOrWhiteSpace(resolvedVersion))
-            {
+            if ( string.IsNullOrWhiteSpace( resolvedVersion ) )
                 throw new ConfigurationException(
                     $"npm registry '{registry}' did not resolve a version for package '{requirement.Id}'."
                 );
-            }
 
             var tarballUrl = metadata["versions"]
                 ?[resolvedVersion]?["dist"]?["tarball"]?.GetValue<string>();
-            if (string.IsNullOrWhiteSpace(tarballUrl))
-            {
+            if ( string.IsNullOrWhiteSpace( tarballUrl ) )
                 throw new ConfigurationException(
                     $"npm registry '{registry}' did not return a tarball URL for '{requirement.Id}@{resolvedVersion}'."
                 );
-            }
 
             var archivePath = (
-                tempRoot.AsAbsolutePath() / new Uri(tarballUrl).AbsolutePath.AsLocalPath().FileName
+                tempRoot.AsAbsolutePath() / new Uri( tarballUrl ).AbsolutePath.AsLocalPath().FileName
             ).Value;
-            await infrastructure.DownloadFileAsync(tarballUrl, archivePath, cancellationToken);
+            await infrastructure.DownloadFileAsync( tarballUrl, archivePath, cancellationToken );
 
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive(archivePath, extractRoot);
+            infrastructure.ExtractArchive( archivePath, extractRoot );
             return extractRoot;
-        });
+        } );
     }
 
     public RestoredPluginLocation Restore(
@@ -72,7 +66,7 @@ internal sealed class NpmPluginProvider : IPluginProvider
         Action<string>? log
     )
     {
-        var registry = string.IsNullOrWhiteSpace(requirement.Registry)
+        var registry = string.IsNullOrWhiteSpace( requirement.Registry )
             ? "https://registry.npmjs.org/"
             : requirement.Registry!;
         return infrastructure.RestoreToCache(
@@ -92,9 +86,9 @@ internal sealed class NpmPluginProvider : IPluginProvider
     )
     {
         using var client = new HttpClient();
-        return await client.GetFromJsonAsync<JsonObject>(metadataUrl, cancellationToken)
-            ?? throw new ConfigurationException(
-                $"npm registry returned an empty metadata document for '{metadataUrl}'."
-            );
+        return await client.GetFromJsonAsync<JsonObject>( metadataUrl, cancellationToken )
+               ?? throw new ConfigurationException(
+                   $"npm registry returned an empty metadata document for '{metadataUrl}'."
+               );
     }
 }

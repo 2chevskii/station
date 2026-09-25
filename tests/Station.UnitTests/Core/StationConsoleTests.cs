@@ -1,5 +1,7 @@
 using FluentAssertions;
+
 using Spectre.Console.Testing;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.Modules;
 using Station.Cli;
@@ -14,9 +16,9 @@ public sealed class StationConsoleTests
     [Fact]
     public void WriteResult_renders_status_tasks_stats_and_diagnostics()
     {
-        var standard = new TestConsole().Width(160);
-        var error = new TestConsole().Width(160);
-        var console = new StationConsole(standard, error);
+        var standard = new TestConsole().Width( 160 );
+        var error = new TestConsole().Width( 160 );
+        var console = new StationConsole( standard, error );
         var result = new EngineRunResult(
             ExecutionMode.Check,
             true,
@@ -27,12 +29,12 @@ public sealed class StationConsoleTests
                     "Install scoop package",
                     "builtin.scoop",
                     null,
-                    ModuleResult.ChangedResult("Package would be installed")
+                    ModuleResult.ChangedResult( "Package would be installed" )
                 ),
             ]
         );
 
-        console.WriteResult(result);
+        console.WriteResult( result );
 
         standard
             .Output.Should()
@@ -50,9 +52,9 @@ public sealed class StationConsoleTests
     [Fact]
     public void WriteRestoreResult_routes_failures_to_error_console()
     {
-        var standard = new TestConsole().Width(160);
-        var error = new TestConsole().Width(160);
-        var console = new StationConsole(standard, error);
+        var standard = new TestConsole().Width( 160 );
+        var error = new TestConsole().Width( 160 );
+        var console = new StationConsole( standard, error );
         var result = new PluginRestoreResult(
             false,
             "Plugin restore failed.",
@@ -63,25 +65,25 @@ public sealed class StationConsoleTests
                     "example.tools",
                     "1.2.3",
                     "C:\\cache\\example",
-                    CacheHit: true,
-                    IsLocal: false
+                    true,
+                    false
                 ),
             ],
             []
         );
 
-        console.WriteRestoreResult(result);
+        console.WriteRestoreResult( result );
 
-        error.Output.Should().ContainAll("Failed", "example.tools", "cache", "failure");
+        error.Output.Should().ContainAll( "Failed", "example.tools", "cache", "failure" );
         standard.Output.Should().BeEmpty();
     }
 
     [Fact]
     public void WriteExplainResult_renders_tree()
     {
-        var standard = new TestConsole().Width(160);
-        var error = new TestConsole().Width(160);
-        var console = new StationConsole(standard, error);
+        var standard = new TestConsole().Width( 160 );
+        var error = new TestConsole().Width( 160 );
+        var console = new StationConsole( standard, error );
         var result = new ExplainResult(
             true,
             "Explained 1 task(s).",
@@ -98,7 +100,7 @@ public sealed class StationConsoleTests
                                 "base.tasks.1 [station.builtin.template]",
                                 ExplainNodeKind.Task,
                                 [
-                                    new ExplainNode("role: base", ExplainNodeKind.Detail, []),
+                                    new ExplainNode( "role: base", ExplainNodeKind.Detail, [] ),
                                     new ExplainNode(
                                         "parameters",
                                         ExplainNodeKind.Section,
@@ -118,7 +120,7 @@ public sealed class StationConsoleTests
             )
         );
 
-        console.WriteExplainResult(result);
+        console.WriteExplainResult( result );
 
         standard
             .Output.Should()

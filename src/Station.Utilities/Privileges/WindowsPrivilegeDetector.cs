@@ -6,13 +6,11 @@ public sealed class WindowsPrivilegeDetector : IPrivilegeDetector
 {
     public bool IsElevated()
     {
-        if (!OperatingSystem.IsWindows())
-        {
+        if ( !OperatingSystem.IsWindows() )
             return false;
-        }
 
         using var identity = WindowsIdentity.GetCurrent();
-        var principal = new WindowsPrincipal(identity);
-        return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        var principal = new WindowsPrincipal( identity );
+        return principal.IsInRole( WindowsBuiltInRole.Administrator );
     }
 }

@@ -1,8 +1,9 @@
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
+using Station.Abstractions.FileSystem;
 using Station.Plugins.Abstractions.Requirements;
-using Station.Plugins.Restoration;
 using Station.Plugins.Manifests;
+using Station.Plugins.Restoration;
+
 using TruePath;
 using TruePath.SystemIo;
 
@@ -24,18 +25,17 @@ internal sealed class PluginCacheStore(
         bool isLocal = false
     )
     {
-        var pluginName = GetCacheSegment(source.Manifest.Name, "name");
-        var pluginVersion = GetCacheSegment(source.Manifest.Version, "version");
-        var pluginCacheRoot = GetCacheRoot(configRoot) / pluginName;
+        var pluginName = GetCacheSegment( source.Manifest.Name, "name" );
+        var pluginVersion = GetCacheSegment( source.Manifest.Version, "version" );
+        var pluginCacheRoot = GetCacheRoot( configRoot ) / pluginName;
         pluginCacheRoot.CreateDirectory();
 
         var destinationRoot = pluginCacheRoot / pluginVersion;
-        if (destinationRoot.ExistsDirectory())
-        {
+        if ( destinationRoot.ExistsDirectory() )
             try
             {
-                var cachedPluginRoot = manifestReader.ResolvePluginRoot(destinationRoot.Value);
-                var cachedManifest = manifestReader.ReadManifest(cachedPluginRoot);
+                var cachedPluginRoot = manifestReader.ResolvePluginRoot( destinationRoot.Value );
+                var cachedManifest = manifestReader.ReadManifest( cachedPluginRoot );
                 if (
                     string.Equals(
                         cachedManifest.Name!.Trim(),
@@ -49,130 +49,119 @@ internal sealed class PluginCacheStore(
                     )
                 )
                 {
-                    log?.Invoke($"Using cached plugin '{requirement.DisplaySource}'.");
+                    log?.Invoke( $"Using cached plugin '{requirement.DisplaySource}'." );
                     return new RestoredPluginLocation(
                         cachedPluginRoot,
-                        CacheHit: true,
-                        IsLocal: isLocal
+                        true,
+                        isLocal
                     );
                 }
             }
-            catch (Exception exception) when (exception is ConfigurationException or IOException)
+            catch ( Exception exception ) when ( exception is ConfigurationException or IOException )
             {
                 log?.Invoke(
                     $"Refreshing invalid cached plugin '{requirement.DisplaySource}': {exception.Message}"
                 );
             }
-        }
 
         var stagingRoot = pluginCacheRoot / $"{pluginVersion}.staging.{Guid.NewGuid():N}";
         var backupRoot = pluginCacheRoot / $"{pluginVersion}.backup.{Guid.NewGuid():N}";
         try
         {
-            log?.Invoke($"Restoring plugin '{requirement.DisplaySource}'.");
-            CopyDirectory(source.PluginRoot.AsAbsolutePath(), stagingRoot);
-            if (destinationRoot.ExistsDirectory())
-            {
-                Directory.Move(destinationRoot.Value, backupRoot.Value);
-            }
+            log?.Invoke( $"Restoring plugin '{requirement.DisplaySource}'." );
+            CopyDirectory( source.PluginRoot.AsAbsolutePath(), stagingRoot );
+            if ( destinationRoot.ExistsDirectory() )
+                Directory.Move( destinationRoot.Value, backupRoot.Value );
 
             try
             {
-                Directory.Move(stagingRoot.Value, destinationRoot.Value);
-                var installedRoot = manifestReader.ResolvePluginRoot(destinationRoot.Value);
-                _ = manifestReader.ReadManifest(installedRoot);
-                return new RestoredPluginLocation(installedRoot, CacheHit: false, IsLocal: isLocal);
+                Directory.Move( stagingRoot.Value, destinationRoot.Value );
+                var installedRoot = manifestReader.ResolvePluginRoot( destinationRoot.Value );
+                _ = manifestReader.ReadManifest( installedRoot );
+                return new RestoredPluginLocation( installedRoot, false, isLocal );
             }
             catch
             {
-                if (destinationRoot.ExistsDirectory())
+                if ( destinationRoot.ExistsDirectory() )
                 {
-                    ClearAttributes(destinationRoot);
+                    ClearAttributes( destinationRoot );
                     destinationRoot.DeleteDirectoryRecursively();
                 }
 
-                if (backupRoot.ExistsDirectory())
-                {
-                    Directory.Move(backupRoot.Value, destinationRoot.Value);
-                }
+                if ( backupRoot.ExistsDirectory() )
+                    Directory.Move( backupRoot.Value, destinationRoot.Value );
 
                 throw;
             }
         }
         finally
         {
-            if (stagingRoot.ExistsDirectory())
+            if ( stagingRoot.ExistsDirectory() )
             {
-                ClearAttributes(stagingRoot);
+                ClearAttributes( stagingRoot );
                 stagingRoot.DeleteDirectoryRecursively();
             }
 
-            if (backupRoot.ExistsDirectory() && destinationRoot.ExistsDirectory())
+            if ( backupRoot.ExistsDirectory() && destinationRoot.ExistsDirectory() )
             {
-                ClearAttributes(backupRoot);
+                ClearAttributes( backupRoot );
                 backupRoot.DeleteDirectoryRecursively();
             }
         }
     }
 
-    private AbsolutePath GetCacheRoot(string configRoot) =>
+    private AbsolutePath GetCacheRoot( string configRoot ) =>
         cacheRootOverride is null
             ? configRoot.AsLocalPath().ResolveToCurrentDirectory()
-                / CacheDirectoryName
-                / PluginCacheDirectoryName
+              / CacheDirectoryName
+              / PluginCacheDirectoryName
             : cacheRootOverride.AsAbsolutePath();
 
-    private static string GetCacheSegment(string? value, string propertyName)
+    private static string GetCacheSegment( string? value, string propertyName )
     {
         var segment = value?.Trim();
         if (
-            string.IsNullOrWhiteSpace(segment)
+            string.IsNullOrWhiteSpace( segment )
             || segment is "." or ".."
-            || segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
-            || segment.Contains('/')
-            || segment.Contains('\\')
-            || Path.GetFileName(segment) != segment
+            || segment.IndexOfAny( Path.GetInvalidFileNameChars() ) >= 0
+            || segment.Contains( '/' )
+            || segment.Contains( '\\' )
+            || Path.GetFileName( segment ) != segment
         )
-        {
             throw new ConfigurationException(
                 $"Plugin manifest '{propertyName}' must be a valid directory name."
             );
-        }
 
         return segment;
     }
 
-    private static void CopyDirectory(AbsolutePath sourceRoot, AbsolutePath destinationRoot)
+    private static void CopyDirectory( AbsolutePath sourceRoot, AbsolutePath destinationRoot )
     {
         destinationRoot.CreateDirectory();
 
-        foreach (var path in sourceRoot.GetDirectories("*", SearchOption.AllDirectories))
+        foreach ( var path in sourceRoot.GetDirectories( "*", SearchOption.AllDirectories ) )
         {
-            var relativePath = path.AsAbsolutePath().RelativeTo(sourceRoot);
+            var relativePath = path.AsAbsolutePath().RelativeTo( sourceRoot );
             (destinationRoot / relativePath).CreateDirectory();
         }
 
-        foreach (var path in sourceRoot.GetFiles("*", SearchOption.AllDirectories))
+        foreach ( var path in sourceRoot.GetFiles( "*", SearchOption.AllDirectories ) )
         {
             var file = path.AsAbsolutePath();
-            var destinationPath = destinationRoot / file.RelativeTo(sourceRoot);
+            var destinationPath = destinationRoot / file.RelativeTo( sourceRoot );
             destinationPath.Parent!.Value.CreateDirectory();
-            file.Copy(destinationPath, overwrite: true);
+            file.Copy( destinationPath, true );
         }
     }
 
-    internal static void ClearAttributes(AbsolutePath root)
+    internal static void ClearAttributes( AbsolutePath root )
     {
-        foreach (var path in root.GetDirectories("*", SearchOption.AllDirectories))
-        {
-            path.AsAbsolutePath().SetAttributes(FileAttributes.Normal);
-        }
+        foreach ( var path in root.GetDirectories( "*", SearchOption.AllDirectories ) )
+            path.AsAbsolutePath().SetAttributes( FileAttributes.Normal );
 
-        foreach (var path in root.GetFiles("*", SearchOption.AllDirectories))
-        {
-            path.AsAbsolutePath().SetAttributes(FileAttributes.Normal);
-        }
+        foreach ( var path in root.GetFiles( "*", SearchOption.AllDirectories ) )
+            path.AsAbsolutePath().SetAttributes( FileAttributes.Normal );
 
-        root.SetAttributes(FileAttributes.Normal);
+        root.SetAttributes( FileAttributes.Normal );
     }
 }

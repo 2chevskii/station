@@ -1,18 +1,19 @@
 using FluentAssertions;
+
 using Station.Abstractions.Configuration;
 using Station.Core.Configuration.Loading;
 using Station.Testing;
 
 namespace Station.IntegrationTests.Configuration;
 
-[Collection("Environment variables")]
+[Collection( "Environment variables" )]
 public sealed class ConfigLoaderTests
 {
     [Fact]
     public void Load_applies_variable_precedence_and_parses_root_and_role_tasks()
     {
         using var directory = new TemporaryDirectory();
-        using var environment = new EnvironmentVariableScope("CONFIG_TOOL_VAR_GREETING", "env");
+        using var environment = new EnvironmentVariableScope( "CONFIG_TOOL_VAR_GREETING", "env" );
 
         directory.WriteFile(
             "station.yaml",
@@ -53,41 +54,41 @@ public sealed class ConfigLoaderTests
         var loader = new ConfigLoader();
         var configuration = loader.Load(
             directory.Path,
-            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase )
             {
                 ["greeting"] = "cli",
             }
         );
 
-        configuration.RootVariables.Get<string>("greeting").Should().Be("cli");
-        configuration.RequestedRoles.Should().Equal("base");
+        configuration.RootVariables.Get<string>( "greeting" ).Should().Be( "cli" );
+        configuration.RequestedRoles.Should().Equal( "base" );
         configuration
             .PluginRequirements.Should()
             .ContainSingle()
             .Which.Should()
-            .BeEquivalentTo(new { Provider = "local", Name = "demo_plugin.zip" });
+            .BeEquivalentTo( new { Provider = "local", Name = "demo_plugin.zip" } );
 
         var rootTask = configuration.RootTasks.Should().ContainSingle().Subject;
-        rootTask.Name.Should().Be("station.tasks.1");
+        rootTask.Name.Should().Be( "station.tasks.1" );
         rootTask
             .Parameters["destination"]
             .GetValue<string>()
             .Should()
-            .Be("output/{{ greeting }}.txt");
+            .Be( "output/{{ greeting }}.txt" );
 
-        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
         var roleTask = loader
-            .LoadRoleTasks(role, configuration.RootVariables)
+            .LoadRoleTasks( role, configuration.RootVariables )
             .Should()
             .ContainSingle()
             .Subject;
-        roleTask.Name.Should().Be("base.tasks.1");
+        roleTask.Name.Should().Be( "base.tasks.1" );
         roleTask
             .Parameters["destination"]
             .GetValue<string>()
             .Should()
-            .Be("role/{{ greeting }}.txt");
-        roleTask.Variables.Get<string>("greeting").Should().Be("cli");
+            .Be( "role/{{ greeting }}.txt" );
+        roleTask.Variables.Get<string>( "greeting" ).Should().Be( "cli" );
     }
 
     [Fact]
@@ -143,24 +144,24 @@ public sealed class ConfigLoaderTests
         );
 
         var loader = new ConfigLoader();
-        var configuration = loader.Load(directory.Path);
+        var configuration = loader.Load( directory.Path );
 
-        configuration.RootVariables.Get<string>("greeting").Should().Be("root");
-        configuration.RootVariables.Get<string>("chosen_greeting").Should().Be("root");
+        configuration.RootVariables.Get<string>( "greeting" ).Should().Be( "root" );
+        configuration.RootVariables.Get<string>( "chosen_greeting" ).Should().Be( "root" );
 
-        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
         var roleTask = loader
-            .LoadRoleTasks(role, configuration.RootVariables)
+            .LoadRoleTasks( role, configuration.RootVariables )
             .Should()
             .ContainSingle()
             .Subject;
-        roleTask.Name.Should().Be("Copy from JS role");
+        roleTask.Name.Should().Be( "Copy from JS role" );
         roleTask
             .Parameters["destination"]
             .Should()
             .BeOfType<VariableReference>()
             .Which.Path.Should()
-            .Be("destination_path");
+            .Be( "destination_path" );
     }
 
     [Fact]
@@ -204,35 +205,39 @@ public sealed class ConfigLoaderTests
         );
 
         var loader = new ConfigLoader();
-        var configuration = loader.Load(directory.Path);
-        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
-        var task = loader.LoadRoleTasks(role, configuration.RootVariables).Should().ContainSingle().Subject;
+        var configuration = loader.Load( directory.Path );
+        var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
+        var task = loader
+            .LoadRoleTasks( role, configuration.RootVariables )
+            .Should()
+            .ContainSingle()
+            .Subject;
 
-        loader.ReadRoleDescription(role).Should().Be("Example role");
-        task.Name.Should().Be("inline");
-        task.Variables.Get<string>("nested.file_value").Should().Be("file");
-        task.Variables.Get<string>("nested.inline_value").Should().Be("inline");
-        task.Variables.Get<string>("nested.root_value").Should().Be("root");
-        task.Variables.Get<string>("overridden").Should().Be("root");
+        loader.ReadRoleDescription( role ).Should().Be( "Example role" );
+        task.Name.Should().Be( "inline" );
+        task.Variables.Get<string>( "nested.file_value" ).Should().Be( "file" );
+        task.Variables.Get<string>( "nested.inline_value" ).Should().Be( "inline" );
+        task.Variables.Get<string>( "nested.root_value" ).Should().Be( "root" );
+        task.Variables.Get<string>( "overridden" ).Should().Be( "root" );
     }
 
     [Theory]
-    [InlineData("description: Missing tasks\n", "'tasks' list")]
-    [InlineData("tasks: {}\n", "'tasks' list")]
-    [InlineData("tasks: []\ndefaults: []\n", "'defaults'")]
-    [InlineData("tasks: []\ndescription: []\n", "'description'")]
-    public void Load_rejects_invalid_role_mapping(string roleContents, string expectedMessage)
+    [InlineData( "description: Missing tasks\n", "'tasks' list" )]
+    [InlineData( "tasks: {}\n", "'tasks' list" )]
+    [InlineData( "tasks: []\ndefaults: []\n", "'defaults'" )]
+    [InlineData( "tasks: []\ndescription: []\n", "'description'" )]
+    public void Load_rejects_invalid_role_mapping( string roleContents, string expectedMessage )
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("station.yaml", "roles: [base]\n");
-        directory.WriteFile("roles/base/role.yaml", roleContents);
+        directory.WriteFile( "station.yaml", "roles: [base]\n" );
+        directory.WriteFile( "roles/base/role.yaml", roleContents );
 
         var loader = new ConfigLoader();
-        var configuration = loader.Load(directory.Path);
-        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var configuration = loader.Load( directory.Path );
+        var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
 
-        var action = () => loader.LoadRoleTasks(role, configuration.RootVariables);
-        action.Should().Throw<ConfigurationException>().WithMessage($"*{expectedMessage}*");
+        var action = () => loader.LoadRoleTasks( role, configuration.RootVariables );
+        action.Should().Throw<ConfigurationException>().WithMessage( $"*{expectedMessage}*" );
     }
 
     [Fact]
@@ -263,10 +268,10 @@ public sealed class ConfigLoaderTests
         );
 
         var loader = new ConfigLoader();
-        var configuration = loader.Load(directory.Path);
-        var role = loader.DiscoverLocalRoles(directory.Path).Should().ContainSingle().Subject;
+        var configuration = loader.Load( directory.Path );
+        var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
         var roleTask = loader
-            .LoadRoleTasks(role, configuration.RootVariables)
+            .LoadRoleTasks( role, configuration.RootVariables )
             .Should()
             .ContainSingle()
             .Subject;
@@ -276,6 +281,6 @@ public sealed class ConfigLoaderTests
             .Should()
             .BeOfType<TemplateMarkup>()
             .Which.TemplateText.Should()
-            .Be("{{ user_home }}/.config/my_config.json");
+            .Be( "{{ user_home }}/.config/my_config.json" );
     }
 }

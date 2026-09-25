@@ -30,9 +30,9 @@ internal sealed class PluginSourceSnapshot : IDisposable
 
     public void Dispose()
     {
-        if (temporaryRoot is { } root && root.ExistsDirectory())
+        if ( temporaryRoot is { } root && root.ExistsDirectory() )
         {
-            PluginRestoreInfrastructure.ClearAttributes(root);
+            PluginRestoreInfrastructure.ClearAttributes( root );
             root.DeleteDirectoryRecursively();
         }
     }

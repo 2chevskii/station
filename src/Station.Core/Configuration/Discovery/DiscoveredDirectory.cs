@@ -27,18 +27,18 @@ public sealed class DiscoveredDirectory
 
     public IReadOnlyList<DiscoveredFile> Files { get; }
 
-    public bool TryGetDirectory(string name, out DiscoveredDirectory? directory)
+    public bool TryGetDirectory( string name, out DiscoveredDirectory? directory )
     {
-        directory = Directories.FirstOrDefault(candidate =>
-            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)
+        directory = Directories.FirstOrDefault( candidate =>
+            string.Equals( candidate.Name, name, StringComparison.OrdinalIgnoreCase )
         );
         return directory is not null;
     }
 
-    public bool TryGetFile(string name, out DiscoveredFile? file)
+    public bool TryGetFile( string name, out DiscoveredFile? file )
     {
-        file = Files.FirstOrDefault(candidate =>
-            string.Equals(candidate.Name, name, StringComparison.OrdinalIgnoreCase)
+        file = Files.FirstOrDefault( candidate =>
+            string.Equals( candidate.Name, name, StringComparison.OrdinalIgnoreCase )
         );
         return file is not null;
     }

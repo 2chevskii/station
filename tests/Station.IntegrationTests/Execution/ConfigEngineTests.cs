@@ -1,4 +1,5 @@
 using FluentAssertions;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Core.Execution.Running;
@@ -14,10 +15,13 @@ public sealed class ConfigEngineTests
     public async Task ListRoles_shows_local_and_plugin_descriptions_without_selected_roles()
     {
         using var directory = new TemporaryDirectory();
-        directory.WriteFile("station.yaml", "plugins: [demo_plugin]\n");
-        directory.WriteFile("roles/local/role.yaml", "description: Local workstation setup\ntasks: []\n");
-        directory.WriteFile("roles/undocumented/role.yaml", "[]");
-        directory.WriteFile("roles/undocumented/metadata.yaml", "description: Obsolete\n");
+        directory.WriteFile( "station.yaml", "plugins: [demo_plugin]\n" );
+        directory.WriteFile(
+            "roles/local/role.yaml",
+            "description: Local workstation setup\ntasks: []\n"
+        );
+        directory.WriteFile( "roles/undocumented/role.yaml", "[]" );
+        directory.WriteFile( "roles/undocumented/metadata.yaml", "description: Obsolete\n" );
         PluginFixtureBuilder.CreatePlugin(
             directory,
             "plugins/demo_plugin",
@@ -29,23 +33,29 @@ public sealed class ConfigEngineTests
             "description: Shared plugin setup\ntasks: []\n"
         );
 
-        var result = await new ConfigEngine().ListRolesAsync(directory.Path);
+        var result = await new ConfigEngine().ListRolesAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Components.Should().HaveCount(3);
-        result.Components.Should().ContainSingle(component =>
-            component.Name == "station.local.local"
-            && component.Description == "Local workstation setup"
-            && component.Source == "station.local: roles/local"
-        );
-        result.Components.Should().ContainSingle(component =>
-            component.Name == "example.plugin.plugin-role"
-            && component.Description == "Shared plugin setup"
-            && component.Source == "example.plugin: plugins/demo_plugin/roles/plugin-role"
-        );
-        result.Components.Should().ContainSingle(component =>
-            component.Name == "station.local.undocumented" && component.Description == null
-        );
+        result.Components.Should().HaveCount( 3 );
+        result
+            .Components.Should()
+            .ContainSingle( component =>
+                component.Name == "station.local.local"
+                && component.Description == "Local workstation setup"
+                && component.Source == "station.local: roles/local"
+            );
+        result
+            .Components.Should()
+            .ContainSingle( component =>
+                component.Name == "example.plugin.plugin-role"
+                && component.Description == "Shared plugin setup"
+                && component.Source == "example.plugin: plugins/demo_plugin/roles/plugin-role"
+            );
+        result
+            .Components.Should()
+            .ContainSingle( component =>
+                component.Name == "station.local.undocumented" && component.Description == null
+            );
     }
 
     [Fact]
@@ -58,7 +68,7 @@ public sealed class ConfigEngineTests
             "example.plugin",
             "plugin-role"
         );
-        directory.WriteFile("station.yaml", "plugins: [demo_plugin]\n");
+        directory.WriteFile( "station.yaml", "plugins: [demo_plugin]\n" );
         directory.WriteFile(
             "plugins/demo_plugin/manifest.yaml",
             """
@@ -71,23 +81,30 @@ public sealed class ConfigEngineTests
         );
         var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
         assemblyPath.Parent!.Value.CreateDirectory();
-        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
-            .Copy(assemblyPath, overwrite: true);
+        typeof( Station.Modules.Builtin.Dotfile.CopyModule )
+            .Assembly.Location.AsAbsolutePath()
+            .Copy( assemblyPath, true );
 
-        var result = await new ConfigEngine().ListModulesAsync(directory.Path);
+        var result = await new ConfigEngine().ListModulesAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Components.Should().Contain(component =>
-            component.Name == "station.builtin.copy"
-            && !string.IsNullOrWhiteSpace(component.Description)
-            && component.Source == "station.builtin"
-        );
-        result.Components.Should().Contain(component =>
-            component.Name == "example.plugin.copy"
-            && !string.IsNullOrWhiteSpace(component.Description)
-            && component.Source.Contains("bundle.dll", StringComparison.OrdinalIgnoreCase)
-        );
-        result.Components.Should().Contain(component => component.Name == "example.plugin.template");
+        result
+            .Components.Should()
+            .Contain( component =>
+                component.Name == "station.builtin.copy"
+                && !string.IsNullOrWhiteSpace( component.Description )
+                && component.Source == "station.builtin"
+            );
+        result
+            .Components.Should()
+            .Contain( component =>
+                component.Name == "example.plugin.copy"
+                && !string.IsNullOrWhiteSpace( component.Description )
+                && component.Source.Contains( "bundle.dll", StringComparison.OrdinalIgnoreCase )
+            );
+        result
+            .Components.Should()
+            .Contain( component => component.Name == "example.plugin.template" );
     }
 
     [Fact]
@@ -112,11 +129,11 @@ public sealed class ConfigEngineTests
         );
 
         var engine = new ConfigEngine();
-        var result = await engine.RestoreAsync(directory.Path);
+        var result = await engine.RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         var plugin = result.Plugins.Should().ContainSingle().Subject;
-        plugin.PluginName.Should().Be("example.plugin");
+        plugin.PluginName.Should().Be( "example.plugin" );
         plugin.IsLocal.Should().BeTrue();
         plugin.CacheHit.Should().BeTrue();
     }
@@ -132,9 +149,9 @@ public sealed class ConfigEngineTests
             "archive.plugin",
             "plugin-role"
         );
-        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        var archivePath = directory.GetPath( "plugins", "demo_plugin.zip" );
         archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
+        ArchiveBuilder.CreateZip( pluginRoot, archivePath );
         directory.WriteFile(
             "station.yaml",
             """
@@ -147,8 +164,8 @@ public sealed class ConfigEngineTests
         );
 
         var engine = new ConfigEngine();
-        var first = await engine.RestoreAsync(directory.Path);
-        var second = await engine.RestoreAsync(directory.Path);
+        var first = await engine.RestoreAsync( directory.Path );
+        var second = await engine.RestoreAsync( directory.Path );
 
         source.WriteFile(
             "archive-plugin/manifest.yaml",
@@ -160,57 +177,73 @@ public sealed class ConfigEngineTests
             modules: []
             """
         );
-        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
-        var updated = await engine.RestoreAsync(directory.Path);
+        ArchiveBuilder.CreateZip( pluginRoot, archivePath );
+        var updated = await engine.RestoreAsync( directory.Path );
 
         first.Succeeded.Should().BeTrue();
         first.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
-        first.Plugins[0].PluginRoot.Should().Be(
-            directory.GetPath(".station", "plugin_cache", "archive.plugin", "1.0.0")
-        );
+        first
+            .Plugins[0]
+            .PluginRoot.Should()
+            .Be( directory.GetPath( ".station", "plugin_cache", "archive.plugin", "1.0.0" ) );
         second.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeTrue();
         updated.Succeeded.Should().BeTrue();
         updated.Plugins.Should().ContainSingle().Subject.CacheHit.Should().BeFalse();
-        updated.Plugins[0].Version.Should().Be("2.0.0");
-        updated.Plugins[0].PluginRoot.Should().Be(
-            directory.GetPath(".station", "plugin_cache", "archive.plugin", "2.0.0")
-        );
-        directory.GetPath(".station", "plugin_cache", "archive.plugin", "1.0.0", "manifest.yaml")
-            .AsAbsolutePath().ExistsFile().Should().BeTrue();
+        updated.Plugins[0].Version.Should().Be( "2.0.0" );
+        updated
+            .Plugins[0]
+            .PluginRoot.Should()
+            .Be( directory.GetPath( ".station", "plugin_cache", "archive.plugin", "2.0.0" ) );
+        directory
+            .GetPath( ".station", "plugin_cache", "archive.plugin", "1.0.0", "manifest.yaml" )
+            .AsAbsolutePath()
+            .ExistsFile()
+            .Should()
+            .BeTrue();
     }
 
     [Fact]
     public async Task Restore_rejects_legacy_plugin_manifest_name()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
-        File.Move(
-            directory.GetPath("plugins", "demo_plugin", "manifest.yaml"),
-            directory.GetPath("plugins", "demo_plugin", "plugin-manifest.yaml")
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
         );
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+        File.Move(
+            directory.GetPath( "plugins", "demo_plugin", "manifest.yaml" ),
+            directory.GetPath( "plugins", "demo_plugin", "plugin-manifest.yaml" )
+        );
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
-        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("no plugin manifest");
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "no plugin manifest" );
     }
 
     [Fact]
     public async Task Restore_accepts_yml_plugin_manifest()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
-        File.Move(
-            directory.GetPath("plugins", "demo_plugin", "manifest.yaml"),
-            directory.GetPath("plugins", "demo_plugin", "manifest.yml")
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
         );
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+        File.Move(
+            directory.GetPath( "plugins", "demo_plugin", "manifest.yaml" ),
+            directory.GetPath( "plugins", "demo_plugin", "manifest.yml" )
+        );
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Plugins.Should().ContainSingle().Which.PluginName.Should().Be("example.plugin");
+        result.Plugins.Should().ContainSingle().Which.PluginName.Should().Be( "example.plugin" );
     }
 
     [Fact]
@@ -224,15 +257,15 @@ public sealed class ConfigEngineTests
             "../outside",
             "plugin-role"
         );
-        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        var archivePath = directory.GetPath( "plugins", "demo_plugin.zip" );
         archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n");
+        ArchiveBuilder.CreateZip( pluginRoot, archivePath );
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
-        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("valid directory name");
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "valid directory name" );
     }
 
     [Fact]
@@ -248,7 +281,7 @@ public sealed class ConfigEngineTests
             "git.plugin",
             "git-role"
         );
-        await InitializeGitRepositoryAsync(gitPluginRoot);
+        await InitializeGitRepositoryAsync( gitPluginRoot );
 
         var urlPluginRoot = PluginFixtureBuilder.CreatePlugin(
             packages,
@@ -256,8 +289,8 @@ public sealed class ConfigEngineTests
             "url.plugin",
             "url-role"
         );
-        var urlArchivePath = packages.GetPath("url-plugin.zip");
-        ArchiveBuilder.CreateZip(urlPluginRoot, urlArchivePath);
+        var urlArchivePath = packages.GetPath( "url-plugin.zip" );
+        ArchiveBuilder.CreateZip( urlPluginRoot, urlArchivePath );
 
         var nugetPluginRoot = PluginFixtureBuilder.CreatePlugin(
             packages,
@@ -265,8 +298,8 @@ public sealed class ConfigEngineTests
             "nuget.plugin",
             "nuget-role"
         );
-        var nugetPackagePath = packages.GetPath("station.demo.plugin.1.2.3.nupkg");
-        ArchiveBuilder.CreateZip(nugetPluginRoot, nugetPackagePath);
+        var nugetPackagePath = packages.GetPath( "station.demo.plugin.1.2.3.nupkg" );
+        ArchiveBuilder.CreateZip( nugetPluginRoot, nugetPackagePath );
 
         var npmPluginRoot = PluginFixtureBuilder.CreatePlugin(
             packages,
@@ -274,8 +307,8 @@ public sealed class ConfigEngineTests
             "npm.plugin",
             "npm-role"
         );
-        var npmPackagePath = packages.GetPath("station-demo-plugin-2.0.0.zip");
-        ArchiveBuilder.CreateZip(npmPluginRoot, npmPackagePath);
+        var npmPackagePath = packages.GetPath( "station-demo-plugin-2.0.0.zip" );
+        ArchiveBuilder.CreateZip( npmPluginRoot, npmPackagePath );
 
         server.AddFile(
             "/packages/url-plugin.zip",
@@ -284,15 +317,15 @@ public sealed class ConfigEngineTests
         server.AddJson(
             "/nuget/index.json",
             $$"""
-            {
-              "resources": [
-                {
-                  "@id": "{{server.BaseUrl}}/flatcontainer/",
-                  "@type": "PackageBaseAddress/3.0.0"
-                }
-              ]
-            }
-            """
+              {
+                "resources": [
+                  {
+                    "@id": "{{server.BaseUrl}}/flatcontainer/",
+                    "@type": "PackageBaseAddress/3.0.0"
+                  }
+                ]
+              }
+              """
         );
         server.AddJson(
             "/flatcontainer/station.demo.plugin/index.json",
@@ -309,19 +342,19 @@ public sealed class ConfigEngineTests
         server.AddJson(
             "/npm/station-demo-plugin",
             $$"""
-            {
-              "dist-tags": {
-                "latest": "2.0.0"
-              },
-              "versions": {
-                "2.0.0": {
-                  "dist": {
-                    "tarball": "{{server.BaseUrl}}/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip"
+              {
+                "dist-tags": {
+                  "latest": "2.0.0"
+                },
+                "versions": {
+                  "2.0.0": {
+                    "dist": {
+                      "tarball": "{{server.BaseUrl}}/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip"
+                    }
                   }
                 }
               }
-            }
-            """
+              """
         );
         server.AddFile(
             "/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip",
@@ -332,37 +365,37 @@ public sealed class ConfigEngineTests
         directory.WriteFile(
             "station.yaml",
             $$"""
-            roles:
-              - git-role
-              - url-role
-              - nuget-role
-              - npm-role
-            plugins:
-              - provider: git
-                url: {{gitPluginRoot}}
-              - provider: url
-                url: {{server.BaseUrl}}/packages/url-plugin.zip
-              - provider: nuget
-                id: station.demo.plugin
-                version: 1.2.3
-                feed: {{server.BaseUrl}}/nuget/index.json
-              - provider: npm
-                id: station-demo-plugin
-                version: 2.0.0
-                registry: {{server.BaseUrl}}/npm
-            vars: {}
-            """
+              roles:
+                - git-role
+                - url-role
+                - nuget-role
+                - npm-role
+              plugins:
+                - provider: git
+                  url: {{gitPluginRoot}}
+                - provider: url
+                  url: {{server.BaseUrl}}/packages/url-plugin.zip
+                - provider: nuget
+                  id: station.demo.plugin
+                  version: 1.2.3
+                  feed: {{server.BaseUrl}}/nuget/index.json
+                - provider: npm
+                  id: station-demo-plugin
+                  version: 2.0.0
+                  registry: {{server.BaseUrl}}/npm
+              vars: {}
+              """
         );
 
         var engine = new ConfigEngine();
-        var result = await engine.RestoreAsync(directory.Path);
+        var result = await engine.RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Plugins.Should().HaveCount(4);
+        result.Plugins.Should().HaveCount( 4 );
         result
-            .Plugins.Select(plugin => plugin.PluginName)
+            .Plugins.Select( plugin => plugin.PluginName )
             .Should()
-            .BeEquivalentTo(["git.plugin", "url.plugin", "nuget.plugin", "npm.plugin"]);
+            .BeEquivalentTo( ["git.plugin", "url.plugin", "nuget.plugin", "npm.plugin"] );
     }
 
     [Fact]
@@ -374,7 +407,7 @@ public sealed class ConfigEngineTests
             "plugins/demo_plugin",
             "example.plugin",
             "plugin-role",
-            includeModule: true
+            true
         );
         directory.WriteFile(
             "station.yaml",
@@ -389,10 +422,10 @@ public sealed class ConfigEngineTests
         );
 
         var engine = new ConfigEngine();
-        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
-        result.Message.Should().Contain("Validated");
+        result.Message.Should().Contain( "Validated" );
     }
 
     [Fact]
@@ -419,36 +452,42 @@ public sealed class ConfigEngineTests
         );
         var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
         assemblyPath.Parent!.Value.CreateDirectory();
-        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
-            .Copy(assemblyPath, overwrite: true);
-        directory.WriteFile("files/input.txt", "hello");
-        directory.WriteFile("templates/sample.scriban", "hello");
+        typeof( Station.Modules.Builtin.Dotfile.CopyModule )
+            .Assembly.Location.AsAbsolutePath()
+            .Copy( assemblyPath, true );
+        directory.WriteFile( "files/input.txt", "hello" );
+        directory.WriteFile( "templates/sample.scriban", "hello" );
         directory.WriteFile(
             "station.yaml",
             $$"""
-            roles: [plugin-role]
-            plugins: [demo_plugin]
-            tasks:
-              - example.plugin.copy:
-                  file: input.txt
-                  destination: {{directory.GetPath("copy.txt")}}
-              - example.plugin.template:
-                  template: sample
-                  destination: {{directory.GetPath("template.txt")}}
-            """
+              roles: [plugin-role]
+              plugins: [demo_plugin]
+              tasks:
+                - example.plugin.copy:
+                    file: input.txt
+                    destination: {{directory.GetPath( "copy.txt" )}}
+                - example.plugin.template:
+                    template: sample
+                    destination: {{directory.GetPath( "template.txt" )}}
+              """
         );
 
-        var result = await new ConfigEngine().RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await new ConfigEngine().RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
-        result.Message.Should().Be("Validated 3 task(s).");
+        result.Message.Should().Be( "Validated 3 task(s)." );
     }
 
     [Fact]
     public async Task Restore_rejects_module_assembly_outside_plugin_root()
     {
         using var directory = new TemporaryDirectory();
-        PluginFixtureBuilder.CreatePlugin(directory, "plugins/demo_plugin", "example.plugin", "plugin-role");
+        PluginFixtureBuilder.CreatePlugin(
+            directory,
+            "plugins/demo_plugin",
+            "example.plugin",
+            "plugin-role"
+        );
         directory.WriteFile(
             "plugins/demo_plugin/manifest.yaml",
             """
@@ -458,12 +497,16 @@ public sealed class ConfigEngineTests
               - ../outside.dll:Example.Module
             """
         );
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
-        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("outside the plugin root");
+        result
+            .Diagnostics.Should()
+            .ContainSingle()
+            .Which.Should()
+            .Contain( "outside the plugin root" );
     }
 
     [Fact]
@@ -488,14 +531,15 @@ public sealed class ConfigEngineTests
         );
         var assemblyPath = pluginRoot.AsAbsolutePath() / "assemblies" / "bundle.dll";
         assemblyPath.Parent!.Value.CreateDirectory();
-        typeof(Station.Modules.Builtin.Dotfile.CopyModule).Assembly.Location.AsAbsolutePath()
-            .Copy(assemblyPath, overwrite: true);
-        directory.WriteFile("station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n");
+        typeof( Station.Modules.Builtin.Dotfile.CopyModule )
+            .Assembly.Location.AsAbsolutePath()
+            .Copy( assemblyPath, true );
+        directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await new ConfigEngine().RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeFalse();
-        result.Diagnostics.Should().ContainSingle().Which.Should().Contain("Example.MissingModule");
+        result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "Example.MissingModule" );
     }
 
     [Fact]
@@ -507,7 +551,7 @@ public sealed class ConfigEngineTests
             "plugins/demo_plugin",
             "example.plugin",
             "plugin-role",
-            includeModule: true
+            true
         );
         directory.WriteFile(
             "station.yaml",
@@ -528,15 +572,15 @@ public sealed class ConfigEngineTests
                 destination: "{{ destination_path }}"
             """
         );
-        directory.WriteFile("roles/base/scripts/test.ps1", "Write-Output '{\"changed\":false}'");
+        directory.WriteFile( "roles/base/scripts/test.ps1", "Write-Output '{\"changed\":false}'" );
 
         var engine = new ConfigEngine();
-        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeFalse();
         result
             .Diagnostics.Should()
-            .ContainSingle(x => x.Contains("ambiguous", StringComparison.OrdinalIgnoreCase));
+            .ContainSingle( x => x.Contains( "ambiguous", StringComparison.OrdinalIgnoreCase ) );
     }
 
     [Fact]
@@ -561,26 +605,26 @@ public sealed class ConfigEngineTests
                 destination: out/{{ greeting }}.txt
             """
         );
-        directory.WriteFile("roles/base/templates/sample.scriban", "{{ greeting }}");
+        directory.WriteFile( "roles/base/templates/sample.scriban", "{{ greeting }}" );
 
         var engine = new ConfigEngine();
-        var result = await engine.ExplainAsync(directory.Path);
+        var result = await engine.ExplainAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         result.Plan.Should().NotBeNull();
-        result.Plan!.Children.Should().Contain(x => x.Text == "variables");
-        var tasksSection = result.Plan.Children.Single(x => x.Text == "tasks");
+        result.Plan!.Children.Should().Contain( x => x.Text == "variables" );
+        var tasksSection = result.Plan.Children.Single( x => x.Text == "tasks" );
         var taskNode = tasksSection.Children.Should().ContainSingle().Subject;
-        taskNode.Text.Should().Be("base.tasks.1 [station.builtin.template]");
-        taskNode.Children.Should().Contain(x => x.Text == "role: base");
+        taskNode.Text.Should().Be( "base.tasks.1 [station.builtin.template]" );
+        taskNode.Children.Should().Contain( x => x.Text == "role: base" );
         taskNode
-            .Children.Single(x => x.Text == "parameters")
+            .Children.Single( x => x.Text == "parameters" )
             .Children.Should()
-            .Contain(x => x.Text == "template = sample");
+            .Contain( x => x.Text == "template = sample" );
         taskNode
-            .Children.Single(x => x.Text == "variables")
+            .Children.Single( x => x.Text == "variables" )
             .Children.Should()
-            .Contain(x => x.Text == "greeting = hello");
+            .Contain( x => x.Text == "greeting = hello" );
     }
 
     [Fact]
@@ -625,13 +669,13 @@ public sealed class ConfigEngineTests
             });
             """
         );
-        directory.WriteFile("roles/base/files/sample.txt", "hello");
+        directory.WriteFile( "roles/base/files/sample.txt", "hello" );
 
         var engine = new ConfigEngine();
-        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
-        result.Message.Should().Contain("Validated");
+        result.Message.Should().Contain( "Validated" );
     }
 
     [Fact]
@@ -660,13 +704,13 @@ public sealed class ConfigEngineTests
             });
             """
         );
-        directory.WriteFile("roles/base/files/sample.txt", "hello");
+        directory.WriteFile( "roles/base/files/sample.txt", "hello" );
 
         var engine = new ConfigEngine();
-        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
-        result.Message.Should().Contain("Validated");
+        result.Message.Should().Contain( "Validated" );
     }
 
     [Fact]
@@ -678,8 +722,8 @@ public sealed class ConfigEngineTests
             "plugins/demo_plugin",
             "example.plugin",
             "plugin-role",
-            includeModule: true,
-            useJavaScriptRole: true
+            true,
+            true
         );
         directory.WriteFile(
             "station.yaml",
@@ -694,22 +738,22 @@ public sealed class ConfigEngineTests
         );
 
         var engine = new ConfigEngine();
-        var result = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
-        result.Message.Should().Contain("Validated");
+        result.Message.Should().Contain( "Validated" );
     }
 
-    private static async Task InitializeGitRepositoryAsync(string root)
+    private static async Task InitializeGitRepositoryAsync( string root )
     {
-        await RunGitAsync(root, "init");
-        await RunGitAsync(root, "config", "user.email", "station-tests@example.invalid");
-        await RunGitAsync(root, "config", "user.name", "Station Tests");
-        await RunGitAsync(root, "add", ".");
-        await RunGitAsync(root, "commit", "-m", "Initial plugin");
+        await RunGitAsync( root, "init" );
+        await RunGitAsync( root, "config", "user.email", "station-tests@example.invalid" );
+        await RunGitAsync( root, "config", "user.name", "Station Tests" );
+        await RunGitAsync( root, "add", "." );
+        await RunGitAsync( root, "commit", "-m", "Initial plugin" );
     }
 
-    private static async Task RunGitAsync(string workingDirectory, params string[] arguments)
+    private static async Task RunGitAsync( string workingDirectory, params string[] arguments )
     {
         var startInfo = new System.Diagnostics.ProcessStartInfo
         {
@@ -720,13 +764,11 @@ public sealed class ConfigEngineTests
             UseShellExecute = false,
         };
 
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
+        foreach ( var argument in arguments )
+            startInfo.ArgumentList.Add( argument );
 
-        using var process = System.Diagnostics.Process.Start(startInfo)!;
+        using var process = System.Diagnostics.Process.Start( startInfo )!;
         await process.WaitForExitAsync();
-        process.ExitCode.Should().Be(0, await process.StandardError.ReadToEndAsync());
+        process.ExitCode.Should().Be( 0, await process.StandardError.ReadToEndAsync() );
     }
 }

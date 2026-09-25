@@ -1,4 +1,3 @@
-
 namespace Station.Core.Configuration.Loading;
 
 public sealed record LoadedTask(

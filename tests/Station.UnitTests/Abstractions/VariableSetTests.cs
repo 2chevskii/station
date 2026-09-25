@@ -1,4 +1,5 @@
 using FluentAssertions;
+
 using Station.Abstractions.Configuration;
 using Station.Testing;
 
@@ -13,11 +14,11 @@ public sealed class VariableSetTests
             new ConfigObject(
                 new Dictionary<string, ConfigValue>
                 {
-                    ["name"] = ConfigScalar.String("Alice"),
+                    ["name"] = ConfigScalar.String( "Alice" ),
                     ["nested"] = new ConfigObject(
                         new Dictionary<string, ConfigValue>
                         {
-                            ["enabled"] = ConfigScalar.Boolean(false),
+                            ["enabled"] = ConfigScalar.Boolean( false ),
                         }
                     ),
                 }
@@ -31,15 +32,15 @@ public sealed class VariableSetTests
                     ["nested"] = new ConfigObject(
                         new Dictionary<string, ConfigValue>
                         {
-                            ["enabled"] = ConfigScalar.Boolean(true),
+                            ["enabled"] = ConfigScalar.Boolean( true ),
                         }
                     ),
                 }
             )
         );
 
-        overlay.Get<bool>("nested.enabled").Should().BeTrue();
-        overlay.Get<string>("name").Should().Be("Alice");
+        overlay.Get<bool>( "nested.enabled" ).Should().BeTrue();
+        overlay.Get<string>( "name" ).Should().Be( "Alice" );
     }
 
     [Fact]
@@ -49,16 +50,16 @@ public sealed class VariableSetTests
             new ConfigObject(
                 new Dictionary<string, ConfigValue>
                 {
-                    ["name"] = ConfigScalar.String("Alice"),
-                    ["alias"] = new VariableReference("name"),
+                    ["name"] = ConfigScalar.String( "Alice" ),
+                    ["alias"] = new VariableReference( "name" ),
                 }
             )
         );
 
-        variables.Contains("alias").Should().BeTrue();
-        variables.Get<string>("alias").Should().Be("Alice");
-        variables.TryGetValue<string>("alias", out var alias).Should().BeTrue();
-        alias.Should().Be("Alice");
+        variables.Contains( "alias" ).Should().BeTrue();
+        variables.Get<string>( "alias" ).Should().Be( "Alice" );
+        variables.TryGetValue<string>( "alias", out var alias ).Should().BeTrue();
+        alias.Should().Be( "Alice" );
     }
 
     [Fact]
@@ -66,21 +67,21 @@ public sealed class VariableSetTests
     {
         var variables = new VariableSet(
             new ConfigObject(
-                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String( "Alice" ) }
             )
         );
 
-        variables.TryGetValue<int>("name", out var value).Should().BeFalse();
-        value.Should().Be(0);
+        variables.TryGetValue<int>( "name", out var value ).Should().BeFalse();
+        value.Should().Be( 0 );
     }
 
     [Fact]
     public void TryGetRaw_returns_false_for_missing_path()
     {
-        var variables = new VariableSet(new ConfigObject());
+        var variables = new VariableSet( new ConfigObject() );
 
-        variables.TryGetRaw("missing.path", out var value).Should().BeFalse();
-        value.Should().BeSameAs(ConfigNull.Instance);
+        variables.TryGetRaw( "missing.path", out var value ).Should().BeFalse();
+        value.Should().BeSameAs( ConfigNull.Instance );
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public sealed class VariableSetTests
                     ["user"] = new ConfigObject(
                         new Dictionary<string, ConfigValue>
                         {
-                            ["name"] = ConfigScalar.String("Alice"),
+                            ["name"] = ConfigScalar.String( "Alice" ),
                         }
                     ),
                 }
@@ -102,9 +103,9 @@ public sealed class VariableSetTests
         var templateEngine = new TestTemplateEngine();
 
         variables
-            .ToObjectGraph(templateEngine)
+            .ToObjectGraph( templateEngine )
             .Should()
             .BeAssignableTo<IDictionary<string, object?>>();
-        variables.EnumeratePaths().Should().ContainSingle(x => x.Path == "user.name");
+        variables.EnumeratePaths().Should().ContainSingle( x => x.Path == "user.name" );
     }
 }

@@ -25,17 +25,17 @@ internal sealed class TaskExecutionPipeline(
         var isElevated = privilegeDetector.IsElevated();
         var records = new List<EngineTaskRecord>();
 
-        foreach (var task in tasks)
+        foreach ( var task in tasks )
         {
             ResolvedModule resolvedModule;
             try
             {
-                resolvedModule = moduleCatalog.Resolve(task.ModuleName);
+                resolvedModule = moduleCatalog.Resolve( task.ModuleName );
             }
-            catch (ConfigurationException exception)
+            catch ( ConfigurationException exception )
             {
                 hasErrors = true;
-                diagnostics.Add($"{task.Name}: error: {exception.Message}");
+                diagnostics.Add( $"{task.Name}: error: {exception.Message}" );
                 continue;
             }
 
@@ -61,83 +61,69 @@ internal sealed class TaskExecutionPipeline(
                 resolvedModule.Schema,
                 context,
                 task.Parameters,
-                allowDeferred: mode == ExecutionMode.Validate
+                mode == ExecutionMode.Validate
             );
 
-            foreach (var diagnostic in binding.Diagnostics)
-            {
-                diagnostics.Add($"{task.Name}: {ModuleDiagnosticFormatter.Format(diagnostic)}");
-            }
+            foreach ( var diagnostic in binding.Diagnostics )
+                diagnostics.Add( $"{task.Name}: {ModuleDiagnosticFormatter.Format( diagnostic )}" );
 
-            if (binding.HasErrors)
+            if ( binding.HasErrors )
             {
                 hasErrors = true;
-                if (mode == ExecutionMode.Validate)
-                {
+                if ( mode == ExecutionMode.Validate )
                     continue;
-                }
 
-                return new EngineRunResult(mode, false, "Validation failed.", diagnostics, records);
+                return new EngineRunResult( mode, false, "Validation failed.", diagnostics, records );
             }
 
-            if (binding.IsDeferred)
-            {
+            if ( binding.IsDeferred )
                 continue;
-            }
 
-            log?.Invoke($"Inspecting {task.Name} [{resolvedModule.FullName}]");
+            log?.Invoke( $"Inspecting {task.Name} [{resolvedModule.FullName}]" );
 
             ModuleInspectionResult inspection;
             try
             {
-                inspection = await binding.Module!.InspectAsync(cancellationToken);
+                inspection = await binding.Module!.InspectAsync( cancellationToken );
             }
-            catch (Exception exception)
+            catch ( Exception exception )
             {
                 hasErrors = true;
-                diagnostics.Add($"{task.Name}: inspection failed: {exception.Message}");
-                if (mode == ExecutionMode.Validate)
-                {
+                diagnostics.Add( $"{task.Name}: inspection failed: {exception.Message}" );
+                if ( mode == ExecutionMode.Validate )
                     continue;
-                }
 
-                return new EngineRunResult(mode, false, "Validation failed.", diagnostics, records);
+                return new EngineRunResult( mode, false, "Validation failed.", diagnostics, records );
             }
 
-            foreach (var diagnostic in inspection.Diagnostics)
-            {
-                diagnostics.Add($"{task.Name}: {ModuleDiagnosticFormatter.Format(diagnostic)}");
-            }
+            foreach ( var diagnostic in inspection.Diagnostics )
+                diagnostics.Add( $"{task.Name}: {ModuleDiagnosticFormatter.Format( diagnostic )}" );
 
             hasErrors |= !inspection.IsValid;
 
-            if (inspection.RequiredPrivilege == PrivilegeRequirement.Administrator && !isElevated)
+            if ( inspection.RequiredPrivilege == PrivilegeRequirement.Administrator && !isElevated )
             {
                 var message =
                     $"The task '{task.Name}' requires elevation. Rerun the command from an elevated terminal.";
                 hasErrors = true;
-                diagnostics.Add($"{task.Name}: error: {message}");
-                if (mode == ExecutionMode.Validate)
-                {
+                diagnostics.Add( $"{task.Name}: error: {message}" );
+                if ( mode == ExecutionMode.Validate )
                     continue;
-                }
 
-                return new EngineRunResult(mode, false, message, diagnostics, records);
+                return new EngineRunResult( mode, false, message, diagnostics, records );
             }
 
-            if (mode == ExecutionMode.Validate)
-            {
+            if ( mode == ExecutionMode.Validate )
                 continue;
-            }
 
-            log?.Invoke($"Running {task.Name} [{resolvedModule.FullName}]");
+            log?.Invoke( $"Running {task.Name} [{resolvedModule.FullName}]" );
 
             ModuleResult result;
             try
             {
-                result = await binding.Module!.ExecuteAsync(cancellationToken);
+                result = await binding.Module!.ExecuteAsync( cancellationToken );
             }
-            catch (Exception exception)
+            catch ( Exception exception )
             {
                 var message = $"{task.Name}: execution failed: {exception.Message}";
                 records.Add(
@@ -145,18 +131,17 @@ internal sealed class TaskExecutionPipeline(
                         task.Name,
                         resolvedModule.FullName,
                         task.RoleName,
-                        ModuleResult.Failure(message)
+                        ModuleResult.Failure( message )
                     )
                 );
-                return new EngineRunResult(mode, false, message, [message], records);
+                return new EngineRunResult( mode, false, message, [message], records );
             }
 
             records.Add(
-                new EngineTaskRecord(task.Name, resolvedModule.FullName, task.RoleName, result)
+                new EngineTaskRecord( task.Name, resolvedModule.FullName, task.RoleName, result )
             );
 
-            if (result.Failed)
-            {
+            if ( result.Failed )
                 return new EngineRunResult(
                     mode,
                     false,
@@ -164,13 +149,11 @@ internal sealed class TaskExecutionPipeline(
                     [result.Message ?? $"{task.Name} failed."],
                     records
                 );
-            }
         }
 
-        if (mode == ExecutionMode.Validate)
-        {
+        if ( mode == ExecutionMode.Validate )
             return hasErrors
-                ? new EngineRunResult(mode, false, "Validation failed.", diagnostics, [])
+                ? new EngineRunResult( mode, false, "Validation failed.", diagnostics, [] )
                 : new EngineRunResult(
                     mode,
                     true,
@@ -178,17 +161,16 @@ internal sealed class TaskExecutionPipeline(
                     diagnostics,
                     []
                 );
-        }
 
         var successMessage = mode switch
         {
             ExecutionMode.Check =>
-                $"Check completed. {records.Count(static record => record.Result.Changed)} task(s) would change.",
+                $"Check completed. {records.Count( static record => record.Result.Changed )} task(s) would change.",
             ExecutionMode.Apply =>
-                $"Apply completed. {records.Count(static record => record.Result.Changed)} task(s) changed.",
-            _ => $"Completed {records.Count} task(s).",
+                $"Apply completed. {records.Count( static record => record.Result.Changed )} task(s) changed.",
+            var _ => $"Completed {records.Count} task(s).",
         };
 
-        return new EngineRunResult(mode, true, successMessage, [], records);
+        return new EngineRunResult( mode, true, successMessage, [], records );
     }
 }

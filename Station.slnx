@@ -1,61 +1,68 @@
 <Solution>
-  <Folder Name="/common/">
-    <File Path="Directory.Packages.props" />
-    <File Path="dotnet-tools.json" />
-    <File Path="global.json" />
-    <File Path="NuGet.Config" />
-  </Folder>
-  <Folder Name="/examples/" />
-  <Folder Name="/examples/workstation/">
-    <File Path="examples/workstation/station.yaml" />
-  </Folder>
-  <Folder Name="/examples/workstation/roles/">
-    <File Path="examples/workstation/roles/git/defaults.yaml" />
-    <File Path="examples/workstation/roles/git/files/git/.gitignore_global" />
-    <File Path="examples/workstation/roles/git/role.yaml" />
-    <File Path="examples/workstation/roles/git/templates/git/.gitconfig.scriban" />
-    <File Path="examples/workstation/roles/jsexample/defaults.js" />
-    <File Path="examples/workstation/roles/jsexample/role.js" />
-    <File Path="examples/workstation/roles/shell/defaults.yaml" />
-    <File Path="examples/workstation/roles/shell/role.yaml" />
-    <File Path="examples/workstation/roles/shell/templates/powershell/Microsoft.PowerShell_profile.ps1.scriban" />
-    <File Path="examples/workstation/roles/shell/templates/starship/starship.toml.scriban" />
-    <File Path="examples/workstation/roles/terminal/defaults.yaml" />
-    <File Path="examples/workstation/roles/terminal/role.yaml" />
-    <File Path="examples/workstation/roles/terminal/templates/windows-terminal/settings.json.scriban" />
-  </Folder>
-  <Folder Name="/examples/workstation/vars/">
-    <File Path="examples/workstation/vars/00-common.yaml" />
-    <File Path="examples/workstation/vars/10-workstation.yaml" />
-  </Folder>
+    <Folder Name="/common/">
+        <File Path="Directory.Packages.props"/>
+        <File Path="dotnet-tools.json"/>
+        <File Path="global.json"/>
+        <File Path="NuGet.Config"/>
+    </Folder>
+    <Folder Name="/examples/"/>
+    <Folder Name="/examples/workstation/">
+        <File Path="examples/workstation/station.yaml"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/">
+        <File Path="examples/workstation/roles/git/defaults.yaml"/>
+        <File Path="examples/workstation/roles/git/files/git/.gitignore_global"/>
+        <File Path="examples/workstation/roles/git/role.yaml"/>
+        <File Path="examples/workstation/roles/git/templates/git/.gitconfig.scriban"/>
+        <File Path="examples/workstation/roles/jsexample/defaults.js"/>
+        <File Path="examples/workstation/roles/jsexample/role.js"/>
+        <File Path="examples/workstation/roles/shell/defaults.yaml"/>
+        <File Path="examples/workstation/roles/shell/role.yaml"/>
+        <File
+                Path="examples/workstation/roles/shell/templates/powershell/Microsoft.PowerShell_profile.ps1.scriban"/>
+        <File Path="examples/workstation/roles/shell/templates/starship/starship.toml.scriban"/>
+        <File Path="examples/workstation/roles/terminal/defaults.yaml"/>
+        <File Path="examples/workstation/roles/terminal/role.yaml"/>
+        <File
+                Path="examples/workstation/roles/terminal/templates/windows-terminal/settings.json.scriban"/>
+    </Folder>
+    <Folder Name="/examples/workstation/vars/">
+        <File Path="examples/workstation/vars/00-common.yaml"/>
+        <File Path="examples/workstation/vars/10-workstation.yaml"/>
+    </Folder>
 
-  <Folder Name="/misc/">
-    <File Path=".gitignore" />
-    <File Path="AGENTS.md" />
-    <File Path="README.md" />
-    <File Path="schema.md" />
-  </Folder>
-  <Folder Name="/src/">
-    <Project Path="src/Station.Abstractions/Station.Abstractions.csproj" />
-    <Project Path="src/Station.Configuration.Abstractions/Station.Configuration.Abstractions.csproj" />
-    <Project Path="src/Station.Configuration.Yaml/Station.Configuration.Yaml.csproj" />
-    <Project Path="src/Station.Configuration.JavaScript/Station.Configuration.JavaScript.csproj" />
-    <Project Path="src/Station.Cli/Station.Cli.csproj" />
-    <Project Path="src/Station.Core/Station.Core.csproj" />
-    <Project Path="src/Station.Plugins.Abstractions/Station.Plugins.Abstractions.csproj" />
-    <Project Path="src/Station.Plugins/Station.Plugins.csproj" />
-    <Project Path="src/Station.Utilities/Station.Utilities.csproj" />
-  </Folder>
-  <Folder Name="/src/Modules/">
-    <Project Path="src/Modules/Station.Modules.Builtin.Apt/Station.Modules.Builtin.Apt.csproj" />
-    <Project Path="src/Modules/Station.Modules.Builtin.Dotfile/Station.Modules.Builtin.Dotfile.csproj" />
-    <Project Path="src/Modules/Station.Modules.Builtin.Scoop/Station.Modules.Builtin.Scoop.csproj" />
-    <Project Path="src/Modules/Station.Modules.Builtin.Script/Station.Modules.Builtin.Script.csproj" />
-    <Project Path="src/Modules/Station.Modules.Builtin.Winget/Station.Modules.Builtin.Winget.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Station.IntegrationTests/Station.IntegrationTests.csproj" />
-    <Project Path="tests/Station.Testing/Station.Testing.csproj" />
-    <Project Path="tests/Station.UnitTests/Station.UnitTests.csproj" />
-  </Folder>
+    <Folder Name="/misc/">
+        <File Path=".editorconfig"/>
+        <File Path=".gitignore"/>
+        <File Path="AGENTS.md"/>
+        <File Path="README.md"/>
+        <File Path="schema.md"/>
+    </Folder>
+    <Folder Name="/src/">
+        <Project Path="src/Station.Abstractions/Station.Abstractions.csproj"/>
+        <Project
+                Path="src/Station.Configuration.Abstractions/Station.Configuration.Abstractions.csproj"/>
+        <Project Path="src/Station.Configuration.Yaml/Station.Configuration.Yaml.csproj"/>
+        <Project Path="src/Station.Configuration.JavaScript/Station.Configuration.JavaScript.csproj"/>
+        <Project Path="src/Station.Cli/Station.Cli.csproj"/>
+        <Project Path="src/Station.Core/Station.Core.csproj"/>
+        <Project Path="src/Station.Plugins.Abstractions/Station.Plugins.Abstractions.csproj"/>
+        <Project Path="src/Station.Plugins/Station.Plugins.csproj"/>
+        <Project Path="src/Station.Utilities/Station.Utilities.csproj"/>
+    </Folder>
+    <Folder Name="/src/Modules/">
+        <Project Path="src/Modules/Station.Modules.Builtin.Apt/Station.Modules.Builtin.Apt.csproj"/>
+        <Project
+                Path="src/Modules/Station.Modules.Builtin.Dotfile/Station.Modules.Builtin.Dotfile.csproj"/>
+        <Project Path="src/Modules/Station.Modules.Builtin.Scoop/Station.Modules.Builtin.Scoop.csproj"/>
+        <Project
+                Path="src/Modules/Station.Modules.Builtin.Script/Station.Modules.Builtin.Script.csproj"/>
+        <Project
+                Path="src/Modules/Station.Modules.Builtin.Winget/Station.Modules.Builtin.Winget.csproj"/>
+    </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/Station.IntegrationTests/Station.IntegrationTests.csproj"/>
+        <Project Path="tests/Station.Testing/Station.Testing.csproj"/>
+        <Project Path="tests/Station.UnitTests/Station.UnitTests.csproj"/>
+    </Folder>
 </Solution>

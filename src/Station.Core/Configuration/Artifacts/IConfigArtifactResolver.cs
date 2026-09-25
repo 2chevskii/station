@@ -4,7 +4,7 @@ namespace Station.Core.Configuration.Artifacts;
 
 internal interface IConfigArtifactResolver
 {
-    IReadOnlyList<ResolvedConfigArtifact> EnumerateRootVarArtifacts(DiscoveredConfigTree tree);
+    IReadOnlyList<ResolvedConfigArtifact> EnumerateRootVarArtifacts( DiscoveredConfigTree tree );
 
     ResolvedConfigArtifact? ResolveRoleDefaultsArtifact(
         DiscoveredDirectory roleDirectory,

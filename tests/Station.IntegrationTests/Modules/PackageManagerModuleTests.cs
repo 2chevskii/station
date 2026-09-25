@@ -1,7 +1,8 @@
 using FluentAssertions;
+
 using Station.Abstractions.Execution;
-using Station.Abstractions.Modules;
 using Station.Abstractions.FileSystem;
+using Station.Abstractions.Modules;
 using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Winget;
@@ -19,13 +20,13 @@ public sealed class PackageManagerModuleTests
         var commandPath = shims.AddPowerShellCommand(
             "scoop",
             $$"""
-            $state = '{{statePath.Replace("'", "''")}}'
-            switch ($args[0]) {
-              'list' { if (Test-Path $state) { Get-Content $state }; exit 0 }
-              'install' { Set-Content -Path $state -Value $args[-1]; exit 0 }
-              'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
-            }
-            """
+              $state = '{{statePath.Replace( "'", "''" )}}'
+              switch ($args[0]) {
+                'list' { if (Test-Path $state) { Get-Content $state }; exit 0 }
+                'install' { Set-Content -Path $state -Value $args[-1]; exit 0 }
+                'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
+              }
+              """
         );
 
         var module = new ScoopModule(
@@ -41,11 +42,11 @@ public sealed class PackageManagerModuleTests
             Command = commandPath,
         };
 
-        (await module.InspectAsync(CancellationToken.None))
+        (await module.InspectAsync( CancellationToken.None ))
             .RequiredPrivilege.Should()
-            .Be(PrivilegeRequirement.Administrator);
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
+            .Be( PrivilegeRequirement.Administrator );
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeTrue();
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeFalse();
     }
 
     [Fact]
@@ -56,13 +57,13 @@ public sealed class PackageManagerModuleTests
         var commandPath = shims.AddPowerShellCommand(
             "winget",
             $$"""
-            $state = '{{statePath.Replace("'", "''")}}'
-            switch ($args[0]) {
-              'list' { if (Test-Path $state) { Write-Output ('Git.Git ' + (Get-Content $state)) }; exit 0 }
-              'install' { Set-Content -Path $state -Value '2.0.0'; exit 0 }
-              'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
-            }
-            """
+              $state = '{{statePath.Replace( "'", "''" )}}'
+              switch ($args[0]) {
+                'list' { if (Test-Path $state) { Write-Output ('Git.Git ' + (Get-Content $state)) }; exit 0 }
+                'install' { Set-Content -Path $state -Value '2.0.0'; exit 0 }
+                'uninstall' { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
+              }
+              """
         );
 
         var module = new WingetModule(
@@ -79,11 +80,11 @@ public sealed class PackageManagerModuleTests
             Command = commandPath,
         };
 
-        (await module.InspectAsync(CancellationToken.None))
+        (await module.InspectAsync( CancellationToken.None ))
             .RequiredPrivilege.Should()
-            .Be(PrivilegeRequirement.Administrator);
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
+            .Be( PrivilegeRequirement.Administrator );
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeTrue();
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeFalse();
     }
 
     [Fact]
@@ -94,12 +95,12 @@ public sealed class PackageManagerModuleTests
         var commandPath = shims.AddPowerShellCommand(
             "wsl",
             $$"""
-            $state = '{{statePath.Replace("'", "''")}}'
-            if ($args[0] -eq '-l') { Write-Output 'Ubuntu'; exit 0 }
-            if ($args -contains 'dpkg-query') { if (Test-Path $state) { Get-Content $state; exit 0 } exit 1 }
-            if ($args -contains 'install') { Set-Content -Path $state -Value '1.0.0'; exit 0 }
-            if ($args -contains 'remove') { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
-            """
+              $state = '{{statePath.Replace( "'", "''" )}}'
+              if ($args[0] -eq '-l') { Write-Output 'Ubuntu'; exit 0 }
+              if ($args -contains 'dpkg-query') { if (Test-Path $state) { Get-Content $state; exit 0 } exit 1 }
+              if ($args -contains 'install') { Set-Content -Path $state -Value '1.0.0'; exit 0 }
+              if ($args -contains 'remove') { Remove-Item -Path $state -ErrorAction SilentlyContinue; exit 0 }
+              """
         );
 
         var module = new AptModule(
@@ -116,8 +117,8 @@ public sealed class PackageManagerModuleTests
             WslCommand = commandPath,
         };
 
-        (await module.InspectAsync(CancellationToken.None)).IsValid.Should().BeTrue();
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeTrue();
-        (await module.ExecuteAsync(CancellationToken.None)).Changed.Should().BeFalse();
+        (await module.InspectAsync( CancellationToken.None )).IsValid.Should().BeTrue();
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeTrue();
+        (await module.ExecuteAsync( CancellationToken.None )).Changed.Should().BeFalse();
     }
 }

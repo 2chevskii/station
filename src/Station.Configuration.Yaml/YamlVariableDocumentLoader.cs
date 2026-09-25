@@ -6,14 +6,14 @@ public sealed class YamlVariableDocumentLoader : IVariableDocumentLoader
 {
     private readonly YamlConfigurationReader yamlReader;
 
-    public YamlVariableDocumentLoader(YamlConfigurationReader yamlReader)
+    public YamlVariableDocumentLoader( YamlConfigurationReader yamlReader )
     {
         this.yamlReader = yamlReader;
     }
 
     public string Id => "yaml";
 
-    public bool Supports(ConfigArtifactKind kind, string fileName) =>
+    public bool Supports( ConfigArtifactKind kind, string fileName ) =>
         kind switch
         {
             ConfigArtifactKind.RootVarsEntry => fileName.EndsWith(
@@ -25,7 +25,7 @@ public sealed class YamlVariableDocumentLoader : IVariableDocumentLoader
                 "defaults.yaml",
                 StringComparison.OrdinalIgnoreCase
             ),
-            _ => false,
+            var _ => false,
         };
 
     public ConfigObject LoadVariables(
@@ -33,7 +33,7 @@ public sealed class YamlVariableDocumentLoader : IVariableDocumentLoader
         ConfigEvaluationContext context
     )
     {
-        var value = ConfigValueFactory.FromClrValue(yamlReader.LoadObject(artifact.FullPath));
-        return ConfigValueFactory.RequireObject(value, artifact.DisplayName);
+        var value = ConfigValueFactory.FromClrValue( yamlReader.LoadObject( artifact.FullPath ) );
+        return ConfigValueFactory.RequireObject( value, artifact.DisplayName );
     }
 }

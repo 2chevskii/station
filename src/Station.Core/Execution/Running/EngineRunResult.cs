@@ -10,5 +10,5 @@ public sealed record EngineRunResult(
     IReadOnlyList<EngineTaskRecord> Tasks
 )
 {
-    public int ChangedCount => Tasks.Count(static task => task.Result.Changed);
+    public int ChangedCount => Tasks.Count( static task => task.Result.Changed );
 }

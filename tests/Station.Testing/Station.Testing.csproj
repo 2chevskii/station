@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="TruePath" />
-    <PackageReference Include="TruePath.SystemIo" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="TruePath"/>
+        <PackageReference Include="TruePath.SystemIo"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Station.Abstractions\Station.Abstractions.csproj" />
-    <ProjectReference Include="..\..\src\Station.Core\Station.Core.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj" />
-    <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Station.Abstractions\Station.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\src\Station.Core\Station.Core.csproj"/>
+        <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj"/>
+        <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj"/>
+        <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj"/>
+        <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj"/>
+        <ProjectReference Include="..\..\src\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj"/>
+    </ItemGroup>
 </Project>

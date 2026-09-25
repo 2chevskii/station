@@ -23,30 +23,28 @@ internal sealed class RoleCatalog
         IEnumerable<ResolvedPluginManifest> plugins
     )
     {
-        var roles = new List<ResolvedRole>(localRoles);
+        var roles = new List<ResolvedRole>( localRoles );
 
-        foreach (var plugin in plugins)
-        {
+        foreach ( var plugin in plugins )
             roles.AddRange(
-                plugin.Roles.Select(shortName => new ResolvedRole(
+                plugin.Roles.Select( shortName => new ResolvedRole(
                     plugin.Name,
                     shortName,
                     $"{plugin.Name}.{shortName}",
                     (plugin.PluginRoot.AsAbsolutePath() / "roles" / shortName).Value,
-                    plugin.Tree.RolesRoot?.Directories.First(directory =>
-                        string.Equals(directory.Name, shortName, StringComparison.OrdinalIgnoreCase)
+                    plugin.Tree.RolesRoot?.Directories.First( directory =>
+                        string.Equals( directory.Name, shortName, StringComparison.OrdinalIgnoreCase )
                     )
-                        ?? throw new ConfigurationException(
-                            $"Plugin '{plugin.Name}' exports role '{shortName}', but its role directory is missing."
-                        )
-                ))
+                    ?? throw new ConfigurationException(
+                        $"Plugin '{plugin.Name}' exports role '{shortName}', but its role directory is missing."
+                    )
+                ) )
             );
-        }
 
         return new RoleCatalog(
-            roles.ToDictionary(role => role.FullName, StringComparer.OrdinalIgnoreCase),
+            roles.ToDictionary( role => role.FullName, StringComparer.OrdinalIgnoreCase ),
             roles
-                .GroupBy(role => role.ShortName, StringComparer.OrdinalIgnoreCase)
+                .GroupBy( role => role.ShortName, StringComparer.OrdinalIgnoreCase )
                 .ToDictionary(
                     group => group.Key,
                     group => (IReadOnlyList<ResolvedRole>)group.ToArray(),
@@ -55,29 +53,24 @@ internal sealed class RoleCatalog
         );
     }
 
-    public ResolvedRole Resolve(string name)
+    public ResolvedRole Resolve( string name )
     {
-        if (rolesByFullName.TryGetValue(name, out var fullNameMatch))
-        {
+        if ( rolesByFullName.TryGetValue( name, out var fullNameMatch ) )
             return fullNameMatch;
-        }
 
-        if (!rolesByShortName.TryGetValue(name, out var shortNameMatches))
-        {
-            throw new ConfigurationException($"Role '{name}' is not registered.");
-        }
+        if ( !rolesByShortName.TryGetValue( name, out var shortNameMatches ) )
+            throw new ConfigurationException( $"Role '{name}' is not registered." );
 
-        if (shortNameMatches.Count > 1)
-        {
+        if ( shortNameMatches.Count > 1 )
             throw new ConfigurationException(
-                $"Role '{name}' is ambiguous. Use one of: {string.Join(", ", shortNameMatches.Select(static role => role.FullName))}."
+                $"Role '{name}' is ambiguous. Use one of: {string.Join( ", ", shortNameMatches.Select( static role => role.FullName ) )}."
             );
-        }
 
         return shortNameMatches[0];
     }
 
-    public IReadOnlyList<ResolvedRole> All => rolesByFullName.Values
-        .OrderBy(role => role.FullName, StringComparer.OrdinalIgnoreCase)
-        .ToArray();
+    public IReadOnlyList<ResolvedRole> All =>
+        rolesByFullName
+            .Values.OrderBy( role => role.FullName, StringComparer.OrdinalIgnoreCase )
+            .ToArray();
 }

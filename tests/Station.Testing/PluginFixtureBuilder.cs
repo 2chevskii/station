@@ -15,35 +15,35 @@ public static class PluginFixtureBuilder
         bool useJavaScriptRole = false
     )
     {
-        var pluginRoot = root.GetPath(pluginDirectoryName);
+        var pluginRoot = root.GetPath( pluginDirectoryName );
         pluginRoot.AsAbsolutePath().CreateDirectory();
 
         var moduleList = includeModule ? "  - script" : string.Empty;
         root.WriteFile(
             $"{pluginDirectoryName}/manifest.yaml",
             $$"""
-            name: {{pluginName}}
-            version: 1.0.0
-            roles:
-              - {{roleName}}
-            modules:
-            {{moduleList}}
-            """
+              name: {{pluginName}}
+              version: 1.0.0
+              roles:
+                - {{roleName}}
+              modules:
+              {{moduleList}}
+              """
         );
 
         var moduleReference = includeModule ? $"{pluginName}.script" : "script";
         var roleContents = useJavaScriptRole
             ? """
-                import { script } from 'station:modules/builtin';
+              import { script } from 'station:modules/builtin';
 
-                task('plugin script', '__MODULE_REFERENCE__', {
-                  path: 'scripts/sample.ps1'
-                });
-                """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal)
+              task('plugin script', '__MODULE_REFERENCE__', {
+                path: 'scripts/sample.ps1'
+              });
+              """.Replace( "__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal )
             : """
-                - __MODULE_REFERENCE__:
-                    path: scripts/sample.ps1
-                """.Replace("__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal);
+              - __MODULE_REFERENCE__:
+                  path: scripts/sample.ps1
+              """.Replace( "__MODULE_REFERENCE__", moduleReference, StringComparison.Ordinal );
         root.WriteFile(
             $"{pluginDirectoryName}/roles/{roleName}/{(useJavaScriptRole ? "role.js" : "role.yaml")}",
             roleContents
@@ -53,12 +53,12 @@ public static class PluginFixtureBuilder
             "Write-Output '{\"changed\":false,\"message\":\"ok\"}'"
         );
 
-        if (includeModule)
+        if ( includeModule )
         {
-            var modulePath = typeof(Modules.Builtin.Script.ScriptModule).Assembly.Location;
+            var modulePath = typeof( Modules.Builtin.Script.ScriptModule ).Assembly.Location;
             var destinationPath = pluginRoot.AsAbsolutePath() / "modules" / "script" / "script.dll";
             destinationPath.Parent!.Value.CreateDirectory();
-            modulePath.AsAbsolutePath().Copy(destinationPath, overwrite: true);
+            modulePath.AsAbsolutePath().Copy( destinationPath, true );
         }
 
         return pluginRoot;

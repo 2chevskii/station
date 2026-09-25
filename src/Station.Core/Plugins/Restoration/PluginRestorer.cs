@@ -10,31 +10,28 @@ internal sealed class PluginRestorer
     private readonly PluginManifestLoader pluginManifestLoader;
     private readonly PluginSourceRestorer sourceRestorer;
 
-    public PluginRestorer(PluginManifestLoader pluginManifestLoader, IProcessRunner processRunner)
+    public PluginRestorer( PluginManifestLoader pluginManifestLoader, IProcessRunner processRunner )
     {
         this.pluginManifestLoader = pluginManifestLoader;
-        sourceRestorer = new PluginSourceRestorer(processRunner);
+        sourceRestorer = new PluginSourceRestorer( processRunner );
     }
 
     public async Task<PluginRestoreResult> RestoreAsync(
         string configRoot,
         IReadOnlyList<PluginRequirement> requirements,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default,
+        CancellationToken cancellationToken = default(CancellationToken),
         string? cacheRootOverride = null
     )
     {
-        if (requirements.Count == 0)
-        {
-            return new PluginRestoreResult(true, "No plugin requirements.", [], [], []);
-        }
+        if ( requirements.Count == 0 )
+            return new PluginRestoreResult( true, "No plugin requirements.", [], [], [] );
 
         var diagnostics = new List<string>();
         var records = new List<PluginRestoreRecord>();
         var manifests = new List<ResolvedPluginManifest>();
 
-        foreach (var requirement in requirements)
-        {
+        foreach ( var requirement in requirements )
             try
             {
                 var restored = await sourceRestorer.RestoreAsync(
@@ -44,8 +41,8 @@ internal sealed class PluginRestorer
                     cancellationToken,
                     cacheRootOverride
                 );
-                var manifest = pluginManifestLoader.Load(restored.PluginRoot);
-                manifests.Add(manifest);
+                var manifest = pluginManifestLoader.Load( restored.PluginRoot );
+                manifests.Add( manifest );
                 records.Add(
                     new PluginRestoreRecord(
                         requirement.DisplaySource,
@@ -57,15 +54,13 @@ internal sealed class PluginRestorer
                     )
                 );
             }
-            catch (Exception exception)
-                when (exception is ConfigurationException or IOException or HttpRequestException)
+            catch ( Exception exception )
+                when ( exception is ConfigurationException or IOException or HttpRequestException )
             {
-                diagnostics.Add($"{requirement.DisplaySource}: {exception.Message}");
+                diagnostics.Add( $"{requirement.DisplaySource}: {exception.Message}" );
             }
-        }
 
-        if (diagnostics.Count > 0)
-        {
+        if ( diagnostics.Count > 0 )
             return new PluginRestoreResult(
                 false,
                 "Plugin restore failed.",
@@ -73,7 +68,6 @@ internal sealed class PluginRestorer
                 records,
                 manifests
             );
-        }
 
         return new PluginRestoreResult(
             true,

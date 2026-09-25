@@ -6,18 +6,22 @@ public abstract record ConfigValue;
 
 public sealed record ConfigNull : ConfigValue
 {
-    public static readonly ConfigNull Instance = new();
+    public static readonly ConfigNull Instance = new ConfigNull();
 }
 
-public sealed record ConfigScalar(ConfigScalarKind Kind, object Value) : ConfigValue
+public sealed record ConfigScalar( ConfigScalarKind Kind, object Value ) : ConfigValue
 {
-    public static ConfigScalar String(string value) => new(ConfigScalarKind.String, value);
+    public static ConfigScalar String( string value ) =>
+        new ConfigScalar( ConfigScalarKind.String, value );
 
-    public static ConfigScalar Boolean(bool value) => new(ConfigScalarKind.Boolean, value);
+    public static ConfigScalar Boolean( bool value ) =>
+        new ConfigScalar( ConfigScalarKind.Boolean, value );
 
-    public static ConfigScalar Integer(long value) => new(ConfigScalarKind.Integer, value);
+    public static ConfigScalar Integer( long value ) =>
+        new ConfigScalar( ConfigScalarKind.Integer, value );
 
-    public static ConfigScalar Float(double value) => new(ConfigScalarKind.Float, value);
+    public static ConfigScalar Float( double value ) =>
+        new ConfigScalar( ConfigScalarKind.Float, value );
 }
 
 public sealed record ConfigArray : ConfigValue, IReadOnlyList<ConfigValue>
@@ -25,14 +29,16 @@ public sealed record ConfigArray : ConfigValue, IReadOnlyList<ConfigValue>
     private readonly IReadOnlyList<ConfigValue> items;
 
     public ConfigArray()
-        : this(Array.Empty<ConfigValue>()) { }
-
-    public ConfigArray(IEnumerable<ConfigValue> items)
+        : this( Array.Empty<ConfigValue>() )
     {
-        this.items = items.Select(ConfigValueUtilities.EnsureValue).ToArray();
     }
 
-    public ConfigValue this[int index] => items[index];
+    public ConfigArray( IEnumerable<ConfigValue> items )
+    {
+        this.items = items.Select( ConfigValueUtilities.EnsureValue ).ToArray();
+    }
+
+    public ConfigValue this[ int index ] => items[index];
 
     public int Count => items.Count;
 
@@ -46,18 +52,20 @@ public sealed record ConfigObject : ConfigValue, IReadOnlyDictionary<string, Con
     private readonly IReadOnlyDictionary<string, ConfigValue> properties;
 
     public ConfigObject()
-        : this(Array.Empty<KeyValuePair<string, ConfigValue>>()) { }
+        : this( Array.Empty<KeyValuePair<string, ConfigValue>>() )
+    {
+    }
 
-    public ConfigObject(IEnumerable<KeyValuePair<string, ConfigValue>> properties)
+    public ConfigObject( IEnumerable<KeyValuePair<string, ConfigValue>> properties )
     {
         this.properties = properties.ToDictionary(
             static pair => pair.Key,
-            static pair => ConfigValueUtilities.EnsureValue(pair.Value),
+            static pair => ConfigValueUtilities.EnsureValue( pair.Value ),
             StringComparer.OrdinalIgnoreCase
         );
     }
 
-    public ConfigValue this[string key] => properties[key];
+    public ConfigValue this[ string key ] => properties[key];
 
     public IEnumerable<string> Keys => properties.Keys;
 
@@ -65,11 +73,11 @@ public sealed record ConfigObject : ConfigValue, IReadOnlyDictionary<string, Con
 
     public int Count => properties.Count;
 
-    public bool ContainsKey(string key) => properties.ContainsKey(key);
+    public bool ContainsKey( string key ) => properties.ContainsKey( key );
 
-    public bool TryGetValue(string key, out ConfigValue value)
+    public bool TryGetValue( string key, out ConfigValue value )
     {
-        if (properties.TryGetValue(key, out var actual))
+        if ( properties.TryGetValue( key, out var actual ) )
         {
             value = actual;
             return true;
@@ -85,6 +93,6 @@ public sealed record ConfigObject : ConfigValue, IReadOnlyDictionary<string, Con
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
-public sealed record VariableReference(string Path) : ConfigValue;
+public sealed record VariableReference( string Path ) : ConfigValue;
 
-public sealed record TemplateMarkup(string TemplateText) : ConfigValue;
+public sealed record TemplateMarkup( string TemplateText ) : ConfigValue;

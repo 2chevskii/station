@@ -17,41 +17,35 @@ internal sealed class GitPluginProvider : IPluginProvider
         CancellationToken cancellationToken
     )
     {
-        return infrastructure.StageAsync(async tempRoot =>
+        return infrastructure.StageAsync( async tempRoot =>
         {
-            if (!infrastructure.ProcessRunner.CommandExists("git"))
-            {
-                throw new ConfigurationException("git is not available on PATH.");
-            }
+            if ( !infrastructure.ProcessRunner.CommandExists( "git" ) )
+                throw new ConfigurationException( "git is not available on PATH." );
 
             var cloneRoot = (tempRoot.AsAbsolutePath() / "clone").Value;
             var cloneResult = await infrastructure.ProcessRunner.RunAsync(
-                new ProcessCommand("git", ["clone", requirement.Url!, cloneRoot]),
+                new ProcessCommand( "git", ["clone", requirement.Url!, cloneRoot] ),
                 cancellationToken
             );
-            if (!cloneResult.Succeeded)
-            {
+            if ( !cloneResult.Succeeded )
                 throw new ConfigurationException(
-                    infrastructure.SelectProcessError(cloneResult, "git clone failed.")
+                    infrastructure.SelectProcessError( cloneResult, "git clone failed." )
                 );
-            }
 
-            if (!string.IsNullOrWhiteSpace(requirement.Ref))
+            if ( !string.IsNullOrWhiteSpace( requirement.Ref ) )
             {
                 var checkoutResult = await infrastructure.ProcessRunner.RunAsync(
-                    new ProcessCommand("git", ["checkout", requirement.Ref!], cloneRoot),
+                    new ProcessCommand( "git", ["checkout", requirement.Ref!], cloneRoot ),
                     cancellationToken
                 );
-                if (!checkoutResult.Succeeded)
-                {
+                if ( !checkoutResult.Succeeded )
                     throw new ConfigurationException(
-                        infrastructure.SelectProcessError(checkoutResult, "git checkout failed.")
+                        infrastructure.SelectProcessError( checkoutResult, "git checkout failed." )
                     );
-                }
             }
 
             return cloneRoot;
-        });
+        } );
     }
 
     public RestoredPluginLocation Restore(
@@ -60,8 +54,6 @@ internal sealed class GitPluginProvider : IPluginProvider
         PluginSourceSnapshot source,
         PluginRestoreInfrastructure infrastructure,
         Action<string>? log
-    )
-    {
-        return infrastructure.RestoreToCache(configRoot, requirement, source, log);
-    }
+    ) =>
+        infrastructure.RestoreToCache( configRoot, requirement, source, log );
 }

@@ -1,7 +1,7 @@
+using Station.Abstractions.Artifacts;
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
 using Station.Abstractions.Modules;
-using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
 
 namespace Station.Testing;
 
@@ -22,11 +22,11 @@ public static class TestModuleContextFactory
     )
     {
         templateEngine ??= new TestTemplateEngine();
-        variables ??= new VariableSet(new ConfigObject());
+        variables ??= new VariableSet( new ConfigObject() );
         artifacts ??= new ModuleArtifactSet(
-            new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, ManagedTemplate>(StringComparer.OrdinalIgnoreCase),
-            new Dictionary<string, IReadOnlyList<ManagedTemplate>>(StringComparer.OrdinalIgnoreCase)
+            new Dictionary<string, ManagedFile>( StringComparer.OrdinalIgnoreCase ),
+            new Dictionary<string, ManagedTemplate>( StringComparer.OrdinalIgnoreCase ),
+            new Dictionary<string, IReadOnlyList<ManagedTemplate>>( StringComparer.OrdinalIgnoreCase )
         );
 
         return new ModuleContext(

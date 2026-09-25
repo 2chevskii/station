@@ -1,27 +1,26 @@
-using Station.Abstractions.Modules;
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Configuration;
+using Station.Abstractions.Modules;
 
 using TruePath;
 using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Dotfile;
 
-[Module("copy", "Copies a file from the module artifact tree to the local machine.")]
+[Module( "copy", "Copies a file from the module artifact tree to the local machine." )]
 public sealed class CopyModule : ConfigModule
 {
-    public CopyModule(ModuleContext context)
-        : base(context) { }
+    public CopyModule( ModuleContext context )
+        : base( context )
+    {
+    }
 
-    [Parameter("file", Required = true)]
-    public string FileName { get; set; } = string.Empty;
+    [Parameter( "file", Required = true )] public string FileName { get; set; } = string.Empty;
 
-    [Parameter(Required = true)]
-    public string Destination { get; set; } = string.Empty;
+    [Parameter( Required = true )] public string Destination { get; set; } = string.Empty;
 
-    [Parameter]
-    public bool Backup { get; set; } = true;
+    [Parameter] public bool Backup { get; set; } = true;
 
     public override ValueTask<ModuleInspectionResult> InspectAsync(
         CancellationToken cancellationToken
@@ -29,54 +28,50 @@ public sealed class CopyModule : ConfigModule
     {
         try
         {
-            _ = Context.Artifacts.GetRequiredFile(FileName);
-            var privilege = HostFilePaths.RequiresAdmin(Destination)
+            _ = Context.Artifacts.GetRequiredFile( FileName );
+            var privilege = HostFilePaths.RequiresAdmin( Destination )
                 ? PrivilegeRequirement.Administrator
                 : PrivilegeRequirement.User;
-            return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
+            return ValueTask.FromResult( ModuleInspectionResult.Success( privilege ) );
         }
-        catch (ConfigurationException exception)
+        catch ( ConfigurationException exception )
         {
             return ValueTask.FromResult(
-                ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message))
+                ModuleInspectionResult.Failure( new ModuleDiagnostic( exception.Message ) )
             );
         }
     }
 
-    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
         try
         {
-            var sourceFile = Context.Artifacts.GetRequiredFile(FileName);
-            var destinationPath = HostFilePaths.Resolve(Destination);
+            var sourceFile = Context.Artifacts.GetRequiredFile( FileName );
+            var destinationPath = HostFilePaths.Resolve( Destination );
             var desiredBytes = sourceFile.ReadAllBytes();
             var existingBytes = destinationPath.ExistsFile()
-                ? await destinationPath.ReadAllBytesAsync(cancellationToken)
+                ? await destinationPath.ReadAllBytesAsync( cancellationToken )
                 : null;
-            var changed = existingBytes is null || !existingBytes.SequenceEqual(desiredBytes);
+            var changed = existingBytes is null || !existingBytes.SequenceEqual( desiredBytes );
 
-            if (Context.Mode == ExecutionMode.Check)
-            {
+            if ( Context.Mode == ExecutionMode.Check )
                 return changed
-                    ? ModuleResult.ChangedResult($"File '{destinationPath}' would change.")
+                    ? ModuleResult.ChangedResult( $"File '{destinationPath}' would change." )
                     : ModuleResult.NoChange(
                         $"File '{destinationPath}' is already in the desired state."
                     );
-            }
 
-            if (!changed)
-            {
+            if ( !changed )
                 return ModuleResult.NoChange(
                     $"File '{destinationPath}' is already in the desired state."
                 );
-            }
 
-            await WriteBytesAsync(destinationPath, desiredBytes, cancellationToken);
-            return ModuleResult.ChangedResult($"File '{destinationPath}' was updated.");
+            await WriteBytesAsync( destinationPath, desiredBytes, cancellationToken );
+            return ModuleResult.ChangedResult( $"File '{destinationPath}' was updated." );
         }
-        catch (ConfigurationException exception)
+        catch ( ConfigurationException exception )
         {
-            return ModuleResult.Failure(exception.Message);
+            return ModuleResult.Failure( exception.Message );
         }
     }
 
@@ -86,20 +81,18 @@ public sealed class CopyModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
-        if (destinationPath.Parent is { } parentDirectory)
-        {
+        if ( destinationPath.Parent is { } parentDirectory )
             parentDirectory.CreateDirectory();
-        }
 
-        if (destinationPath.ExistsFile() && Backup)
+        if ( destinationPath.ExistsFile() && Backup )
         {
-            var timestamp = Context.TimeProvider.GetUtcNow().ToString("yyyyMMddHHmmss");
+            var timestamp = Context.TimeProvider.GetUtcNow().ToString( "yyyyMMddHHmmss" );
             destinationPath.Copy(
                 $"{destinationPath}.bak.{timestamp}".AsAbsolutePath(),
-                overwrite: true
+                true
             );
         }
 
-        await destinationPath.WriteAllBytesAsync(desiredBytes, cancellationToken);
+        await destinationPath.WriteAllBytesAsync( desiredBytes, cancellationToken );
     }
 }

@@ -6,10 +6,10 @@ namespace Station.Plugins.Restoration;
 
 public sealed class PluginSourceRestorer
 {
-    private readonly PluginProviderRegistry providerRegistry = new();
+    private readonly PluginProviderRegistry providerRegistry = new PluginProviderRegistry();
     private readonly IProcessRunner processRunner;
 
-    public PluginSourceRestorer(IProcessRunner processRunner)
+    public PluginSourceRestorer( IProcessRunner processRunner )
     {
         this.processRunner = processRunner;
     }
@@ -18,18 +18,18 @@ public sealed class PluginSourceRestorer
         string configRoot,
         PluginRequirement requirement,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default,
+        CancellationToken cancellationToken = default(CancellationToken),
         string? cacheRootOverride = null
     )
     {
-        var infrastructure = new PluginRestoreInfrastructure(processRunner, cacheRootOverride);
-        var provider = providerRegistry.Resolve(requirement.Provider);
+        var infrastructure = new PluginRestoreInfrastructure( processRunner, cacheRootOverride );
+        var provider = providerRegistry.Resolve( requirement.Provider );
         using var source = await provider.GetManifestAsync(
             configRoot,
             requirement,
             infrastructure,
             cancellationToken
         );
-        return provider.Restore(configRoot, requirement, source, infrastructure, log);
+        return provider.Restore( configRoot, requirement, source, infrastructure, log );
     }
 }

@@ -1,5 +1,7 @@
 using System.Text.Json.Nodes;
+
 using FluentAssertions;
+
 using Station.Abstractions.Configuration;
 using Station.Core.Configuration.Values;
 using Station.Testing;
@@ -24,9 +26,9 @@ public sealed class JsonNodeHelpersTests
             .BeOfType<JsonObject>()
             .Subject;
 
-        node["name"]!.GetValue<string>().Should().Be("Alice");
-        node["count"]!.GetValue<int>().Should().Be(2);
-        node["items"]![1]!.GetValue<long>().Should().Be(3L);
+        node["name"]!.GetValue<string>().Should().Be( "Alice" );
+        node["count"]!.GetValue<int>().Should().Be( 2 );
+        node["items"]![1]!.GetValue<long>().Should().Be( 3L );
     }
 
     [Fact]
@@ -34,7 +36,7 @@ public sealed class JsonNodeHelpersTests
     {
         var variables = new VariableSet(
             new ConfigObject(
-                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
+                new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String( "Alice" ) }
             )
         );
         var templateEngine = new TestTemplateEngine();
@@ -42,14 +44,14 @@ public sealed class JsonNodeHelpersTests
         {
             ["name"] = "Hello {{ name }}",
             ["count"] = 2,
-            ["items"] = new JsonArray("{{ name }}", 3),
+            ["items"] = new JsonArray( "{{ name }}", 3 ),
         };
 
-        var rendered = JsonNodeHelpers.RenderStringScalars(node, variables, templateEngine);
+        var rendered = JsonNodeHelpers.RenderStringScalars( node, variables, templateEngine );
 
-        rendered["name"]!.GetValue<string>().Should().Be("Hello Alice");
-        rendered["count"]!.GetValue<int>().Should().Be(2);
-        rendered["items"]![0]!.GetValue<string>().Should().Be("Alice");
+        rendered["name"]!.GetValue<string>().Should().Be( "Hello Alice" );
+        rendered["count"]!.GetValue<int>().Should().Be( 2 );
+        rendered["items"]![0]!.GetValue<string>().Should().Be( "Alice" );
     }
 
     [Fact]
@@ -59,7 +61,7 @@ public sealed class JsonNodeHelpersTests
             .NormalizeYamlValue(
                 new Dictionary<object, object>
                 {
-                    [1] = new DateTime(2026, 4, 12, 1, 2, 3, DateTimeKind.Utc),
+                    [1] = new DateTime( 2026, 4, 12, 1, 2, 3, DateTimeKind.Utc ),
                     ["items"] = new object?[] { "a", 2L },
                 }
             )
@@ -67,7 +69,7 @@ public sealed class JsonNodeHelpersTests
             .BeAssignableTo<IDictionary<string, object?>>()
             .Subject;
 
-        value.Should().ContainKey("1");
+        value.Should().ContainKey( "1" );
         value["items"].Should().BeAssignableTo<IReadOnlyList<object?>>();
     }
 
@@ -76,11 +78,11 @@ public sealed class JsonNodeHelpersTests
     {
         var json = new JsonObject { ["nested"] = new JsonObject { ["value"] = 1 } };
 
-        json.GetObject("nested")["value"]!.GetValue<int>().Should().Be(1);
-        var action = () => json.GetObject("missing");
+        json.GetObject( "nested" )["value"]!.GetValue<int>().Should().Be( 1 );
+        var action = () => json.GetObject( "missing" );
         action
             .Should()
             .Throw<ConfigurationException>()
-            .WithMessage("Parameter 'missing' must be an object.");
+            .WithMessage( "Parameter 'missing' must be an object." );
     }
 }

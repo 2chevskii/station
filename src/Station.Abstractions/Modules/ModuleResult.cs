@@ -12,15 +12,15 @@ public sealed record ModuleResult(
 {
     public JsonObject OutputsOrEmpty => Outputs ?? [];
 
-    public static ModuleResult NoChange(string? message = null, JsonObject? outputs = null) =>
-        new(false, false, false, message, outputs);
+    public static ModuleResult NoChange( string? message = null, JsonObject? outputs = null ) =>
+        new ModuleResult( false, false, false, message, outputs );
 
-    public static ModuleResult ChangedResult(string? message = null, JsonObject? outputs = null) =>
-        new(true, false, false, message, outputs);
+    public static ModuleResult ChangedResult( string? message = null, JsonObject? outputs = null ) =>
+        new ModuleResult( true, false, false, message, outputs );
 
-    public static ModuleResult SkippedResult(string message, JsonObject? outputs = null) =>
-        new(false, false, true, message, outputs);
+    public static ModuleResult SkippedResult( string message, JsonObject? outputs = null ) =>
+        new ModuleResult( false, false, true, message, outputs );
 
-    public static ModuleResult Failure(string message, JsonObject? outputs = null) =>
-        new(false, true, false, message, outputs);
+    public static ModuleResult Failure( string message, JsonObject? outputs = null ) =>
+        new ModuleResult( false, true, false, message, outputs );
 }

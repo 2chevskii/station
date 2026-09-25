@@ -34,35 +34,35 @@ internal sealed class VariableScopeLoader
     {
         var rootVariables = new ConfigObject();
 
-        foreach (var artifact in artifactResolver.EnumerateRootVarArtifacts(tree))
+        foreach ( var artifact in artifactResolver.EnumerateRootVarArtifacts( tree ) )
         {
-            var loader = ResolveLoader(artifact.LoaderId);
+            var loader = ResolveLoader( artifact.LoaderId );
             var loaded = loader.LoadVariables(
                 artifact,
                 new ConfigEvaluationContext(
                     configRoot,
                     artifact,
-                    new VariableSet(rootVariables),
+                    new VariableSet( rootVariables ),
                     null,
                     null
                 )
             );
-            rootVariables = (ConfigObject)ConfigValueUtilities.Merge(rootVariables, loaded);
+            rootVariables = (ConfigObject)ConfigValueUtilities.Merge( rootVariables, loaded );
         }
 
         var manifestVariables = ToVariableObject(
-            manifest.GetOptionalMapping("vars"),
+            manifest.GetOptionalMapping( "vars" ),
             manifestPath,
             "vars"
         );
-        rootVariables = (ConfigObject)ConfigValueUtilities.Merge(rootVariables, manifestVariables);
+        rootVariables = (ConfigObject)ConfigValueUtilities.Merge( rootVariables, manifestVariables );
         rootVariables = (ConfigObject)
-            ConfigValueUtilities.Merge(rootVariables, LoadEnvironmentVariables());
+            ConfigValueUtilities.Merge( rootVariables, LoadEnvironmentVariables() );
         rootVariables = (ConfigObject)
-            ConfigValueUtilities.Merge(rootVariables, LoadCliVariables(cliVariables));
+            ConfigValueUtilities.Merge( rootVariables, LoadCliVariables( cliVariables ) );
         rootVariables = (ConfigObject)
-            ConfigValueUtilities.Merge(rootVariables, LoadGlobalVariables());
-        return new VariableSet(rootVariables);
+            ConfigValueUtilities.Merge( rootVariables, LoadGlobalVariables() );
+        return new VariableSet( rootVariables );
     }
 
     public VariableSet CreateRoleVariables(
@@ -77,26 +77,26 @@ internal sealed class VariableScopeLoader
         );
         var roleDefaults = artifact is null
             ? new ConfigObject()
-            : ResolveLoader(artifact.LoaderId)
+            : ResolveLoader( artifact.LoaderId )
                 .LoadVariables(
                     artifact,
                     new ConfigEvaluationContext(
                         role.RoleRoot,
                         artifact,
-                        new VariableSet(new ConfigObject()),
+                        new VariableSet( new ConfigObject() ),
                         role.ShortName,
                         role.RoleRoot
                     )
                 );
 
-        var mergedDefaults = (ConfigObject)ConfigValueUtilities.Merge(roleDefaults, inlineDefaults);
+        var mergedDefaults = (ConfigObject)ConfigValueUtilities.Merge( roleDefaults, inlineDefaults );
         return new VariableSet(
-            (ConfigObject)ConfigValueUtilities.Merge(mergedDefaults, rootVariables.Root)
+            (ConfigObject)ConfigValueUtilities.Merge( mergedDefaults, rootVariables.Root )
         );
     }
 
-    private IVariableDocumentLoader ResolveLoader(string loaderId) =>
-        variableLoaders.TryGetValue(loaderId, out var loader)
+    private IVariableDocumentLoader ResolveLoader( string loaderId ) =>
+        variableLoaders.TryGetValue( loaderId, out var loader )
             ? loader
             : throw new ConfigurationException(
                 $"No variable loader is registered for '{loaderId}'."
@@ -111,7 +111,7 @@ internal sealed class VariableScopeLoader
                     "user_home",
                     new ConfigScalar(
                         ConfigScalarKind.String,
-                        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+                        Environment.GetFolderPath( Environment.SpecialFolder.UserProfile )
                     )
                 },
             }
@@ -122,34 +122,30 @@ internal sealed class VariableScopeLoader
     private static ConfigObject LoadEnvironmentVariables()
     {
         var variables = new ConfigObject();
-        foreach (var key in Environment.GetEnvironmentVariables().Keys.Cast<object>())
+        foreach ( var key in Environment.GetEnvironmentVariables().Keys.Cast<object>() )
         {
             var keyString = key.ToString();
             if (
                 keyString is null
-                || !keyString.StartsWith(EnvironmentPrefix, StringComparison.OrdinalIgnoreCase)
+                || !keyString.StartsWith( EnvironmentPrefix, StringComparison.OrdinalIgnoreCase )
             )
-            {
                 continue;
-            }
 
             variables = SetVariablePath(
                 variables,
                 keyString[EnvironmentPrefix.Length..],
-                ConfigScalar.String(Environment.GetEnvironmentVariable(keyString) ?? string.Empty)
+                ConfigScalar.String( Environment.GetEnvironmentVariable( keyString ) ?? string.Empty )
             );
         }
 
         return variables;
     }
 
-    private static ConfigObject LoadCliVariables(IReadOnlyDictionary<string, string>? cliVariables)
+    private static ConfigObject LoadCliVariables( IReadOnlyDictionary<string, string>? cliVariables )
     {
         var variables = new ConfigObject();
-        foreach (var (key, value) in cliVariables ?? new Dictionary<string, string>())
-        {
-            variables = SetVariablePath(variables, key, ConfigScalar.String(value));
-        }
+        foreach ( var (key, value) in cliVariables ?? new Dictionary<string, string>() )
+            variables = SetVariablePath( variables, key, ConfigScalar.String( value ) );
 
         return variables;
     }
@@ -160,12 +156,10 @@ internal sealed class VariableScopeLoader
         string? propertyName = null
     )
     {
-        if (value is null)
-        {
+        if ( value is null )
             return new ConfigObject();
-        }
 
-        if (value is not IDictionary<string, object?> variables)
+        if ( value is not IDictionary<string, object?> variables )
         {
             var name = propertyName is null ? sourceName : $"{sourceName}:{propertyName}";
             throw new ConfigurationException(
@@ -174,7 +168,7 @@ internal sealed class VariableScopeLoader
         }
 
         return ConfigValueFactory.RequireObject(
-            ConfigValueFactory.FromClrValue(variables),
+            ConfigValueFactory.FromClrValue( variables ),
             propertyName is null ? sourceName : $"{sourceName}:{propertyName}"
         );
     }
@@ -185,13 +179,11 @@ internal sealed class VariableScopeLoader
         ConfigValue value
     )
     {
-        var segments = ConfigValueUtilities.SplitPath(path).ToArray();
-        if (segments.Length == 0)
-        {
-            throw new ConfigurationException("Variable names must not be empty.");
-        }
+        var segments = ConfigValueUtilities.SplitPath( path ).ToArray();
+        if ( segments.Length == 0 )
+            throw new ConfigurationException( "Variable names must not be empty." );
 
-        return SetVariablePath(variables, segments, 0, value);
+        return SetVariablePath( variables, segments, 0, value );
     }
 
     private static ConfigObject SetVariablePath(
@@ -207,18 +199,18 @@ internal sealed class VariableScopeLoader
             StringComparer.OrdinalIgnoreCase
         );
 
-        if (index == segments.Count - 1)
+        if ( index == segments.Count - 1 )
         {
             updated[segments[index]] = value;
-            return new ConfigObject(updated);
+            return new ConfigObject( updated );
         }
 
         var segment = segments[index];
         var child =
-            updated.TryGetValue(segment, out var existing) && existing is ConfigObject childObject
+            updated.TryGetValue( segment, out var existing ) && existing is ConfigObject childObject
                 ? childObject
                 : new ConfigObject();
-        updated[segment] = SetVariablePath(child, segments, index + 1, value);
-        return new ConfigObject(updated);
+        updated[segment] = SetVariablePath( child, segments, index + 1, value );
+        return new ConfigObject( updated );
     }
 }

@@ -3,29 +3,29 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Station.Abstractions.Modules;
-using Station.Abstractions.FileSystem;
+
 using Station.Abstractions.Configuration;
+using Station.Abstractions.FileSystem;
+using Station.Abstractions.Modules;
 
 using TruePath;
 using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Script;
 
-[Module("script", "Runs local scripts with a JSON request contract.")]
+[Module( "script", "Runs local scripts with a JSON request contract." )]
 public sealed class ScriptModule : ConfigModule
 {
-    public ScriptModule(ModuleContext context)
-        : base(context) { }
+    public ScriptModule( ModuleContext context )
+        : base( context )
+    {
+    }
 
-    [Parameter("path", Required = true)]
-    public string ScriptPath { get; set; } = string.Empty;
+    [Parameter( "path", Required = true )] public string ScriptPath { get; set; } = string.Empty;
 
-    [Parameter]
-    public string Runner { get; set; } = "pwsh";
+    [Parameter] public string Runner { get; set; } = "pwsh";
 
-    [Parameter]
-    public bool RequiresAdmin { get; set; }
+    [Parameter] public bool RequiresAdmin { get; set; }
 
     public override ValueTask<ModuleInspectionResult> InspectAsync(
         CancellationToken cancellationToken
@@ -34,40 +34,36 @@ public sealed class ScriptModule : ConfigModule
         try
         {
             var scriptPath = ResolveScriptPath();
-            if (!scriptPath.ExistsFile())
-            {
+            if ( !scriptPath.ExistsFile() )
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(
-                        new ModuleDiagnostic($"Script '{scriptPath}' does not exist.")
+                        new ModuleDiagnostic( $"Script '{scriptPath}' does not exist." )
                     )
                 );
-            }
 
             var runner = Runner.ToLowerInvariant();
-            if (!CommandLocator.Exists(runner))
-            {
+            if ( !CommandLocator.Exists( runner ) )
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(
-                        new ModuleDiagnostic($"Runner '{runner}' is not available on PATH.")
+                        new ModuleDiagnostic( $"Runner '{runner}' is not available on PATH." )
                     )
                 );
-            }
 
             var privilege = RequiresAdmin
                 ? PrivilegeRequirement.Administrator
                 : PrivilegeRequirement.User;
 
-            return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
+            return ValueTask.FromResult( ModuleInspectionResult.Success( privilege ) );
         }
-        catch (ConfigurationException exception)
+        catch ( ConfigurationException exception )
         {
             return ValueTask.FromResult(
-                ModuleInspectionResult.Failure(new ModuleDiagnostic(exception.Message))
+                ModuleInspectionResult.Failure( new ModuleDiagnostic( exception.Message ) )
             );
         }
     }
 
-    public override async ValueTask<ModuleResult> ExecuteAsync(CancellationToken cancellationToken)
+    public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
         try
         {
@@ -92,39 +88,35 @@ public sealed class ScriptModule : ConfigModule
                     },
                     cancellationToken
                 );
-                if (result.ExitCode != 0)
-                {
-                    return ModuleResult.Failure(SelectProcessError(result));
-                }
+                if ( result.ExitCode != 0 )
+                    return ModuleResult.Failure( SelectProcessError( result ) );
 
-                return ParseResult(result.StandardOutput);
+                return ParseResult( result.StandardOutput );
             }
             finally
             {
                 requestFilePath.Delete();
             }
         }
-        catch (ConfigurationException exception)
+        catch ( ConfigurationException exception )
         {
-            return ModuleResult.Failure(exception.Message);
+            return ModuleResult.Failure( exception.Message );
         }
     }
 
-    private static ModuleResult ParseResult(string stdout)
+    private static ModuleResult ParseResult( string stdout )
     {
-        if (string.IsNullOrWhiteSpace(stdout))
-        {
-            return ModuleResult.Failure("Script module produced no JSON output.");
-        }
+        if ( string.IsNullOrWhiteSpace( stdout ) )
+            return ModuleResult.Failure( "Script module produced no JSON output." );
 
         JsonObject payload;
         try
         {
             payload =
-                JsonNode.Parse(stdout)?.AsObject()
-                ?? throw new JsonException("Output was not a JSON object.");
+                JsonNode.Parse( stdout )?.AsObject()
+                ?? throw new JsonException( "Output was not a JSON object." );
         }
-        catch (JsonException exception)
+        catch ( JsonException exception )
         {
             return ModuleResult.Failure(
                 $"Script module returned invalid JSON: {exception.Message}"
@@ -137,11 +129,11 @@ public sealed class ScriptModule : ConfigModule
         var message = payload["message"]?.GetValue<string>();
         var outputs = payload["outputs"] as JsonObject;
 
-        return new ModuleResult(changed, failed, skipped, message, outputs);
+        return new ModuleResult( changed, failed, skipped, message, outputs );
     }
 
     private JsonObject CreatePayload() =>
-        new()
+        new JsonObject
         {
             ["mode"] = Context.Mode.ToString().ToLowerInvariant(),
             ["taskName"] = Context.TaskName,
@@ -151,30 +143,25 @@ public sealed class ScriptModule : ConfigModule
                     Context.Variables.Root,
                     Context.Variables,
                     Context.TemplateEngine
-                ) ?? new JsonObject(),
+                )
+                ?? new JsonObject(),
         };
 
     private AbsolutePath ResolveScriptPath()
     {
         var taskRoot = Context.WorkingDirectory.AsLocalPath().ResolveToCurrentDirectory();
         var fullPath = taskRoot / ScriptPath;
-        if (!IsWithinRoot(fullPath, taskRoot))
-        {
-            throw new ConfigurationException("Script path must stay within the task root.");
-        }
+        if ( !IsWithinRoot( fullPath, taskRoot ) )
+            throw new ConfigurationException( "Script path must stay within the task root." );
 
         return fullPath;
     }
 
-    private static bool IsWithinRoot(AbsolutePath path, AbsolutePath root)
+    private static bool IsWithinRoot( AbsolutePath path, AbsolutePath root )
     {
-        for (AbsolutePath? current = path; current is { } candidate; current = candidate.Parent)
-        {
-            if (candidate.Equals(root, AbsolutePath.PlatformDefaultComparer))
-            {
+        for ( AbsolutePath? current = path; current is { } candidate; current = candidate.Parent )
+            if ( candidate.Equals( root, AbsolutePath.PlatformDefaultComparer ) )
                 return true;
-            }
-        }
 
         return false;
     }
@@ -182,9 +169,11 @@ public sealed class ScriptModule : ConfigModule
     private static string SelectProcessError(
         (int ExitCode, string StandardOutput, string StandardError) result
     ) =>
-        !string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardError.Trim()
-        : !string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardOutput.Trim()
-        : "Script execution failed.";
+        !string.IsNullOrWhiteSpace( result.StandardError )
+            ? result.StandardError.Trim()
+            : !string.IsNullOrWhiteSpace( result.StandardOutput )
+                ? result.StandardOutput.Trim()
+                : "Script execution failed.";
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
         string fileName,
@@ -205,16 +194,14 @@ public sealed class ScriptModule : ConfigModule
             StandardErrorEncoding = Encoding.UTF8,
         };
 
-        foreach (var argument in arguments)
-        {
-            startInfo.ArgumentList.Add(argument);
-        }
+        foreach ( var argument in arguments )
+            startInfo.ArgumentList.Add( argument );
 
-        foreach (var (key, value) in environment)
+        foreach ( var (key, value) in environment )
         {
-            if (value is null)
+            if ( value is null )
             {
-                startInfo.Environment.Remove(key);
+                startInfo.Environment.Remove( key );
                 continue;
             }
 
@@ -227,14 +214,14 @@ public sealed class ScriptModule : ConfigModule
         {
             process.Start();
         }
-        catch (Exception exception) when (exception is InvalidOperationException or Win32Exception)
+        catch ( Exception exception ) when ( exception is InvalidOperationException or Win32Exception )
         {
             return (-1, string.Empty, exception.Message);
         }
 
-        var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        await Task.WhenAll(stdoutTask, stderrTask, process.WaitForExitAsync(cancellationToken));
+        var stdoutTask = process.StandardOutput.ReadToEndAsync( cancellationToken );
+        var stderrTask = process.StandardError.ReadToEndAsync( cancellationToken );
+        await Task.WhenAll( stdoutTask, stderrTask, process.WaitForExitAsync( cancellationToken ) );
         return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
     }
 }

@@ -1,5 +1,5 @@
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
+using Station.Abstractions.FileSystem;
 
 using TruePath.SystemIo;
 
@@ -37,13 +37,13 @@ public sealed class ManagedTemplate
 
     public string GetRenderedText()
     {
-        renderedText ??= templateEngine.Render(GetRawText(), variables, SourcePath);
+        renderedText ??= templateEngine.Render( GetRawText(), variables, SourcePath );
         return renderedText;
     }
 
-    public string Render(VariableSet additionalVariables)
+    public string Render( VariableSet additionalVariables )
     {
-        var overlay = variables.CreateOverlay(additionalVariables.Root);
-        return templateEngine.Render(GetRawText(), overlay, SourcePath);
+        var overlay = variables.CreateOverlay( additionalVariables.Root );
+        return templateEngine.Render( GetRawText(), overlay, SourcePath );
     }
 }

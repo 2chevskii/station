@@ -10,12 +10,12 @@ public sealed class ModulePrimitivesTests
     public void ModuleResult_helpers_populate_flags()
     {
         ModuleResult
-            .NoChange("same")
+            .NoChange( "same" )
             .Should()
-            .BeEquivalentTo(new ModuleResult(false, false, false, "same"));
-        ModuleResult.ChangedResult("changed").Changed.Should().BeTrue();
-        ModuleResult.SkippedResult("skipped").Skipped.Should().BeTrue();
-        ModuleResult.Failure("failed").Failed.Should().BeTrue();
+            .BeEquivalentTo( new ModuleResult( false, false, false, "same" ) );
+        ModuleResult.ChangedResult( "changed" ).Changed.Should().BeTrue();
+        ModuleResult.SkippedResult( "skipped" ).Skipped.Should().BeTrue();
+        ModuleResult.Failure( "failed" ).Failed.Should().BeTrue();
         ModuleResult.NoChange().OutputsOrEmpty.Should().NotBeNull();
     }
 
@@ -23,9 +23,9 @@ public sealed class ModulePrimitivesTests
     public void ModuleInspectionResult_helpers_track_validity()
     {
         ModuleInspectionResult
-            .Success(PrivilegeRequirement.Administrator)
+            .Success( PrivilegeRequirement.Administrator )
             .IsValid.Should()
             .BeTrue();
-        ModuleInspectionResult.Failure(new ModuleDiagnostic("broken")).IsValid.Should().BeFalse();
+        ModuleInspectionResult.Failure( new ModuleDiagnostic( "broken" ) ).IsValid.Should().BeFalse();
     }
 }

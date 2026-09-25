@@ -1,4 +1,5 @@
 using FluentAssertions;
+
 using Station.Testing;
 using Station.Utilities.Processes;
 
@@ -20,9 +21,9 @@ public sealed class ProcessRunnerTests
 
         var runner = new ProcessRunner();
 
-        runner.CommandExists("echoargs").Should().BeTrue();
-        runner.CommandExists(shims.AddCommand("rooted", "echo rooted")).Should().BeTrue();
-        runner.CommandExists("missing-command").Should().BeFalse();
+        runner.CommandExists( "echoargs" ).Should().BeTrue();
+        runner.CommandExists( shims.AddCommand( "rooted", "echo rooted" ) ).Should().BeTrue();
+        runner.CommandExists( "missing-command" ).Should().BeFalse();
 
         var result = await runner.RunAsync(
             new ProcessCommand(
@@ -34,8 +35,8 @@ public sealed class ProcessRunnerTests
             CancellationToken.None
         );
 
-        result.ExitCode.Should().Be(0);
-        result.StandardOutput.Should().ContainAll("value", "hello world");
-        new ProcessCommand("tool", ["a", "b"]).ToString().Should().Be("tool a b");
+        result.ExitCode.Should().Be( 0 );
+        result.StandardOutput.Should().ContainAll( "value", "hello world" );
+        new ProcessCommand( "tool", ["a", "b"] ).ToString().Should().Be( "tool a b" );
     }
 }

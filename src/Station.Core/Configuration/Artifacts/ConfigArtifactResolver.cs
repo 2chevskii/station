@@ -23,21 +23,19 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
         DiscoveredConfigTree tree
     )
     {
-        if (tree.VarsRoot is null)
-        {
+        if ( tree.VarsRoot is null )
             return [];
-        }
 
         var candidates = tree
-            .VarsRoot.Files.Select(file => new
+            .VarsRoot.Files.Select( file => new
             {
                 File = file,
-                Loader = variableLoaders.FirstOrDefault(loader =>
-                    loader.Supports(ConfigArtifactKind.RootVarsEntry, file.Name)
+                Loader = variableLoaders.FirstOrDefault( loader =>
+                    loader.Supports( ConfigArtifactKind.RootVarsEntry, file.Name )
                 ),
-            })
-            .Where(static item => item.Loader is not null)
-            .OrderBy(static item => item.File.Name, StringComparer.OrdinalIgnoreCase)
+            } )
+            .Where( static item => item.Loader is not null )
+            .OrderBy( static item => item.File.Name, StringComparer.OrdinalIgnoreCase )
             .ToArray();
 
         var duplicateBaseName = candidates
@@ -45,12 +43,12 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
                 static item => item.File.Name.AsLocalPath().GetFilenameWithoutExtension(),
                 StringComparer.OrdinalIgnoreCase
             )
-            .FirstOrDefault(static group => group.Count() > 1);
-        if (duplicateBaseName is not null)
+            .FirstOrDefault( static group => group.Count() > 1 );
+        if ( duplicateBaseName is not null )
         {
             var names = duplicateBaseName
-                .Select(static item => item.File.Name)
-                .OrderBy(static item => item, StringComparer.OrdinalIgnoreCase)
+                .Select( static item => item.File.Name )
+                .OrderBy( static item => item, StringComparer.OrdinalIgnoreCase )
                 .ToArray();
             throw new ConfigurationException(
                 $"Vars files '{names[0]}' and '{names[1]}' are ambiguous because they share the same basename."
@@ -58,14 +56,14 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
         }
 
         return candidates
-            .Select(item => new ResolvedConfigArtifact(
+            .Select( item => new ResolvedConfigArtifact(
                 ConfigArtifactKind.RootVarsEntry,
                 item.File.FullPath,
                 item.File.RelativePath,
                 tree.RootPath,
                 null,
                 item.Loader!.Id
-            ))
+            ) )
             .ToArray();
     }
 
@@ -78,7 +76,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
             roleDirectory,
             ConfigArtifactKind.RoleDefaults,
             variableLoaders
-                .Select(static loader =>
+                .Select( static loader =>
                     (loader.Id, Supports: (Func<ConfigArtifactKind, string, bool>)loader.Supports)
                 )
                 .ToArray(),
@@ -89,7 +87,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
         {
             0 => null,
             1 => candidates[0],
-            _ => throw new ConfigurationException(
+            var _ => throw new ConfigurationException(
                 $"Role '{roleFullName}' contains both 'defaults.yaml' and 'defaults.js'."
             ),
         };
@@ -104,7 +102,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
             roleDirectory,
             ConfigArtifactKind.RoleTasks,
             roleLoaders
-                .Select(static loader =>
+                .Select( static loader =>
                     (loader.Id, Supports: (Func<ConfigArtifactKind, string, bool>)loader.Supports)
                 )
                 .ToArray(),
@@ -117,7 +115,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
                 $"Role '{roleFullName}' is missing 'role.yaml' or 'role.js'."
             ),
             1 => candidates[0],
-            _ => throw new ConfigurationException(
+            var _ => throw new ConfigurationException(
                 $"Role '{roleFullName}' contains both 'role.yaml' and 'role.js'."
             ),
         };
@@ -131,13 +129,11 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
     )
     {
         var results = new List<ResolvedConfigArtifact>();
-        foreach (var file in roleDirectory.Files)
+        foreach ( var file in roleDirectory.Files )
         {
-            var loader = loaders.FirstOrDefault(candidate => candidate.Supports(kind, file.Name));
-            if (loader.Id is null)
-            {
+            var loader = loaders.FirstOrDefault( candidate => candidate.Supports( kind, file.Name ) );
+            if ( loader.Id is null )
                 continue;
-            }
 
             results.Add(
                 new ResolvedConfigArtifact(

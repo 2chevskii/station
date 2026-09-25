@@ -18,34 +18,34 @@ internal sealed class ModuleBinder
             static pair => pair.Value,
             StringComparer.OrdinalIgnoreCase
         );
-        var usedEntries = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var module = (ConfigModule)schema.Constructor.Invoke([context]);
+        var usedEntries = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
+        var module = (ConfigModule)schema.Constructor.Invoke( [context] );
 
-        foreach (var parameter in schema.Parameters)
+        foreach ( var parameter in schema.Parameters )
         {
             var matches = rawEntries
-                .Where(entry =>
-                    string.Equals(entry.Key, parameter.Name, StringComparison.OrdinalIgnoreCase)
-                    || parameter.Aliases.Contains(entry.Key, StringComparer.OrdinalIgnoreCase)
+                .Where( entry =>
+                    string.Equals( entry.Key, parameter.Name, StringComparison.OrdinalIgnoreCase )
+                    || parameter.Aliases.Contains( entry.Key, StringComparer.OrdinalIgnoreCase )
                 )
                 .ToArray();
 
-            if (matches.Length > 1)
+            if ( matches.Length > 1 )
             {
                 diagnostics.Add(
                     new ModuleDiagnostic(
-                        $"Parameter '{parameter.Name}' is specified more than once ({string.Join(", ", matches.Select(static match => match.Key))})."
+                        $"Parameter '{parameter.Name}' is specified more than once ({string.Join( ", ", matches.Select( static match => match.Key ) )})."
                     )
                 );
                 continue;
             }
 
-            if (matches.Length == 0)
+            if ( matches.Length == 0 )
             {
-                if (parameter.Required)
+                if ( parameter.Required )
                 {
                     diagnostics.Add(
-                        new ModuleDiagnostic($"Missing required parameter '{parameter.Name}'.")
+                        new ModuleDiagnostic( $"Missing required parameter '{parameter.Name}'." )
                     );
                     continue;
                 }
@@ -54,18 +54,18 @@ internal sealed class ModuleBinder
                     new BoundParameterRecord(
                         parameter.Name,
                         ModuleParameterValueConverter.FormatValue(
-                            parameter.Property.GetValue(module)
+                            parameter.Property.GetValue( module )
                         ),
-                        IsDeferred: false,
-                        IsDefaultValue: true,
-                        SourceName: null
+                        false,
+                        true,
+                        null
                     )
                 );
                 continue;
             }
 
             var match = matches[0];
-            usedEntries.Add(match.Key);
+            usedEntries.Add( match.Key );
             var binding = BindValue(
                 parameter.Property.PropertyType,
                 match.Value,
@@ -75,39 +75,33 @@ internal sealed class ModuleBinder
                 allowDeferred
             );
 
-            if (binding.Diagnostic is not null)
-            {
-                diagnostics.Add(binding.Diagnostic);
-            }
+            if ( binding.Diagnostic is not null )
+                diagnostics.Add( binding.Diagnostic );
 
-            if (binding.Success)
-            {
-                parameter.Property.SetValue(module, binding.Value);
-            }
+            if ( binding.Success )
+                parameter.Property.SetValue( module, binding.Value );
 
             boundParameters.Add(
                 new BoundParameterRecord(
                     parameter.Name,
                     binding.DisplayValue,
                     binding.IsDeferred,
-                    IsDefaultValue: false,
-                    SourceName: match.Key
+                    false,
+                    match.Key
                 )
             );
         }
 
-        foreach (var entry in rawEntries.Keys.Where(key => !usedEntries.Contains(key)))
-        {
-            diagnostics.Add(new ModuleDiagnostic($"Unknown parameter '{entry}'."));
-        }
+        foreach ( var entry in rawEntries.Keys.Where( key => !usedEntries.Contains( key ) ) )
+            diagnostics.Add( new ModuleDiagnostic( $"Unknown parameter '{entry}'." ) );
 
         return new ModuleBindingResult(
-            diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+            diagnostics.Any( static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error )
                 ? null
                 : module,
             diagnostics,
             boundParameters,
-            boundParameters.Any(static parameter => parameter.IsDeferred)
+            boundParameters.Any( static parameter => parameter.IsDeferred )
         );
     }
 
@@ -117,14 +111,14 @@ internal sealed class ModuleBinder
         bool IsDeferred,
         string DisplayValue,
         ModuleDiagnostic? Diagnostic
-    ) BindValue(
-        Type targetType,
-        ConfigValue rawValue,
-        VariableSet variables,
-        ITemplateEngine templateEngine,
-        string parameterName,
-        bool allowDeferred
-    )
+        ) BindValue(
+            Type targetType,
+            ConfigValue rawValue,
+            VariableSet variables,
+            ITemplateEngine templateEngine,
+            string parameterName,
+            bool allowDeferred
+        )
     {
         try
         {
@@ -142,14 +136,16 @@ internal sealed class ModuleBinder
                 true,
                 convertedValue,
                 false,
-                ModuleParameterValueConverter.FormatValue(convertedValue),
+                ModuleParameterValueConverter.FormatValue( convertedValue ),
                 null
             );
         }
-        catch (ConfigurationException exception)
-            when (allowDeferred
-                && exception.Message.Contains("render template", StringComparison.OrdinalIgnoreCase)
-            )
+        catch ( ConfigurationException exception )
+            when ( allowDeferred
+                   && exception.Message.Contains(
+                       "render template",
+                       StringComparison.OrdinalIgnoreCase )
+                 )
         {
             return (
                 false,
@@ -162,13 +158,13 @@ internal sealed class ModuleBinder
                 )
             );
         }
-        catch (Exception exception)
-            when (exception
-                    is ConfigurationException
-                        or FormatException
-                        or InvalidOperationException
-                        or JsonException
-            )
+        catch ( Exception exception )
+            when ( exception
+                      is ConfigurationException
+                      or FormatException
+                      or InvalidOperationException
+                      or JsonException
+                 )
         {
             return (
                 false,

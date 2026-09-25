@@ -1,4 +1,5 @@
 using FluentAssertions;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Core.Execution.Running;
@@ -8,7 +9,7 @@ using TruePath.SystemIo;
 
 namespace Station.IntegrationTests.Execution;
 
-[Collection("Environment variables")]
+[Collection( "Environment variables" )]
 public sealed class PluginCacheDirectoryTests
 {
     [Fact]
@@ -21,12 +22,14 @@ public sealed class PluginCacheDirectoryTests
             """
         );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Plugins.Should().ContainSingle().Which.PluginRoot.Should().Be(
-            directory.GetPath("custom", "plugins", "archive.plugin", "1.0.0")
-        );
+        result
+            .Plugins.Should()
+            .ContainSingle()
+            .Which.PluginRoot.Should()
+            .Be( directory.GetPath( "custom", "plugins", "archive.plugin", "1.0.0" ) );
     }
 
     [Fact]
@@ -43,12 +46,14 @@ public sealed class PluginCacheDirectoryTests
             "environment-cache"
         );
 
-        var result = await new ConfigEngine().RestoreAsync(directory.Path);
+        var result = await new ConfigEngine().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
-        result.Plugins.Should().ContainSingle().Which.PluginRoot.Should().Be(
-            directory.GetPath("environment-cache", "archive.plugin", "1.0.0")
-        );
+        result
+            .Plugins.Should()
+            .ContainSingle()
+            .Which.PluginRoot.Should()
+            .Be( directory.GetPath( "environment-cache", "archive.plugin", "1.0.0" ) );
     }
 
     [Fact]
@@ -67,7 +72,7 @@ public sealed class PluginCacheDirectoryTests
 
         var engine = new ConfigEngine();
         var variables = new Dictionary<string, string> { ["plugin_cache_dir"] = "set-cache" };
-        var fromSet = await engine.RestoreAsync(directory.Path, variables);
+        var fromSet = await engine.RestoreAsync( directory.Path, variables );
         var fromFlag = await engine.RestoreAsync(
             directory.Path,
             variables,
@@ -75,13 +80,17 @@ public sealed class PluginCacheDirectoryTests
         );
 
         fromSet.Succeeded.Should().BeTrue();
-        fromSet.Plugins.Should().ContainSingle().Which.PluginRoot.Should().Be(
-            directory.GetPath("set-cache", "archive.plugin", "1.0.0")
-        );
+        fromSet
+            .Plugins.Should()
+            .ContainSingle()
+            .Which.PluginRoot.Should()
+            .Be( directory.GetPath( "set-cache", "archive.plugin", "1.0.0" ) );
         fromFlag.Succeeded.Should().BeTrue();
-        fromFlag.Plugins.Should().ContainSingle().Which.PluginRoot.Should().Be(
-            directory.GetPath("flag-cache", "archive.plugin", "1.0.0")
-        );
+        fromFlag
+            .Plugins.Should()
+            .ContainSingle()
+            .Which.PluginRoot.Should()
+            .Be( directory.GetPath( "flag-cache", "archive.plugin", "1.0.0" ) );
     }
 
     [Fact]
@@ -95,20 +104,26 @@ public sealed class PluginCacheDirectoryTests
         );
         var engine = new ConfigEngine();
 
-        var listed = await engine.ListRolesAsync(directory.Path);
-        var validated = await engine.RunAsync(directory.Path, ExecutionMode.Validate);
+        var listed = await engine.ListRolesAsync( directory.Path );
+        var validated = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         listed.Succeeded.Should().BeTrue();
-        listed.Components.Should().Contain(component =>
-            component.Name == "archive.plugin.plugin-role"
-            && component.Source.Contains("shared-cache/archive.plugin/1.0.0")
-        );
+        listed
+            .Components.Should()
+            .Contain( component =>
+                component.Name == "archive.plugin.plugin-role"
+                && component.Source.Contains( "shared-cache/archive.plugin/1.0.0" )
+            );
         validated.Succeeded.Should().BeTrue();
-        directory.GetPath("shared-cache", "archive.plugin", "1.0.0", "manifest.yaml")
-            .AsAbsolutePath().ExistsFile().Should().BeTrue();
+        directory
+            .GetPath( "shared-cache", "archive.plugin", "1.0.0", "manifest.yaml" )
+            .AsAbsolutePath()
+            .ExistsFile()
+            .Should()
+            .BeTrue();
     }
 
-    private static TemporaryDirectory CreateConfiguration(string extraManifest)
+    private static TemporaryDirectory CreateConfiguration( string extraManifest )
     {
         var directory = new TemporaryDirectory();
         using var source = new TemporaryDirectory();
@@ -118,9 +133,9 @@ public sealed class PluginCacheDirectoryTests
             "archive.plugin",
             "plugin-role"
         );
-        var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
+        var archivePath = directory.GetPath( "plugins", "demo_plugin.zip" );
         archivePath.AsAbsolutePath().Parent!.Value.CreateDirectory();
-        ArchiveBuilder.CreateZip(pluginRoot, archivePath);
+        ArchiveBuilder.CreateZip( pluginRoot, archivePath );
         directory.WriteFile(
             "station.yaml",
             $"roles: [plugin-role]\nplugins: [demo_plugin.zip]\n{extraManifest}"

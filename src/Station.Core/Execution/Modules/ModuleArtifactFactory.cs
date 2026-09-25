@@ -13,7 +13,7 @@ internal static class ModuleArtifactFactory
         ITemplateEngine templateRenderer
     )
     {
-        var files = new Dictionary<string, ManagedFile>(StringComparer.OrdinalIgnoreCase);
+        var files = new Dictionary<string, ManagedFile>( StringComparer.OrdinalIgnoreCase );
         var exactTemplates = new Dictionary<string, ManagedTemplate>(
             StringComparer.OrdinalIgnoreCase
         );
@@ -21,11 +21,9 @@ internal static class ModuleArtifactFactory
             StringComparer.OrdinalIgnoreCase
         );
 
-        AddScope(configRoot);
-        if (!string.IsNullOrWhiteSpace(roleRoot))
-        {
-            AddScope(roleRoot);
-        }
+        AddScope( configRoot );
+        if ( !string.IsNullOrWhiteSpace( roleRoot ) )
+            AddScope( roleRoot );
 
         return new ModuleArtifactSet(
             files,
@@ -37,61 +35,53 @@ internal static class ModuleArtifactFactory
             )
         );
 
-        void AddScope(string root)
+        void AddScope( string root )
         {
             var scopeRoot = root.AsAbsolutePath();
             var filesRoot = scopeRoot / "files";
-            if (filesRoot.ExistsDirectory())
-            {
-                foreach (var path in filesRoot.GetFiles("*", SearchOption.AllDirectories))
+            if ( filesRoot.ExistsDirectory() )
+                foreach ( var path in filesRoot.GetFiles( "*", SearchOption.AllDirectories ) )
                 {
                     var filePath = path.AsAbsolutePath();
-                    var logicalName = Normalize(filePath.RelativeTo(filesRoot).Value);
-                    files[logicalName] = new ManagedFile(logicalName, filePath.Value);
+                    var logicalName = Normalize( filePath.RelativeTo( filesRoot ).Value );
+                    files[logicalName] = new ManagedFile( logicalName, filePath.Value );
                 }
-            }
 
             var templatesRoot = scopeRoot / "templates";
-            if (!templatesRoot.ExistsDirectory())
-            {
+            if ( !templatesRoot.ExistsDirectory() )
                 return;
-            }
 
             var templatesInScope = templatesRoot
-                .GetFiles("*", SearchOption.AllDirectories)
-                .Select(static path => path.AsAbsolutePath())
-                .Where(static path =>
-                    path.Value.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase)
-                    || path.Value.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase)
+                .GetFiles( "*", SearchOption.AllDirectories )
+                .Select( static path => path.AsAbsolutePath() )
+                .Where( static path =>
+                    path.Value.EndsWith( ".scriban", StringComparison.OrdinalIgnoreCase )
+                    || path.Value.EndsWith( ".sbn", StringComparison.OrdinalIgnoreCase )
                 )
-                .Select(path => new
+                .Select( path => new
                 {
                     SourcePath = path.Value,
-                    ExactName = Normalize(path.RelativeTo(templatesRoot).Value),
+                    ExactName = Normalize( path.RelativeTo( templatesRoot ).Value ),
                     LogicalName = Normalize(
-                        RemoveTemplateExtension(path.RelativeTo(templatesRoot).Value)
+                        RemoveTemplateExtension( path.RelativeTo( templatesRoot ).Value )
                     ),
-                })
+                } )
                 .ToArray();
 
             foreach (
                 var logicalName in templatesInScope
-                    .Select(static item => item.LogicalName)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Select( static item => item.LogicalName )
+                    .Distinct( StringComparer.OrdinalIgnoreCase )
             )
             {
-                if (logicalTemplates.TryGetValue(logicalName, out var previousMatches))
-                {
-                    foreach (var previous in previousMatches)
-                    {
-                        exactTemplates.Remove(previous.Name);
-                    }
-                }
+                if ( logicalTemplates.TryGetValue( logicalName, out var previousMatches ) )
+                    foreach ( var previous in previousMatches )
+                        exactTemplates.Remove( previous.Name );
 
-                logicalTemplates.Remove(logicalName);
+                logicalTemplates.Remove( logicalName );
             }
 
-            foreach (var template in templatesInScope)
+            foreach ( var template in templatesInScope )
             {
                 var managedTemplate = new ManagedTemplate(
                     template.ExactName,
@@ -100,31 +90,27 @@ internal static class ModuleArtifactFactory
                     templateRenderer
                 );
                 exactTemplates[template.ExactName] = managedTemplate;
-                if (!logicalTemplates.TryGetValue(template.LogicalName, out var matches))
+                if ( !logicalTemplates.TryGetValue( template.LogicalName, out var matches ) )
                 {
                     matches = [];
                     logicalTemplates[template.LogicalName] = matches;
                 }
 
-                matches.Add(managedTemplate);
+                matches.Add( managedTemplate );
             }
         }
     }
 
-    private static string RemoveTemplateExtension(string path)
+    private static string RemoveTemplateExtension( string path )
     {
-        if (path.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase))
-        {
+        if ( path.EndsWith( ".scriban", StringComparison.OrdinalIgnoreCase ) )
             return path[..^".scriban".Length];
-        }
 
-        if (path.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase))
-        {
+        if ( path.EndsWith( ".sbn", StringComparison.OrdinalIgnoreCase ) )
             return path[..^".sbn".Length];
-        }
 
         return path;
     }
 
-    private static string Normalize(string path) => path.Replace('\\', '/').TrimStart('/');
+    private static string Normalize( string path ) => path.Replace( '\\', '/' ).TrimStart( '/' );
 }

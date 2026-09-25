@@ -1,6 +1,7 @@
 using Jint;
-using Station.Abstractions.FileSystem;
+
 using Station.Abstractions.Configuration;
+using Station.Abstractions.FileSystem;
 
 namespace Station.Configuration.JavaScript;
 
@@ -12,18 +13,18 @@ public sealed class JavaScriptConfigRuntime
     private const string BuiltInModulesSpecifier = "station:modules/builtin";
     private const long MaximumMemoryBytes = 4_000_000;
     private const int MaximumStatements = 10_000;
-    private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromSeconds( 2 );
 
     public ConfigObject LoadVariables(
         ResolvedConfigArtifact artifact,
         ConfigEvaluationContext context
     )
     {
-        var engine = CreateEngine(artifact, context);
-        var module = engine.Modules.Import(GetImportSpecifier(artifact));
-        var exportValue = module.Get(DefaultExportName).ToObject();
+        var engine = CreateEngine( artifact, context );
+        var module = engine.Modules.Import( GetImportSpecifier( artifact ) );
+        var exportValue = module.Get( DefaultExportName ).ToObject();
         return ConfigValueFactory.RequireObject(
-            ConfigValueFactory.FromClrValue(exportValue),
+            ConfigValueFactory.FromClrValue( exportValue ),
             artifact.DisplayName
         );
     }
@@ -34,21 +35,20 @@ public sealed class JavaScriptConfigRuntime
     )
     {
         var taskRegistrations = new List<object?>();
-        var engine = CreateEngine(artifact, context);
+        var engine = CreateEngine( artifact, context );
         engine.SetValue(
             TaskRegistrationFunctionName,
-            new Func<object?, object?, object?, object?>(
-                (first, second, third) =>
+            new Func<object?, object?, object?, object?>( ( first, second, third ) =>
                 {
-                    RegisterTask(taskRegistrations, first, second, third, artifact);
+                    RegisterTask( taskRegistrations, first, second, third, artifact );
                     return null;
                 }
             )
         );
 
-        engine.Modules.Import(GetImportSpecifier(artifact));
+        engine.Modules.Import( GetImportSpecifier( artifact ) );
         return new ConfigArray(
-            taskRegistrations.Select(static item => ConfigValueFactory.FromClrValue(item))
+            taskRegistrations.Select( static item => ConfigValueFactory.FromClrValue( item ) )
         );
     }
 
@@ -62,29 +62,29 @@ public sealed class JavaScriptConfigRuntime
             ?? throw new ConfigurationException(
                 $"Could not determine the directory for '{artifact.FullPath}'."
             );
-        var engine = new Engine(options =>
+        var engine = new Engine( options =>
             options
-                .EnableModules(moduleRoot, restrictToBasePath: false)
-                .LimitMemory(MaximumMemoryBytes)
-                .MaxStatements(MaximumStatements)
-                .TimeoutInterval(EvaluationTimeout)
+                .EnableModules( moduleRoot, false )
+                .LimitMemory( MaximumMemoryBytes )
+                .MaxStatements( MaximumStatements )
+                .TimeoutInterval( EvaluationTimeout )
         );
 
         engine.Modules.Add(
             VariablesModuleSpecifier,
             builder =>
                 builder.AddSource(
-                    JavaScriptModuleSource.BuildVarsModuleSource(context.VisibleVariables)
+                    JavaScriptModuleSource.BuildVarsModuleSource( context.VisibleVariables )
                 )
         );
         engine.Modules.Add(
             BuiltInModulesSpecifier,
-            builder => builder.AddSource(JavaScriptModuleSource.BuildBuiltinModuleSource())
+            builder => builder.AddSource( JavaScriptModuleSource.BuildBuiltinModuleSource() )
         );
         return engine;
     }
 
-    private static string GetImportSpecifier(ResolvedConfigArtifact artifact) =>
+    private static string GetImportSpecifier( ResolvedConfigArtifact artifact ) =>
         $"./{artifact.FullPath.AsAbsolutePath().FileName}";
 
     private static void RegisterTask(
@@ -99,7 +99,7 @@ public sealed class JavaScriptConfigRuntime
         object? moduleReference;
         object? parametersObject;
 
-        if (third is null)
+        if ( third is null )
         {
             moduleReference = first;
             parametersObject = second;
@@ -112,27 +112,21 @@ public sealed class JavaScriptConfigRuntime
         }
 
         var moduleName = moduleReference?.ToString()?.Trim();
-        if (string.IsNullOrWhiteSpace(moduleName))
-        {
+        if ( string.IsNullOrWhiteSpace( moduleName ) )
             throw new ConfigurationException(
                 $"JavaScript role file '{artifact.FullPath}' called task(...) with an invalid module reference."
             );
-        }
 
-        if (parametersObject is not IDictionary<string, object?> parameters)
-        {
+        if ( parametersObject is not IDictionary<string, object?> parameters )
             throw new ConfigurationException(
                 $"JavaScript role file '{artifact.FullPath}' called task(...) with a non-object parameters value."
             );
-        }
 
-        var task = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrWhiteSpace(explicitName))
-        {
+        var task = new Dictionary<string, object?>( StringComparer.OrdinalIgnoreCase );
+        if ( !string.IsNullOrWhiteSpace( explicitName ) )
             task["name"] = explicitName;
-        }
 
         task[moduleName] = parameters;
-        tasks.Add(task);
+        tasks.Add( task );
     }
 }

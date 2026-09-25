@@ -1,9 +1,9 @@
 namespace Station.Abstractions.Modules;
 
-[AttributeUsage(AttributeTargets.Property, Inherited = true)]
+[AttributeUsage( AttributeTargets.Property, Inherited = true )]
 public sealed class ParameterAttribute : Attribute
 {
-    public ParameterAttribute(string? name = null)
+    public ParameterAttribute( string? name = null )
     {
         Name = name;
     }

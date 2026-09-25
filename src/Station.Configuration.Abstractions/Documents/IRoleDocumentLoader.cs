@@ -6,9 +6,9 @@ public interface IRoleDocumentLoader
 {
     string Id { get; }
 
-    bool Supports(ConfigArtifactKind kind, string fileName);
+    bool Supports( ConfigArtifactKind kind, string fileName );
 
-    RoleDocumentProperties ReadProperties(ResolvedConfigArtifact artifact);
+    RoleDocumentProperties ReadProperties( ResolvedConfigArtifact artifact );
 
-    ConfigArray LoadRoleTasks(ResolvedConfigArtifact artifact, ConfigEvaluationContext context);
+    ConfigArray LoadRoleTasks( ResolvedConfigArtifact artifact, ConfigEvaluationContext context );
 }

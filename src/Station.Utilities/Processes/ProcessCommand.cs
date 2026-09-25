@@ -7,5 +7,5 @@ public sealed record ProcessCommand(
     IReadOnlyDictionary<string, string?>? Environment = null
 )
 {
-    public override string ToString() => $"{FileName} {string.Join(' ', Arguments)}";
+    public override string ToString() => $"{FileName} {string.Join( ' ', Arguments )}";
 }

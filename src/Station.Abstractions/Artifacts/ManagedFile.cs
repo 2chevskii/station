@@ -6,7 +6,7 @@ namespace Station.Abstractions.Artifacts;
 
 public sealed class ManagedFile
 {
-    public ManagedFile(string name, string sourcePath)
+    public ManagedFile( string name, string sourcePath )
     {
         Name = name;
         SourcePath = sourcePath;

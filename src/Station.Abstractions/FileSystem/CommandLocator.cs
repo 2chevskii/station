@@ -8,19 +8,15 @@ public static class CommandLocator
     private const string ExecutableExtensionsVariableName = "PATHEXT";
     private const string DefaultWindowsExecutableExtensions = ".EXE;.CMD;.BAT;.COM;.PS1";
 
-    public static bool Exists(string commandName)
+    public static bool Exists( string commandName )
     {
-        if (string.IsNullOrWhiteSpace(commandName))
-        {
+        if ( string.IsNullOrWhiteSpace( commandName ) )
             return false;
-        }
 
-        if (commandName.AsLocalPath().IsAbsolute)
-        {
+        if ( commandName.AsLocalPath().IsAbsolute )
             return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
-        }
 
-        var path = Environment.GetEnvironmentVariable(PathVariableName) ?? string.Empty;
+        var path = Environment.GetEnvironmentVariable( PathVariableName ) ?? string.Empty;
         var pathEntries = path.Split(
             Path.PathSeparator,
             StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
@@ -36,23 +32,19 @@ public static class CommandLocator
             )
             : [string.Empty];
 
-        foreach (var directory in pathEntries)
+        foreach ( var directory in pathEntries )
         {
             var directPath = (directory.AsLocalPath() / commandName).ResolveToCurrentDirectory();
-            if (directPath.ExistsFile())
-            {
+            if ( directPath.ExistsFile() )
                 return true;
-            }
 
-            foreach (var extension in extensions)
+            foreach ( var extension in extensions )
             {
                 var candidate = (
                     directory.AsLocalPath() / (commandName + extension)
                 ).ResolveToCurrentDirectory();
-                if (candidate.ExistsFile())
-                {
+                if ( candidate.ExistsFile() )
                     return true;
-                }
             }
         }
 

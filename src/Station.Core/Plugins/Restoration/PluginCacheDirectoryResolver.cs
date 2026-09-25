@@ -10,44 +10,40 @@ internal static class PluginCacheDirectoryResolver
         string? commandLineDirectory
     )
     {
-        string? configuredDirectory = commandLineDirectory;
-        if (configuredDirectory is null && variables.Contains(VariableName))
-        {
-            if (!variables.TryGetValue(VariableName, out configuredDirectory))
-            {
-                throw new ConfigurationException($"Variable '{VariableName}' must be a path string.");
-            }
-        }
+        var configuredDirectory = commandLineDirectory;
+        if ( configuredDirectory is null && variables.Contains( VariableName ) )
+            if ( !variables.TryGetValue( VariableName, out configuredDirectory ) )
+                throw new ConfigurationException(
+                    $"Variable '{VariableName}' must be a path string."
+                );
 
-        if (configuredDirectory is null)
-        {
+        if ( configuredDirectory is null )
             return null;
-        }
 
-        if (ConfigValueUtilities.IsTemplateMarkup(configuredDirectory))
-        {
+        if ( ConfigValueUtilities.IsTemplateMarkup( configuredDirectory ) )
             configuredDirectory = new ScribanTemplateRenderer().Render(
                 configuredDirectory,
                 variables,
                 VariableName
             );
-        }
 
-        if (string.IsNullOrWhiteSpace(configuredDirectory))
-        {
-            throw new ConfigurationException($"Plugin cache directory '{VariableName}' must not be empty.");
-        }
+        if ( string.IsNullOrWhiteSpace( configuredDirectory ) )
+            throw new ConfigurationException(
+                $"Plugin cache directory '{VariableName}' must not be empty."
+            );
 
         try
         {
             var path = configuredDirectory.Trim();
             return Path.GetFullPath(
-                Path.IsPathRooted(path) ? path : Path.Combine(configRoot, path)
+                Path.IsPathRooted( path ) ? path : Path.Combine( configRoot, path )
             );
         }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException)
+        catch ( Exception exception ) when ( exception is ArgumentException or NotSupportedException )
         {
-            throw new ConfigurationException($"Plugin cache directory '{configuredDirectory}' is invalid.");
+            throw new ConfigurationException(
+                $"Plugin cache directory '{configuredDirectory}' is invalid."
+            );
         }
     }
 }

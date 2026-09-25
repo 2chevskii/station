@@ -8,5 +8,5 @@ internal sealed record ModuleBindingResult(
 )
 {
     public bool HasErrors =>
-        Diagnostics.Any(static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Diagnostics.Any( static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error );
 }

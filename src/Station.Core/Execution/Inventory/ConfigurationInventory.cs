@@ -19,15 +19,16 @@ internal sealed class ConfigurationInventory(
         string? pluginCacheDirectory,
         Action<string>? log,
         CancellationToken cancellationToken
-    ) => ListAsync(
-        configRoot,
-        cliVariables,
-        pluginCacheDirectory,
-        "roles",
-        BuildRoles,
-        log,
-        cancellationToken
-    );
+    ) =>
+        ListAsync(
+            configRoot,
+            cliVariables,
+            pluginCacheDirectory,
+            "roles",
+            BuildRoles,
+            log,
+            cancellationToken
+        );
 
     public Task<InventoryResult> ListModulesAsync(
         string configRoot,
@@ -35,22 +36,27 @@ internal sealed class ConfigurationInventory(
         string? pluginCacheDirectory,
         Action<string>? log,
         CancellationToken cancellationToken
-    ) => ListAsync(
-        configRoot,
-        cliVariables,
-        pluginCacheDirectory,
-        "modules",
-        BuildModules,
-        log,
-        cancellationToken
-    );
+    ) =>
+        ListAsync(
+            configRoot,
+            cliVariables,
+            pluginCacheDirectory,
+            "modules",
+            BuildModules,
+            log,
+            cancellationToken
+        );
 
     private async Task<InventoryResult> ListAsync(
         string configRoot,
         IReadOnlyDictionary<string, string>? cliVariables,
         string? pluginCacheDirectory,
         string kind,
-        Func<string, IReadOnlyList<ResolvedPluginManifest>, IReadOnlyList<AvailableComponent>> build,
+        Func<
+            string,
+            IReadOnlyList<ResolvedPluginManifest>,
+            IReadOnlyList<AvailableComponent>
+        > build,
         Action<string>? log,
         CancellationToken cancellationToken
     )
@@ -73,12 +79,10 @@ internal sealed class ConfigurationInventory(
                 cancellationToken,
                 cacheRoot
             );
-            if (!restore.Succeeded)
-            {
-                return new InventoryResult(false, restore.Message, restore.Diagnostics, []);
-            }
+            if ( !restore.Succeeded )
+                return new InventoryResult( false, restore.Message, restore.Diagnostics, [] );
 
-            var components = build(root, restore.RestoredPlugins);
+            var components = build( root, restore.RestoredPlugins );
             return new InventoryResult(
                 true,
                 $"Found {components.Count} available {kind}.",
@@ -86,9 +90,9 @@ internal sealed class ConfigurationInventory(
                 components
             );
         }
-        catch (Exception exception) when (exception is ConfigurationException or IOException)
+        catch ( Exception exception ) when ( exception is ConfigurationException or IOException )
         {
-            return new InventoryResult(false, exception.Message, [exception.Message], []);
+            return new InventoryResult( false, exception.Message, [exception.Message], [] );
         }
     }
 
@@ -97,12 +101,14 @@ internal sealed class ConfigurationInventory(
         IReadOnlyList<ResolvedPluginManifest> plugins
     )
     {
-        var catalog = RoleCatalog.Create(configLoader.DiscoverLocalRoles(configRoot), plugins);
-        return catalog.All.Select(role => new AvailableComponent(
-            role.FullName,
-            configLoader.ReadRoleDescription(role),
-            FormatSource(role.ProviderName, role.RoleRoot, configRoot)
-        )).ToArray();
+        var catalog = RoleCatalog.Create( configLoader.DiscoverLocalRoles( configRoot ), plugins );
+        return catalog
+            .All.Select( role => new AvailableComponent(
+                role.FullName,
+                configLoader.ReadRoleDescription( role ),
+                FormatSource( role.ProviderName, role.RoleRoot, configRoot )
+            ) )
+            .ToArray();
     }
 
     private IReadOnlyList<AvailableComponent> BuildModules(
@@ -112,21 +118,23 @@ internal sealed class ConfigurationInventory(
     {
         var catalog = ModuleCatalog.Create(
             builtInModules,
-            configLoader.DiscoverLocalModulePaths(configRoot),
+            configLoader.DiscoverLocalModulePaths( configRoot ),
             plugins
         );
-        return catalog.All.Select(module => new AvailableComponent(
-            module.FullName,
-            module.Schema.Description,
-            module.AssemblyPath is null
-                ? module.ProviderName
-                : FormatSource(module.ProviderName, module.AssemblyPath, configRoot)
-        )).ToArray();
+        return catalog
+            .All.Select( module => new AvailableComponent(
+                module.FullName,
+                module.Schema.Description,
+                module.AssemblyPath is null
+                    ? module.ProviderName
+                    : FormatSource( module.ProviderName, module.AssemblyPath, configRoot )
+            ) )
+            .ToArray();
     }
 
-    private static string FormatSource(string providerName, string path, string configRoot)
+    private static string FormatSource( string providerName, string path, string configRoot )
     {
-        var relativePath = Path.GetRelativePath(configRoot, path).Replace('\\', '/');
+        var relativePath = Path.GetRelativePath( configRoot, path ).Replace( '\\', '/' );
         return $"{providerName}: {relativePath}";
     }
 }

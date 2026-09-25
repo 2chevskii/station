@@ -1,28 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <IsTestProject>true</IsTestProject>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
-    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
-    <PackageReference Include="Spectre.Console.Testing" />
-    <PackageReference Include="xunit.v3.mtp-v2" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentAssertions"/>
+        <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage"/>
+        <PackageReference Include="Microsoft.Testing.Extensions.TrxReport"/>
+        <PackageReference Include="Spectre.Console.Testing"/>
+        <PackageReference Include="xunit.v3.mtp-v2"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Using Include="Xunit" />
-  </ItemGroup>
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Station.Testing\Station.Testing.csproj" />
-    <ProjectReference Include="..\..\src\Station.Cli\Station.Cli.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="TruePath" />
-    <PackageReference Include="TruePath.SystemIo" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Station.Testing\Station.Testing.csproj"/>
+        <ProjectReference Include="..\..\src\Station.Cli\Station.Cli.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="TruePath"/>
+        <PackageReference Include="TruePath.SystemIo"/>
+    </ItemGroup>
 </Project>

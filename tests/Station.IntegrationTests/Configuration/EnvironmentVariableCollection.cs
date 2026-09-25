@@ -1,4 +1,6 @@
 namespace Station.IntegrationTests.Configuration;
 
-[CollectionDefinition("Environment variables", DisableParallelization = true)]
-public sealed class EnvironmentVariableCollection { }
+[CollectionDefinition( "Environment variables", DisableParallelization = true )]
+public sealed class EnvironmentVariableCollection
+{
+}

@@ -1,27 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj" />
-    <ProjectReference Include="..\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj" />
-    <ProjectReference Include="..\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj" />
-    <ProjectReference Include="..\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj" />
-    <ProjectReference Include="..\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj" />
-    <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
-    <ProjectReference Include="..\Station.Configuration.Yaml\Station.Configuration.Yaml.csproj" />
-    <ProjectReference Include="..\Station.Configuration.JavaScript\Station.Configuration.JavaScript.csproj" />
-    <ProjectReference Include="..\Station.Plugins\Station.Plugins.csproj" />
-    <ProjectReference Include="..\Station.Plugins.Abstractions\Station.Plugins.Abstractions.csproj" />
-    <ProjectReference Include="..\Station.Utilities\Station.Utilities.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Modules\Station.Modules.Builtin.Apt\Station.Modules.Builtin.Apt.csproj"/>
+        <ProjectReference Include="..\Modules\Station.Modules.Builtin.Dotfile\Station.Modules.Builtin.Dotfile.csproj"/>
+        <ProjectReference Include="..\Modules\Station.Modules.Builtin.Scoop\Station.Modules.Builtin.Scoop.csproj"/>
+        <ProjectReference Include="..\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj"/>
+        <ProjectReference Include="..\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj"/>
+        <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj"/>
+        <ProjectReference Include="..\Station.Configuration.Yaml\Station.Configuration.Yaml.csproj"/>
+        <ProjectReference Include="..\Station.Configuration.JavaScript\Station.Configuration.JavaScript.csproj"/>
+        <ProjectReference Include="..\Station.Plugins\Station.Plugins.csproj"/>
+        <ProjectReference Include="..\Station.Plugins.Abstractions\Station.Plugins.Abstractions.csproj"/>
+        <ProjectReference Include="..\Station.Utilities\Station.Utilities.csproj"/>
+    </ItemGroup>
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup></ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="TruePath" />
-    <PackageReference Include="TruePath.SystemIo" />
-  </ItemGroup>
+    <ItemGroup></ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="TruePath"/>
+        <PackageReference Include="TruePath.SystemIo"/>
+    </ItemGroup>
 </Project>

@@ -23,11 +23,11 @@ internal sealed class NuGetPluginProvider : IPluginProvider
         CancellationToken cancellationToken
     )
     {
-        var feed = string.IsNullOrWhiteSpace(requirement.Feed)
+        var feed = string.IsNullOrWhiteSpace( requirement.Feed )
             ? "https://api.nuget.org/v3/index.json"
             : requirement.Feed!;
 
-        return infrastructure.StageAsync(async tempRoot =>
+        return infrastructure.StageAsync( async tempRoot =>
         {
             var packageBaseAddress = await infrastructure.ResolveNuGetPackageBaseAddressAsync(
                 feed,
@@ -35,40 +35,38 @@ internal sealed class NuGetPluginProvider : IPluginProvider
             );
             var normalizedId = requirement.Id!.ToLowerInvariant();
             var resolvedVersion = requirement.Version;
-            if (string.IsNullOrWhiteSpace(resolvedVersion))
+            if ( string.IsNullOrWhiteSpace( resolvedVersion ) )
             {
-                var versionsUri = $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/index.json";
-                var versionsNode = await GetVersionsAsync(versionsUri, cancellationToken);
+                var versionsUri = $"{packageBaseAddress.TrimEnd( '/' )}/{normalizedId}/index.json";
+                var versionsNode = await GetVersionsAsync( versionsUri, cancellationToken );
 
                 resolvedVersion = versionsNode["versions"] is JsonArray versionsArray
                     ? versionsArray
-                        .Select(node => node?.GetValue<string>())
-                        .Where(static value => !string.IsNullOrWhiteSpace(value))
-                        .Select(static value => NuGetVersion.Parse(value!))
-                        .OrderByDescending(static version => version)
+                        .Select( node => node?.GetValue<string>() )
+                        .Where( static value => !string.IsNullOrWhiteSpace( value ) )
+                        .Select( static value => NuGetVersion.Parse( value! ) )
+                        .OrderByDescending( static version => version )
                         .FirstOrDefault()
                         ?.ToNormalizedString()
                     : null;
 
-                if (string.IsNullOrWhiteSpace(resolvedVersion))
-                {
+                if ( string.IsNullOrWhiteSpace( resolvedVersion ) )
                     throw new ConfigurationException(
                         $"NuGet feed '{feed}' did not return any versions for package '{requirement.Id}'."
                     );
-                }
             }
 
             var packageFileName = $"{normalizedId}.{resolvedVersion.ToLowerInvariant()}.nupkg";
             var packageUri =
-                $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/{resolvedVersion.ToLowerInvariant()}/{packageFileName}";
+                $"{packageBaseAddress.TrimEnd( '/' )}/{normalizedId}/{resolvedVersion.ToLowerInvariant()}/{packageFileName}";
             var packagePath = (tempRoot.AsAbsolutePath() / packageFileName).Value;
-            await infrastructure.DownloadFileAsync(packageUri, packagePath, cancellationToken);
+            await infrastructure.DownloadFileAsync( packageUri, packagePath, cancellationToken );
 
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive(packagePath, extractRoot);
+            infrastructure.ExtractArchive( packagePath, extractRoot );
             return extractRoot;
-        });
+        } );
     }
 
     public RestoredPluginLocation Restore(
@@ -79,7 +77,7 @@ internal sealed class NuGetPluginProvider : IPluginProvider
         Action<string>? log
     )
     {
-        var feed = string.IsNullOrWhiteSpace(requirement.Feed)
+        var feed = string.IsNullOrWhiteSpace( requirement.Feed )
             ? "https://api.nuget.org/v3/index.json"
             : requirement.Feed!;
         return infrastructure.RestoreToCache(
@@ -99,9 +97,9 @@ internal sealed class NuGetPluginProvider : IPluginProvider
     )
     {
         using var client = new HttpClient();
-        return await client.GetFromJsonAsync<JsonObject>(versionsUri, cancellationToken)
-            ?? throw new ConfigurationException(
-                $"NuGet feed returned an empty version index for '{versionsUri}'."
-            );
+        return await client.GetFromJsonAsync<JsonObject>( versionsUri, cancellationToken )
+               ?? throw new ConfigurationException(
+                   $"NuGet feed returned an empty version index for '{versionsUri}'."
+               );
     }
 }
