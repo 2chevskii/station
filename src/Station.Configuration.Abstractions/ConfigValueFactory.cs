@@ -1,8 +1,8 @@
 using Station.Abstractions.Models;
 
-namespace Station.Core.Infrastructure.Configuration;
+namespace Station.Configuration.Abstractions;
 
-internal static class ConfigValueFactory
+public static class ConfigValueFactory
 {
     public static ConfigValue FromClrValue(object? value, bool detectTemplateMarkup = true)
     {

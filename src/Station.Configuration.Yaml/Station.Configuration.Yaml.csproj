@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Station.Configuration.Abstractions\Station.Configuration.Abstractions.csproj" />
+    <PackageReference Include="Scriban" />
+    <PackageReference Include="SharpYaml" />
+  </ItemGroup>
+</Project>

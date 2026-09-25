@@ -1,6 +1,5 @@
 using Station.Abstractions.Interfaces;
 using Station.Core.Configuration.Models;
-using Station.Core.Infrastructure.Templates;
 
 namespace Station.Core.Configuration.Services;
 

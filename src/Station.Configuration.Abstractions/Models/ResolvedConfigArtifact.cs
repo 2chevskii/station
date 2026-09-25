@@ -1,6 +1,6 @@
-namespace Station.Core.Configuration.Models;
+namespace Station.Configuration.Abstractions.Models;
 
-internal sealed record ResolvedConfigArtifact(
+public sealed record ResolvedConfigArtifact(
     ConfigArtifactKind Kind,
     string FullPath,
     string DisplayName,

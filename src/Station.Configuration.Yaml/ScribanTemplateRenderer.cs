@@ -5,9 +5,9 @@ using Scriban.Parsing;
 using Scriban.Runtime;
 using Station.Abstractions.Models;
 
-namespace Station.Core.Infrastructure.Templates;
+namespace Station.Configuration.Yaml;
 
-internal sealed class ScribanTemplateRenderer : ITemplateEngine
+public sealed class ScribanTemplateRenderer : ITemplateEngine
 {
     private readonly LexerOptions lexerOptions = new LexerOptions { KeepTrivia = true };
     private readonly ConcurrentDictionary<string, Template> cache = new ConcurrentDictionary<

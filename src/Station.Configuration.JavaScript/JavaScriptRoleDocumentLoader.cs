@@ -1,9 +1,8 @@
 using Station.Abstractions.Models;
-using Station.Core.Configuration.Models;
 
-namespace Station.Core.Configuration.Services;
+namespace Station.Configuration.JavaScript;
 
-internal sealed class JavaScriptRoleDocumentLoader : IRoleDocumentLoader
+public sealed class JavaScriptRoleDocumentLoader : IRoleDocumentLoader
 {
     private readonly JavaScriptConfigRuntime runtime;
 

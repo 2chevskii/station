@@ -4,12 +4,11 @@ using System.Text.Json;
 using Jint;
 
 using Station.Abstractions.Models;
-using Station.Core.Configuration.Models;
-using Station.Core.Infrastructure.Configuration;
+using Station.Configuration.Abstractions;
 
-namespace Station.Core.Configuration.Services;
+namespace Station.Configuration.JavaScript;
 
-internal sealed class JavaScriptConfigRuntime
+public sealed class JavaScriptConfigRuntime
 {
     private static readonly string[] BuiltInModules =
     [

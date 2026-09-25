@@ -1,9 +1,9 @@
 using Station.Abstractions.Models;
-using Station.Core.Configuration.Models;
+using Station.Configuration.Abstractions.Models;
 
-namespace Station.Core.Configuration.Services;
+namespace Station.Configuration.Abstractions.Services;
 
-internal sealed record ConfigEvaluationContext(
+public sealed record ConfigEvaluationContext(
     string ConfigRoot,
     ResolvedConfigArtifact Artifact,
     VariableSet VisibleVariables,

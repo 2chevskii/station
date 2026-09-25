@@ -1,9 +1,9 @@
 using Station.Abstractions.Models;
-using Station.Core.Configuration.Models;
+using Station.Configuration.Abstractions.Models;
 
-namespace Station.Core.Configuration.Services;
+namespace Station.Configuration.Abstractions.Services;
 
-internal interface IRoleDocumentLoader
+public interface IRoleDocumentLoader
 {
     string Id { get; }
 

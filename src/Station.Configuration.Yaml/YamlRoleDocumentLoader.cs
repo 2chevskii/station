@@ -1,10 +1,9 @@
 using Station.Abstractions.Models;
-using Station.Core.Configuration.Models;
-using Station.Core.Infrastructure.Configuration;
+using Station.Configuration.Abstractions;
 
-namespace Station.Core.Configuration.Services;
+namespace Station.Configuration.Yaml;
 
-internal sealed class YamlRoleDocumentLoader : IRoleDocumentLoader
+public sealed class YamlRoleDocumentLoader : IRoleDocumentLoader
 {
     private readonly YamlConfigurationReader yamlReader;
 

@@ -5,6 +5,7 @@ using Station.Testing;
 
 namespace Station.IntegrationTests.Configuration;
 
+[Collection("Environment variables")]
 public sealed class ConfigLoaderTests
 {
     [Fact]

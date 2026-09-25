@@ -7,6 +7,8 @@
     <ProjectReference Include="..\Modules\Station.Modules.Builtin.Script\Station.Modules.Builtin.Script.csproj" />
     <ProjectReference Include="..\Modules\Station.Modules.Builtin.Winget\Station.Modules.Builtin.Winget.csproj" />
     <ProjectReference Include="..\Station.Abstractions\Station.Abstractions.csproj" />
+    <ProjectReference Include="..\Station.Configuration.Yaml\Station.Configuration.Yaml.csproj" />
+    <ProjectReference Include="..\Station.Configuration.JavaScript\Station.Configuration.JavaScript.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -16,10 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jint" />
     <PackageReference Include="NuGet.Versioning" />
-    <PackageReference Include="Scriban" />
     <PackageReference Include="SharpCompress" />
-    <PackageReference Include="SharpYaml" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,12 @@ This repository contains `Station`, a local desired-state workstation configurat
 - `Station.Core`
   Orchestration plus internal `Configuration`, `Execution`, and `Plugins` subdomains.
   Keep domain records in `Models/`, orchestration/loaders in `Services/`, and plugin restore strategies in `Plugins/Providers/`.
+- `Station.Configuration.Abstractions`
+  Shared configuration document contracts, artifact records, and value conversion used by format loaders and Core.
+- `Station.Configuration.Yaml`
+  YAML document loading and Scriban template rendering.
+- `Station.Configuration.JavaScript`
+  JavaScript document loading and runtime.
 - `Station.Modules.*`
   Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on `Station.Core`.
 - `Station.Cli`
