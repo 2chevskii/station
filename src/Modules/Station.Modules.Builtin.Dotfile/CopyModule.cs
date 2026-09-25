@@ -2,6 +2,8 @@ using System.Text;
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Dotfile;
 
@@ -29,7 +31,7 @@ public sealed class CopyModule : ConfigModule
         try
         {
             _ = Context.Artifacts.GetRequiredFile(FileName);
-            var privilege = RequiresAdmin(Destination)
+            var privilege = HostFilePaths.RequiresAdmin(Destination)
                 ? PrivilegeRequirement.Administrator
                 : PrivilegeRequirement.User;
             return ValueTask.FromResult(ModuleInspectionResult.Success(privilege));
@@ -47,10 +49,10 @@ public sealed class CopyModule : ConfigModule
         try
         {
             var sourceFile = Context.Artifacts.GetRequiredFile(FileName);
-            var destinationPath = ResolveHostPath(Destination);
+            var destinationPath = HostFilePaths.Resolve(Destination);
             var desiredBytes = sourceFile.ReadAllBytes();
-            var existingBytes = File.Exists(destinationPath)
-                ? await File.ReadAllBytesAsync(destinationPath, cancellationToken)
+            var existingBytes = destinationPath.ExistsFile()
+                ? await destinationPath.ReadAllBytesAsync(cancellationToken)
                 : null;
             var changed = existingBytes is null || !existingBytes.SequenceEqual(desiredBytes);
 
@@ -80,47 +82,22 @@ public sealed class CopyModule : ConfigModule
     }
 
     private async Task WriteBytesAsync(
-        string destinationPath,
+        AbsolutePath destinationPath,
         byte[] desiredBytes,
         CancellationToken cancellationToken
     )
     {
-        var parentDirectory = Path.GetDirectoryName(destinationPath);
-        if (!string.IsNullOrWhiteSpace(parentDirectory))
+        if (destinationPath.Parent is { } parentDirectory)
         {
-            Directory.CreateDirectory(parentDirectory);
+            parentDirectory.CreateDirectory();
         }
 
-        if (File.Exists(destinationPath) && Backup)
+        if (destinationPath.ExistsFile() && Backup)
         {
             var timestamp = Context.TimeProvider.GetUtcNow().ToString("yyyyMMddHHmmss");
-            File.Copy(destinationPath, $"{destinationPath}.bak.{timestamp}", overwrite: true);
+            destinationPath.Copy(new AbsolutePath($"{destinationPath}.bak.{timestamp}"), overwrite: true);
         }
 
-        await File.WriteAllBytesAsync(destinationPath, desiredBytes, cancellationToken);
-    }
-
-    private static string ResolveHostPath(string path)
-    {
-        var expanded = Environment.ExpandEnvironmentVariables(path);
-        return Path.IsPathRooted(expanded)
-            ? Path.GetFullPath(expanded)
-            : Path.GetFullPath(expanded, Environment.CurrentDirectory);
-    }
-
-    private static bool RequiresAdmin(string destination)
-    {
-        var resolved = ResolveHostPath(destination);
-        var protectedRoots = new[]
-        {
-            Environment.GetFolderPath(Environment.SpecialFolder.Windows),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        }.Where(static path => !string.IsNullOrWhiteSpace(path));
-
-        return protectedRoots.Any(root =>
-            resolved.StartsWith(Path.GetFullPath(root), StringComparison.OrdinalIgnoreCase)
-        );
+        await destinationPath.WriteAllBytesAsync(desiredBytes, cancellationToken);
     }
 }

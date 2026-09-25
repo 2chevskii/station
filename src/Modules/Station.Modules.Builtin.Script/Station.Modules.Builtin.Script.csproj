@@ -8,4 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="TruePath" />
+    <PackageReference Include="TruePath.SystemIo" />
+  </ItemGroup>
 </Project>

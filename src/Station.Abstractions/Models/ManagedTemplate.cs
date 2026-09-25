@@ -1,4 +1,6 @@
 using Station.Abstractions.Interfaces;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Abstractions.Models;
 
@@ -28,7 +30,7 @@ public sealed class ManagedTemplate
 
     public string GetRawText()
     {
-        rawText ??= File.ReadAllText(SourcePath);
+        rawText ??= new AbsolutePath(SourcePath).ReadAllText();
         return rawText;
     }
 

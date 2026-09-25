@@ -5,6 +5,8 @@
 
   <ItemGroup>
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="TruePath" />
+    <PackageReference Include="TruePath.SystemIo" />
   </ItemGroup>
 
   <ItemGroup>

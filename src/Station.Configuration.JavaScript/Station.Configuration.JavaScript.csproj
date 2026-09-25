@@ -8,4 +8,7 @@
     <ProjectReference Include="..\Station.Configuration.Abstractions\Station.Configuration.Abstractions.csproj" />
     <PackageReference Include="Jint" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TruePath" />
+  </ItemGroup>
 </Project>

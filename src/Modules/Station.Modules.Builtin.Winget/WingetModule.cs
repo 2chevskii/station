@@ -4,6 +4,8 @@ using System.Text;
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Winget;
 
@@ -176,9 +178,9 @@ public sealed class WingetModule : ConfigModule
             return false;
         }
 
-        if (Path.IsPathRooted(commandName))
+        if (new LocalPath(commandName).IsAbsolute)
         {
-            return File.Exists(commandName);
+            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -194,15 +196,15 @@ public sealed class WingetModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            var directPath = Path.Combine(directory, commandName);
-            if (File.Exists(directPath))
+            var directPath = (new LocalPath(directory) / commandName).ResolveToCurrentDirectory();
+            if (directPath.ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if (File.Exists(Path.Combine(directory, commandName + extension)))
+                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }
@@ -224,7 +226,7 @@ public sealed class WingetModule : ConfigModule
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             UseShellExecute = false,
-            WorkingDirectory = Environment.CurrentDirectory,
+            WorkingDirectory = AbsolutePath.CurrentWorkingDirectory.Value,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };

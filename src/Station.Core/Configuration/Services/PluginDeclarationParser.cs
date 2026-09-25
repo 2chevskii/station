@@ -1,4 +1,5 @@
 using Station.Core.Configuration.Models;
+using TruePath;
 
 namespace Station.Core.Configuration.Services;
 
@@ -189,7 +190,8 @@ internal sealed class PluginDeclarationParser
     private static bool UrlLooksLikeGitRepository(Uri uri)
     {
         var lastSegment = uri.Segments.LastOrDefault()?.TrimEnd('/');
-        return !string.IsNullOrWhiteSpace(lastSegment) && !Path.HasExtension(lastSegment);
+        return !string.IsNullOrWhiteSpace(lastSegment)
+            && string.IsNullOrEmpty(new LocalPath(lastSegment).GetExtensionWithDot());
     }
 
     private static bool HasArchiveExtension(string value) =>

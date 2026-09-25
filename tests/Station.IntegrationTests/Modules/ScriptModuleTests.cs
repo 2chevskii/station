@@ -93,6 +93,12 @@ public sealed class ScriptModuleTests
         {
             ScriptPath = "..\\outside.ps1",
         };
+        var siblingPath = new ScriptModule(
+            TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
+        )
+        {
+            ScriptPath = "..\\role-other\\sample.ps1",
+        };
 
         (await missingScript.InspectAsync(CancellationToken.None)).IsValid.Should().BeFalse();
         (await missingRunner.InspectAsync(CancellationToken.None))
@@ -101,6 +107,9 @@ public sealed class ScriptModuleTests
                 x.Message.Contains("not available", StringComparison.OrdinalIgnoreCase)
             );
         (await escapedPath.ExecuteAsync(CancellationToken.None))
+            .Message.Should()
+            .Contain("must stay within the task root");
+        (await siblingPath.ExecuteAsync(CancellationToken.None))
             .Message.Should()
             .Contain("must stay within the task root");
     }

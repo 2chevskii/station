@@ -1,4 +1,6 @@
 using Station.Core.Configuration.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Services;
 
@@ -39,7 +41,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
 
         var duplicateBaseName = candidates
             .GroupBy(
-                static item => Path.GetFileNameWithoutExtension(item.File.Name),
+                static item => new LocalPath(item.File.Name).GetFilenameWithoutExtension(),
                 StringComparer.OrdinalIgnoreCase
             )
             .FirstOrDefault(static group => group.Count() > 1);

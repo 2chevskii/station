@@ -1,6 +1,8 @@
 using Station.Core.Configuration;
 using Station.Core.Configuration.Models;
 using Station.Core.Plugins.Services;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Plugins.Providers;
 
@@ -25,7 +27,7 @@ internal sealed class LocalPluginProvider : IPluginProvider
             );
         }
 
-        if (Directory.Exists(candidate))
+        if (new AbsolutePath(candidate).ExistsDirectory())
         {
             log?.Invoke($"Using local plugin directory '{candidate}'.");
             return new RestoredPluginLocation(candidate, CacheHit: true, IsLocal: true);
@@ -36,14 +38,14 @@ internal sealed class LocalPluginProvider : IPluginProvider
             declaration with
             {
                 DisplaySource = candidate,
-                Name = Path.GetFileName(candidate),
+                Name = new AbsolutePath(candidate).FileName,
             },
             log,
             cancellationToken,
             async tempRoot =>
             {
-                var extractRoot = Path.Combine(tempRoot, "extract");
-                Directory.CreateDirectory(extractRoot);
+                var extractRoot = (new AbsolutePath(tempRoot) / "extract").Value;
+                new AbsolutePath(extractRoot).CreateDirectory();
                 infrastructure.ExtractArchive(candidate, extractRoot);
                 await Task.CompletedTask;
                 return extractRoot;

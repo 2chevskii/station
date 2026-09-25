@@ -16,6 +16,8 @@
     <PackageVersion Include="Spectre.Console" Version="0.57.3-alpha.0.19" />
     <PackageVersion Include="Spectre.Console.Testing" Version="0.57.3-alpha.0.19" />
     <PackageVersion Include="System.CommandLine" Version="3.0.0-rc.1.26425.128" />
+    <PackageVersion Include="TruePath" Version="1.12.0" />
+    <PackageVersion Include="TruePath.SystemIo" Version="1.12.0" />
     <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
   </ItemGroup>
 </Project>

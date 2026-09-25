@@ -9,13 +9,14 @@ using Station.Core.Execution.Models;
 using Station.Core.Execution.Services;
 using Station.Core.Plugins;
 using Station.Core.Plugins.Models;
+using TruePath;
 
 var stationConsole = StationConsole.CreateStandard();
 
-var configOption = new Option<DirectoryInfo?>("--config")
+var configOption = new Option<string>("--config")
 {
     Description = "Path to the config directory",
-    DefaultValueFactory = _ => new DirectoryInfo(Environment.CurrentDirectory),
+    DefaultValueFactory = _ => AbsolutePath.CurrentWorkingDirectory.Value,
 };
 
 var setOption = new Option<string[]>("--set")
@@ -47,8 +48,7 @@ Command CreateRestoreCommand()
     command.SetAction(
         async (parseResult, cancellationToken) =>
         {
-            var configRoot =
-                parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+            var configRoot = ResolveConfigRoot(parseResult);
             var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
             var engine = new ConfigEngine();
             var result = await engine.RestoreAsync(
@@ -76,8 +76,7 @@ Command CreateExplainCommand()
     command.SetAction(
         async (parseResult, cancellationToken) =>
         {
-            var configRoot =
-                parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+            var configRoot = ResolveConfigRoot(parseResult);
             var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
             var engine = new ConfigEngine();
             var result = await engine.ExplainAsync(
@@ -112,7 +111,7 @@ async Task<int> ExecuteCommandAsync(
     CancellationToken cancellationToken
 )
 {
-    var configRoot = parseResult.GetValue(configOption)?.FullName ?? Environment.CurrentDirectory;
+    var configRoot = ResolveConfigRoot(parseResult);
     var cliVariables = ParseCliVariables(parseResult.GetValue(setOption));
 
     var engine = new ConfigEngine();
@@ -127,6 +126,9 @@ async Task<int> ExecuteCommandAsync(
     stationConsole.WriteResult(result);
     return result.Succeeded ? 0 : 1;
 }
+
+string ResolveConfigRoot(ParseResult parseResult) =>
+    new LocalPath(parseResult.GetValue(configOption)!).ResolveToCurrentDirectory().Value;
 
 static IReadOnlyDictionary<string, string> ParseCliVariables(string[]? values)
 {

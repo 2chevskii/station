@@ -1,4 +1,6 @@
 using Station.Core.Configuration.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Services;
 
@@ -41,12 +43,12 @@ internal sealed class PluginManifestLoader
 
     public ResolvedPluginManifest Load(string pluginRoot)
     {
-        var fullPluginRoot = Path.GetFullPath(pluginRoot);
-        var tree = treeDiscovery.Discover(fullPluginRoot);
-        var yamlPath = Path.Combine(fullPluginRoot, PluginManifestYamlFileName);
-        var ymlPath = Path.Combine(fullPluginRoot, PluginManifestYmlFileName);
+        var fullPluginRoot = new LocalPath(pluginRoot).ResolveToCurrentDirectory();
+        var tree = treeDiscovery.Discover(fullPluginRoot.Value);
+        var yamlPath = fullPluginRoot / PluginManifestYamlFileName;
+        var ymlPath = fullPluginRoot / PluginManifestYmlFileName;
 
-        if (File.Exists(yamlPath) && File.Exists(ymlPath))
+        if (yamlPath.ExistsFile() && ymlPath.ExistsFile())
         {
             throw new ConfigurationException(
                 $"Plugin root '{fullPluginRoot}' contains both '{PluginManifestYamlFileName}' and '{PluginManifestYmlFileName}'."
@@ -54,13 +56,13 @@ internal sealed class PluginManifestLoader
         }
 
         var manifestPath =
-            File.Exists(yamlPath) ? yamlPath
-            : File.Exists(ymlPath) ? ymlPath
+            yamlPath.ExistsFile() ? yamlPath
+            : ymlPath.ExistsFile() ? ymlPath
             : throw new ConfigurationException(
                 $"Plugin root '{fullPluginRoot}' is missing '{PluginManifestYamlFileName}' or '{PluginManifestYmlFileName}'."
             );
 
-        var manifest = yamlReader.Load<PluginManifestFile>(manifestPath);
+        var manifest = yamlReader.Load<PluginManifestFile>(manifestPath.Value);
         var name = manifest.Name?.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
@@ -77,8 +79,8 @@ internal sealed class PluginManifestLoader
             );
         }
 
-        var roles = NormalizeExportList(manifest.Roles, "roles", manifestPath);
-        var modules = NormalizeExportList(manifest.Modules, "modules", manifestPath);
+        var roles = NormalizeExportList(manifest.Roles, "roles", manifestPath.Value);
+        var modules = NormalizeExportList(manifest.Modules, "modules", manifestPath.Value);
 
         foreach (var role in roles)
         {
@@ -97,13 +99,8 @@ internal sealed class PluginManifestLoader
 
         foreach (var module in modules)
         {
-            var modulePath = Path.Combine(
-                fullPluginRoot,
-                ModulesDirectoryName,
-                module,
-                $"{module}.dll"
-            );
-            if (!File.Exists(modulePath))
+            var modulePath = fullPluginRoot / ModulesDirectoryName / module / $"{module}.dll";
+            if (!modulePath.ExistsFile())
             {
                 throw new ConfigurationException(
                     $"Plugin '{name}' exports module '{module}', but '{modulePath}' does not exist."
@@ -111,7 +108,7 @@ internal sealed class PluginManifestLoader
             }
         }
 
-        return new ResolvedPluginManifest(name, version, fullPluginRoot, tree, roles, modules);
+        return new ResolvedPluginManifest(name, version, fullPluginRoot.Value, tree, roles, modules);
     }
 
     private static IReadOnlyList<string> NormalizeExportList(
@@ -136,8 +133,7 @@ internal sealed class PluginManifestLoader
         {
             if (
                 export.Contains('.')
-                || export.Contains(Path.DirectorySeparatorChar)
-                || export.Contains(Path.AltDirectorySeparatorChar)
+                || new LocalPath(export).FileName != export
             )
             {
                 throw new ConfigurationException(

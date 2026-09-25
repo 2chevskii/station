@@ -4,6 +4,8 @@ using NuGet.Versioning;
 using Station.Core.Configuration;
 using Station.Core.Configuration.Models;
 using Station.Core.Plugins.Services;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Plugins.Providers;
 
@@ -66,11 +68,11 @@ internal sealed class NuGetPluginProvider : IPluginProvider
                 var packageFileName = $"{normalizedId}.{resolvedVersion!.ToLowerInvariant()}.nupkg";
                 var packageUri =
                     $"{packageBaseAddress.TrimEnd('/')}/{normalizedId}/{resolvedVersion.ToLowerInvariant()}/{packageFileName}";
-                var packagePath = Path.Combine(tempRoot, packageFileName);
+                var packagePath = (new AbsolutePath(tempRoot) / packageFileName).Value;
                 await infrastructure.DownloadFileAsync(packageUri, packagePath, cancellationToken);
 
-                var extractRoot = Path.Combine(tempRoot, "extract");
-                Directory.CreateDirectory(extractRoot);
+                var extractRoot = (new AbsolutePath(tempRoot) / "extract").Value;
+                new AbsolutePath(extractRoot).CreateDirectory();
                 infrastructure.ExtractArchive(packagePath, extractRoot);
                 return extractRoot;
             }

@@ -4,6 +4,8 @@ using System.Text;
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Scoop;
 
@@ -103,9 +105,9 @@ public sealed class ScoopModule : ConfigModule
             return false;
         }
 
-        if (Path.IsPathRooted(commandName))
+        if (new LocalPath(commandName).IsAbsolute)
         {
-            return File.Exists(commandName);
+            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -121,14 +123,14 @@ public sealed class ScoopModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            if (File.Exists(Path.Combine(directory, commandName)))
+            if ((new LocalPath(directory) / commandName).ResolveToCurrentDirectory().ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if (File.Exists(Path.Combine(directory, commandName + extension)))
+                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }
@@ -150,7 +152,7 @@ public sealed class ScoopModule : ConfigModule
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             UseShellExecute = false,
-            WorkingDirectory = Environment.CurrentDirectory,
+            WorkingDirectory = AbsolutePath.CurrentWorkingDirectory.Value,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };

@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Infrastructure.Processes;
 
@@ -13,9 +15,9 @@ public sealed class ProcessRunner : IProcessRunner
             return false;
         }
 
-        if (Path.IsPathRooted(commandName))
+        if (new LocalPath(commandName).IsAbsolute)
         {
-            return File.Exists(commandName);
+            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -32,16 +34,16 @@ public sealed class ProcessRunner : IProcessRunner
 
         foreach (var directory in pathEntries)
         {
-            var directPath = Path.Combine(directory, commandName);
-            if (File.Exists(directPath))
+            var directPath = (new LocalPath(directory) / commandName).ResolveToCurrentDirectory();
+            if (directPath.ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                var candidate = Path.Combine(directory, commandName + extension);
-                if (File.Exists(candidate))
+                var candidate = (new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory();
+                if (candidate.ExistsFile())
                 {
                     return true;
                 }
@@ -62,7 +64,7 @@ public sealed class ProcessRunner : IProcessRunner
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             UseShellExecute = false,
-            WorkingDirectory = command.WorkingDirectory ?? Environment.CurrentDirectory,
+            WorkingDirectory = command.WorkingDirectory ?? AbsolutePath.CurrentWorkingDirectory.Value,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };

@@ -1,4 +1,6 @@
 using Station.Core.Configuration.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Services;
 
@@ -14,8 +16,8 @@ internal sealed class ConfigTreeDiscovery
 
     public DiscoveredConfigTree Discover(string rootPath)
     {
-        var fullRoot = Path.GetFullPath(rootPath);
-        if (!Directory.Exists(fullRoot))
+        var fullRoot = new LocalPath(rootPath).ResolveToCurrentDirectory();
+        if (!fullRoot.ExistsDirectory())
         {
             throw new ConfigurationException($"Configuration root '{fullRoot}' does not exist.");
         }
@@ -30,7 +32,7 @@ internal sealed class ConfigTreeDiscovery
         rawRoot.TryGetDirectory(ModulesDirectoryName, out var modulesRoot);
 
         return new DiscoveredConfigTree(
-            fullRoot,
+            fullRoot.Value,
             rawRoot,
             rootManifest,
             rolesRoot,
@@ -44,29 +46,31 @@ internal sealed class ConfigTreeDiscovery
         );
     }
 
-    private static DiscoveredDirectory DiscoverDirectory(string fullPath, string relativePath)
+    private static DiscoveredDirectory DiscoverDirectory(AbsolutePath fullPath, string relativePath)
     {
-        var directories = Directory
-            .GetDirectories(fullPath)
+        var directories = fullPath
+            .GetDirectories()
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(static path => new AbsolutePath(path))
             .Select(path =>
-                DiscoverDirectory(path, CombineRelative(relativePath, Path.GetFileName(path)))
+                DiscoverDirectory(path, CombineRelative(relativePath, path.FileName))
             )
             .ToArray();
 
-        var files = Directory
-            .GetFiles(fullPath)
+        var files = fullPath
+            .GetFiles()
             .OrderBy(static path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(static path => new AbsolutePath(path))
             .Select(path => new DiscoveredFile(
-                path,
-                Path.GetFileName(path),
-                CombineRelative(relativePath, Path.GetFileName(path))
+                path.Value,
+                path.FileName,
+                CombineRelative(relativePath, path.FileName)
             ))
             .ToArray();
 
         return new DiscoveredDirectory(
-            fullPath,
-            Path.GetFileName(fullPath),
+            fullPath.Value,
+            fullPath.FileName,
             relativePath,
             directories,
             files

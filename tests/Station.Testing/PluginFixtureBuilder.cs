@@ -1,3 +1,6 @@
+using TruePath;
+using TruePath.SystemIo;
+
 namespace Station.Testing;
 
 public static class PluginFixtureBuilder
@@ -12,7 +15,7 @@ public static class PluginFixtureBuilder
     )
     {
         var pluginRoot = root.GetPath(pluginDirectoryName);
-        Directory.CreateDirectory(pluginRoot);
+        new AbsolutePath(pluginRoot).CreateDirectory();
 
         var moduleList = includeModule ? "  - script" : string.Empty;
         root.WriteFile(
@@ -52,9 +55,9 @@ public static class PluginFixtureBuilder
         if (includeModule)
         {
             var modulePath = typeof(Modules.Builtin.Script.ScriptModule).Assembly.Location;
-            var destinationPath = Path.Combine(pluginRoot, "modules", "script", "script.dll");
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-            File.Copy(modulePath, destinationPath, overwrite: true);
+            var destinationPath = new AbsolutePath(pluginRoot) / "modules" / "script" / "script.dll";
+            destinationPath.Parent!.Value.CreateDirectory();
+            new AbsolutePath(modulePath).Copy(destinationPath, overwrite: true);
         }
 
         return pluginRoot;

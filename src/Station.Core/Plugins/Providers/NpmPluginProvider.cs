@@ -3,6 +3,8 @@ using System.Text.Json.Nodes;
 using Station.Core.Configuration;
 using Station.Core.Configuration.Models;
 using Station.Core.Plugins.Services;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Plugins.Providers;
 
@@ -58,14 +60,13 @@ internal sealed class NpmPluginProvider : IPluginProvider
                     );
                 }
 
-                var archivePath = Path.Combine(
-                    tempRoot,
-                    Path.GetFileName(new Uri(tarballUrl).AbsolutePath)
-                );
+                var archivePath = (
+                    new AbsolutePath(tempRoot) / new LocalPath(new Uri(tarballUrl).AbsolutePath).FileName
+                ).Value;
                 await infrastructure.DownloadFileAsync(tarballUrl, archivePath, cancellationToken);
 
-                var extractRoot = Path.Combine(tempRoot, "extract");
-                Directory.CreateDirectory(extractRoot);
+                var extractRoot = (new AbsolutePath(tempRoot) / "extract").Value;
+                new AbsolutePath(extractRoot).CreateDirectory();
                 infrastructure.ExtractArchive(archivePath, extractRoot);
                 return extractRoot;
             }

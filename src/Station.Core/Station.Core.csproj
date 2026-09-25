@@ -20,4 +20,8 @@
     <PackageReference Include="NuGet.Versioning" />
     <PackageReference Include="SharpCompress" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TruePath" />
+    <PackageReference Include="TruePath.SystemIo" />
+  </ItemGroup>
 </Project>

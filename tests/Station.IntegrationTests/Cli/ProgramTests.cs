@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using FluentAssertions;
 using Station.Testing;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.IntegrationTests.Cli;
 
@@ -20,7 +22,7 @@ public sealed class ProgramTests
     [Fact]
     public async Task Explain_command_renders_plan_for_example_config()
     {
-        var configRoot = Path.Combine(FindRepositoryRoot(), "examples", "workstation");
+        var configRoot = (new AbsolutePath(FindRepositoryRoot()) / "examples" / "workstation").Value;
 
         var result = await RunCliAsync("explain", "--config", configRoot);
 
@@ -59,15 +61,13 @@ public sealed class ProgramTests
 
     private static string FindRepositoryRoot()
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (
-            directory is not null && !File.Exists(Path.Combine(directory.FullName, "Station.slnx"))
-        )
+        AbsolutePath? directory = new AbsolutePath(AppContext.BaseDirectory);
+        while (directory is { } current && !(current / "Station.slnx").ExistsFile())
         {
-            directory = directory.Parent;
+            directory = current.Parent;
         }
 
-        return directory?.FullName
+        return directory?.Value
             ?? throw new InvalidOperationException("Could not locate the repository root.");
     }
 }

@@ -1,4 +1,6 @@
 using Station.Abstractions.Interfaces;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Execution.Services;
 
@@ -37,36 +39,37 @@ internal static class ModuleArtifactFactory
 
         void AddScope(string root)
         {
-            var filesRoot = Path.Combine(root, "files");
-            if (Directory.Exists(filesRoot))
+            var scopeRoot = new AbsolutePath(root);
+            var filesRoot = scopeRoot / "files";
+            if (filesRoot.ExistsDirectory())
             {
-                foreach (
-                    var filePath in Directory.GetFiles(filesRoot, "*", SearchOption.AllDirectories)
-                )
+                foreach (var path in filesRoot.GetFiles("*", SearchOption.AllDirectories))
                 {
-                    var logicalName = Normalize(Path.GetRelativePath(filesRoot, filePath));
-                    files[logicalName] = new ManagedFile(logicalName, filePath);
+                    var filePath = new AbsolutePath(path);
+                    var logicalName = Normalize(filePath.RelativeTo(filesRoot).Value);
+                    files[logicalName] = new ManagedFile(logicalName, filePath.Value);
                 }
             }
 
-            var templatesRoot = Path.Combine(root, "templates");
-            if (!Directory.Exists(templatesRoot))
+            var templatesRoot = scopeRoot / "templates";
+            if (!templatesRoot.ExistsDirectory())
             {
                 return;
             }
 
-            var templatesInScope = Directory
-                .GetFiles(templatesRoot, "*", SearchOption.AllDirectories)
+            var templatesInScope = templatesRoot
+                .GetFiles("*", SearchOption.AllDirectories)
+                .Select(static path => new AbsolutePath(path))
                 .Where(static path =>
-                    path.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase)
-                    || path.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase)
+                    path.Value.EndsWith(".scriban", StringComparison.OrdinalIgnoreCase)
+                    || path.Value.EndsWith(".sbn", StringComparison.OrdinalIgnoreCase)
                 )
                 .Select(path => new
                 {
-                    SourcePath = path,
-                    ExactName = Normalize(Path.GetRelativePath(templatesRoot, path)),
+                    SourcePath = path.Value,
+                    ExactName = Normalize(path.RelativeTo(templatesRoot).Value),
                     LogicalName = Normalize(
-                        RemoveTemplateExtension(Path.GetRelativePath(templatesRoot, path))
+                        RemoveTemplateExtension(path.RelativeTo(templatesRoot).Value)
                     ),
                 })
                 .ToArray();

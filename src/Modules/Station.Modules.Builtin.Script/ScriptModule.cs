@@ -6,6 +6,8 @@ using System.Text.Json.Nodes;
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Script;
 
@@ -31,7 +33,7 @@ public sealed class ScriptModule : ConfigModule
         try
         {
             var scriptPath = ResolveScriptPath();
-            if (!File.Exists(scriptPath))
+            if (!scriptPath.ExistsFile())
             {
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(
@@ -70,23 +72,19 @@ public sealed class ScriptModule : ConfigModule
         {
             var scriptPath = ResolveScriptPath();
             var requestPayload = CreatePayload();
-            var requestFilePath = Path.GetTempFileName();
-            await File.WriteAllTextAsync(
-                requestFilePath,
-                requestPayload.ToJsonString(),
-                cancellationToken
-            );
+            var requestFilePath = Temporary.CreateTempFile();
+            await requestFilePath.WriteAllTextAsync(requestPayload.ToJsonString(), cancellationToken);
 
             try
             {
                 var runner = Runner.ToLowerInvariant();
                 var result = await RunAsync(
                     runner,
-                    ["-NoLogo", "-NoProfile", "-File", scriptPath, requestFilePath],
+                    ["-NoLogo", "-NoProfile", "-File", scriptPath.Value, requestFilePath.Value],
                     Context.WorkingDirectory,
                     new Dictionary<string, string?>
                     {
-                        ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath,
+                        ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath.Value,
                     },
                     cancellationToken
                 );
@@ -99,7 +97,7 @@ public sealed class ScriptModule : ConfigModule
             }
             finally
             {
-                File.Delete(requestFilePath);
+                requestFilePath.Delete();
             }
         }
         catch (ConfigurationException exception)
@@ -152,16 +150,29 @@ public sealed class ScriptModule : ConfigModule
                 ) ?? new JsonObject(),
         };
 
-    private string ResolveScriptPath()
+    private AbsolutePath ResolveScriptPath()
     {
-        var fullPath = Path.GetFullPath(ScriptPath, Context.WorkingDirectory);
-        var taskRoot = Path.GetFullPath(Context.WorkingDirectory);
-        if (!fullPath.StartsWith(taskRoot, StringComparison.OrdinalIgnoreCase))
+        var taskRoot = new LocalPath(Context.WorkingDirectory).ResolveToCurrentDirectory();
+        var fullPath = taskRoot / ScriptPath;
+        if (!IsWithinRoot(fullPath, taskRoot))
         {
             throw new ConfigurationException("Script path must stay within the task root.");
         }
 
         return fullPath;
+    }
+
+    private static bool IsWithinRoot(AbsolutePath path, AbsolutePath root)
+    {
+        for (AbsolutePath? current = path; current is { } candidate; current = candidate.Parent)
+        {
+            if (candidate.Equals(root, AbsolutePath.PlatformDefaultComparer))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static string SelectProcessError(
@@ -191,14 +202,14 @@ public sealed class ScriptModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            if (File.Exists(Path.Combine(directory, commandName)))
+            if ((new LocalPath(directory) / commandName).ResolveToCurrentDirectory().ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if (File.Exists(Path.Combine(directory, commandName + extension)))
+                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }

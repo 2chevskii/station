@@ -1,5 +1,7 @@
 using System.Formats.Tar;
 using System.IO.Compression;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Testing;
 
@@ -7,9 +9,10 @@ public static class ArchiveBuilder
 {
     public static void CreateZip(string sourceDirectory, string archivePath)
     {
-        if (File.Exists(archivePath))
+        var archive = new AbsolutePath(archivePath);
+        if (archive.ExistsFile())
         {
-            File.Delete(archivePath);
+            archive.Delete();
         }
 
         ZipFile.CreateFromDirectory(sourceDirectory, archivePath);
@@ -17,30 +20,27 @@ public static class ArchiveBuilder
 
     public static void CreateTar(string sourceDirectory, string archivePath)
     {
-        if (File.Exists(archivePath))
+        var archive = new AbsolutePath(archivePath);
+        if (archive.ExistsFile())
         {
-            File.Delete(archivePath);
+            archive.Delete();
         }
 
-        using var stream = File.Create(archivePath);
+        using var stream = archive.Create();
         using var writer = new TarWriter(stream, TarEntryFormat.Ustar, leaveOpen: false);
 
-        foreach (
-            var directory in Directory.GetDirectories(
-                sourceDirectory,
-                "*",
-                SearchOption.AllDirectories
-            )
-        )
+        var sourceRoot = new AbsolutePath(sourceDirectory);
+        foreach (var directory in sourceRoot.GetDirectories("*", SearchOption.AllDirectories))
         {
-            var relativePath = Path.GetRelativePath(sourceDirectory, directory).Replace('\\', '/');
+            var relativePath = new AbsolutePath(directory).RelativeTo(sourceRoot).Value.Replace('\\', '/');
             writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, relativePath));
         }
 
-        foreach (var file in Directory.GetFiles(sourceDirectory, "*", SearchOption.AllDirectories))
+        foreach (var file in sourceRoot.GetFiles("*", SearchOption.AllDirectories))
         {
-            var relativePath = Path.GetRelativePath(sourceDirectory, file).Replace('\\', '/');
-            using var fileStream = File.OpenRead(file);
+            var filePath = new AbsolutePath(file);
+            var relativePath = filePath.RelativeTo(sourceRoot).Value.Replace('\\', '/');
+            using var fileStream = filePath.OpenRead();
             var entry = new UstarTarEntry(TarEntryType.RegularFile, relativePath)
             {
                 DataStream = fileStream,

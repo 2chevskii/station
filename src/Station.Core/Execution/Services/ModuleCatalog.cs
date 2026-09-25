@@ -6,6 +6,8 @@ using Station.Modules.Builtin.Dotfile;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Script;
 using Station.Modules.Builtin.Winget;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Execution.Services;
 
@@ -48,7 +50,7 @@ internal sealed class ModuleCatalog
 
         foreach (var modulePath in localModulePaths)
         {
-            var shortName = Path.GetFileNameWithoutExtension(modulePath);
+            var shortName = new LocalPath(modulePath).GetFilenameWithoutExtension();
             resolvedModules.Add(LoadModuleFromAssembly(modulePath, "station.local", shortName));
         }
 
@@ -56,12 +58,9 @@ internal sealed class ModuleCatalog
         {
             foreach (var shortName in plugin.Modules)
             {
-                var modulePath = Path.Combine(
-                    plugin.PluginRoot,
-                    "modules",
-                    shortName,
-                    $"{shortName}.dll"
-                );
+                var modulePath = (
+                    new AbsolutePath(plugin.PluginRoot) / "modules" / shortName / $"{shortName}.dll"
+                ).Value;
                 resolvedModules.Add(LoadModuleFromAssembly(modulePath, plugin.Name, shortName));
             }
         }
@@ -119,16 +118,15 @@ internal sealed class ModuleCatalog
         string shortName
     )
     {
-        if (!File.Exists(assemblyPath))
+        var resolvedPath = new LocalPath(assemblyPath).ResolveToCurrentDirectory();
+        if (!resolvedPath.ExistsFile())
         {
             throw new ConfigurationException($"Module assembly '{assemblyPath}' does not exist.");
         }
 
         ValidateShortName(shortName, $"module '{shortName}'");
 
-        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(
-            Path.GetFullPath(assemblyPath)
-        );
+        var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(resolvedPath.Value);
         var discoveredModules = assembly
             .GetExportedTypes()
             .Where(static type =>
@@ -161,8 +159,7 @@ internal sealed class ModuleCatalog
         if (
             string.IsNullOrWhiteSpace(shortName)
             || shortName.Contains('.')
-            || shortName.Contains(Path.DirectorySeparatorChar)
-            || shortName.Contains(Path.AltDirectorySeparatorChar)
+            || new LocalPath(shortName).FileName != shortName
         )
         {
             throw new ConfigurationException($"{owner} must have a valid short name.");

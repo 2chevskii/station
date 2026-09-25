@@ -2,6 +2,7 @@ using Station.Core.Configuration;
 using Station.Core.Configuration.Models;
 using Station.Core.Infrastructure.Processes;
 using Station.Core.Plugins.Services;
+using TruePath;
 
 namespace Station.Core.Plugins.Providers;
 
@@ -29,7 +30,7 @@ internal sealed class GitPluginProvider : IPluginProvider
                     throw new ConfigurationException("git is not available on PATH.");
                 }
 
-                var cloneRoot = Path.Combine(tempRoot, "clone");
+                var cloneRoot = (new AbsolutePath(tempRoot) / "clone").Value;
                 var cloneResult = await infrastructure.ProcessRunner.RunAsync(
                     new ProcessCommand("git", ["clone", declaration.Url!, cloneRoot]),
                     cancellationToken

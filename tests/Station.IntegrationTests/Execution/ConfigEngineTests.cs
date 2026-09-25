@@ -3,6 +3,8 @@ using FluentAssertions;
 using Station.Abstractions.Enums;
 using Station.Core.Execution.Services;
 using Station.Testing;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.IntegrationTests.Execution;
 
@@ -51,7 +53,7 @@ public sealed class ConfigEngineTests
             "plugin-role"
         );
         var archivePath = directory.GetPath("plugins", "demo_plugin.zip");
-        Directory.CreateDirectory(Path.GetDirectoryName(archivePath)!);
+        new AbsolutePath(archivePath).Parent!.Value.CreateDirectory();
         ZipFile.CreateFromDirectory(pluginRoot, archivePath);
         directory.WriteFile(
             "station.yaml",
@@ -115,7 +117,7 @@ public sealed class ConfigEngineTests
         var npmPackagePath = packages.GetPath("station-demo-plugin-2.0.0.zip");
         ArchiveBuilder.CreateZip(npmPluginRoot, npmPackagePath);
 
-        server.AddFile("/packages/url-plugin.zip", await File.ReadAllBytesAsync(urlArchivePath));
+        server.AddFile("/packages/url-plugin.zip", await new AbsolutePath(urlArchivePath).ReadAllBytesAsync());
         server.AddJson(
             "/nuget/index.json",
             $$"""
@@ -139,7 +141,7 @@ public sealed class ConfigEngineTests
         );
         server.AddFile(
             "/flatcontainer/station.demo.plugin/1.2.3/station.demo.plugin.1.2.3.nupkg",
-            await File.ReadAllBytesAsync(nugetPackagePath)
+            await new AbsolutePath(nugetPackagePath).ReadAllBytesAsync()
         );
         server.AddJson(
             "/npm/station-demo-plugin",
@@ -160,7 +162,7 @@ public sealed class ConfigEngineTests
         );
         server.AddFile(
             "/npm/station-demo-plugin/-/station-demo-plugin-2.0.0.zip",
-            await File.ReadAllBytesAsync(npmPackagePath)
+            await new AbsolutePath(npmPackagePath).ReadAllBytesAsync()
         );
         server.Start();
 

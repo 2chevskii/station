@@ -20,4 +20,8 @@
     <ProjectReference Include="..\Station.Testing\Station.Testing.csproj" />
     <ProjectReference Include="..\..\src\Station.Cli\Station.Cli.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TruePath" />
+    <PackageReference Include="TruePath.SystemIo" />
+  </ItemGroup>
 </Project>

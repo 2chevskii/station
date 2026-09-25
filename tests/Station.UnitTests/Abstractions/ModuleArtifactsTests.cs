@@ -1,6 +1,8 @@
 using FluentAssertions;
 using Station.Abstractions.Models;
 using Station.Testing;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.UnitTests.Abstractions;
 
@@ -11,8 +13,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var path = directory.GetPath("files", "sample.txt");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, "hello");
+        new AbsolutePath(path).Parent!.Value.CreateDirectory();
+        new AbsolutePath(path).WriteAllText("hello");
         var file = new ManagedFile("sample.txt", path);
 
         file.ReadAllText().Should().Be("hello");
@@ -24,8 +26,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var path = directory.GetPath("templates", "sample.scriban");
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, "hello {{ name }}");
+        new AbsolutePath(path).Parent!.Value.CreateDirectory();
+        new AbsolutePath(path).WriteAllText("hello {{ name }}");
         var variables = new VariableSet(
             new ConfigObject(
                 new Dictionary<string, ConfigValue> { ["name"] = ConfigScalar.String("Alice") }
@@ -59,8 +61,8 @@ public sealed class ModuleArtifactsTests
     {
         using var directory = new TemporaryDirectory();
         var templatePath = directory.GetPath("templates", "app.scriban");
-        Directory.CreateDirectory(Path.GetDirectoryName(templatePath)!);
-        File.WriteAllText(templatePath, "hello");
+        new AbsolutePath(templatePath).Parent!.Value.CreateDirectory();
+        new AbsolutePath(templatePath).WriteAllText("hello");
         var template = new ManagedTemplate(
             "nested/app.scriban",
             templatePath,
@@ -91,13 +93,13 @@ public sealed class ModuleArtifactsTests
     {
         var templateA = new ManagedTemplate(
             "app.scriban",
-            Path.GetTempFileName(),
+            Temporary.CreateTempFile().Value,
             new VariableSet(new ConfigObject()),
             new TestTemplateEngine()
         );
         var templateB = new ManagedTemplate(
             "app.sbn",
-            Path.GetTempFileName(),
+            Temporary.CreateTempFile().Value,
             new VariableSet(new ConfigObject()),
             new TestTemplateEngine()
         );

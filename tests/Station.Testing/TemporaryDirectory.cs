@@ -1,54 +1,62 @@
+using TruePath;
+using TruePath.SystemIo;
+
 namespace Station.Testing;
 
 public sealed class TemporaryDirectory : IDisposable
 {
     public TemporaryDirectory()
     {
-        Path = System.IO.Path.Combine(
-            System.IO.Path.GetTempPath(),
-            "station-tests",
-            Guid.NewGuid().ToString("N")
-        );
-        Directory.CreateDirectory(Path);
+        Path = (Temporary.SystemTempDirectory() / "station-tests" / Guid.NewGuid().ToString("N")).Value;
+        new AbsolutePath(Path).CreateDirectory();
     }
 
     public string Path { get; }
 
-    public string GetPath(params string[] segments) => System.IO.Path.Combine([Path, .. segments]);
+    public string GetPath(params string[] segments)
+    {
+        var path = new AbsolutePath(Path);
+        foreach (var segment in segments)
+        {
+            path /= segment;
+        }
+
+        return path.Value;
+    }
 
     public void WriteFile(string relativePath, string contents)
     {
-        var fullPath = GetPath(relativePath.Replace('/', System.IO.Path.DirectorySeparatorChar));
-        var directory = System.IO.Path.GetDirectoryName(fullPath);
-        if (!string.IsNullOrWhiteSpace(directory))
+        var fullPath = new AbsolutePath(GetPath(relativePath));
+        if (fullPath.Parent is { } directory)
         {
-            Directory.CreateDirectory(directory);
+            directory.CreateDirectory();
         }
 
-        File.WriteAllText(fullPath, contents.Replace("\r\n", "\n"));
+        fullPath.WriteAllText(contents.Replace("\r\n", "\n"));
     }
 
     public void Dispose()
     {
-        if (Directory.Exists(Path))
+        var root = new AbsolutePath(Path);
+        if (root.ExistsDirectory())
         {
-            ClearAttributes(Path);
-            Directory.Delete(Path, recursive: true);
+            ClearAttributes(root);
+            root.DeleteDirectoryRecursively();
         }
     }
 
-    private static void ClearAttributes(string root)
+    private static void ClearAttributes(AbsolutePath root)
     {
-        foreach (var directory in Directory.GetDirectories(root, "*", SearchOption.AllDirectories))
+        foreach (var directory in root.GetDirectories("*", SearchOption.AllDirectories))
         {
-            File.SetAttributes(directory, FileAttributes.Normal);
+            new AbsolutePath(directory).SetAttributes(FileAttributes.Normal);
         }
 
-        foreach (var file in Directory.GetFiles(root, "*", SearchOption.AllDirectories))
+        foreach (var file in root.GetFiles("*", SearchOption.AllDirectories))
         {
-            File.SetAttributes(file, FileAttributes.Normal);
+            new AbsolutePath(file).SetAttributes(FileAttributes.Normal);
         }
 
-        File.SetAttributes(root, FileAttributes.Normal);
+        root.SetAttributes(FileAttributes.Normal);
     }
 }

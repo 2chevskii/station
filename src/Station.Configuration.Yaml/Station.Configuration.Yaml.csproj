@@ -9,4 +9,8 @@
     <PackageReference Include="Scriban" />
     <PackageReference Include="SharpYaml" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TruePath" />
+    <PackageReference Include="TruePath.SystemIo" />
+  </ItemGroup>
 </Project>

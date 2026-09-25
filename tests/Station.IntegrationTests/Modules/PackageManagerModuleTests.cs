@@ -4,6 +4,7 @@ using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Winget;
 using Station.Testing;
+using TruePath;
 
 namespace Station.IntegrationTests.Modules;
 
@@ -13,7 +14,7 @@ public sealed class PackageManagerModuleTests
     public async Task Scoop_module_uses_shimmed_command_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = Path.Combine(shims.Path, "scoop-state.txt");
+        var statePath = (new AbsolutePath(shims.Path) / "scoop-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "scoop",
             $$"""
@@ -50,7 +51,7 @@ public sealed class PackageManagerModuleTests
     public async Task Winget_module_uses_shimmed_command_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = Path.Combine(shims.Path, "winget-state.txt");
+        var statePath = (new AbsolutePath(shims.Path) / "winget-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "winget",
             $$"""
@@ -88,7 +89,7 @@ public sealed class PackageManagerModuleTests
     public async Task Apt_module_uses_shimmed_wsl_without_touching_host_installation()
     {
         using var shims = new CommandShimScope();
-        var statePath = Path.Combine(shims.Path, "apt-state.txt");
+        var statePath = (new AbsolutePath(shims.Path) / "apt-state.txt").Value;
         var commandPath = shims.AddPowerShellCommand(
             "wsl",
             $$"""

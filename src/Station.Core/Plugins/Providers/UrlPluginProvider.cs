@@ -1,6 +1,8 @@
 using Station.Core.Configuration;
 using Station.Core.Configuration.Models;
 using Station.Core.Plugins.Services;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Plugins.Providers;
 
@@ -23,17 +25,16 @@ internal sealed class UrlPluginProvider : IPluginProvider
             cancellationToken,
             async tempRoot =>
             {
-                var archivePath = Path.Combine(
-                    tempRoot,
-                    Path.GetFileName(new Uri(declaration.Url!).AbsolutePath)
-                );
+                var archivePath = (
+                    new AbsolutePath(tempRoot) / new LocalPath(new Uri(declaration.Url!).AbsolutePath).FileName
+                ).Value;
                 await infrastructure.DownloadFileAsync(
                     declaration.Url!,
                     archivePath,
                     cancellationToken
                 );
-                var extractRoot = Path.Combine(tempRoot, "extract");
-                Directory.CreateDirectory(extractRoot);
+                var extractRoot = (new AbsolutePath(tempRoot) / "extract").Value;
+                new AbsolutePath(extractRoot).CreateDirectory();
                 infrastructure.ExtractArchive(archivePath, extractRoot);
                 return extractRoot;
             }

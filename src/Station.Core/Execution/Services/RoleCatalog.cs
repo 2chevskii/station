@@ -1,4 +1,6 @@
 using Station.Core.Configuration.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Core.Execution.Services;
 
@@ -30,7 +32,7 @@ internal sealed class RoleCatalog
                     plugin.Name,
                     shortName,
                     $"{plugin.Name}.{shortName}",
-                    Path.Combine(plugin.PluginRoot, "roles", shortName),
+                    (new AbsolutePath(plugin.PluginRoot) / "roles" / shortName).Value,
                     plugin.Tree.RolesRoot?.Directories.First(directory =>
                         string.Equals(directory.Name, shortName, StringComparison.OrdinalIgnoreCase)
                     )

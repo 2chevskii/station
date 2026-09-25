@@ -4,6 +4,8 @@ using System.Text;
 using Station.Abstractions.Attributes;
 using Station.Abstractions.Enums;
 using Station.Abstractions.Models;
+using TruePath;
+using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Apt;
 
@@ -57,7 +59,7 @@ public sealed class AptModule : ConfigModule
             var distrosResult = await RunAsync(
                 WslCommand,
                 ["-l", "-q"],
-                Environment.CurrentDirectory,
+                AbsolutePath.CurrentWorkingDirectory.Value,
                 cancellationToken
             );
             if (
@@ -166,7 +168,7 @@ public sealed class AptModule : ConfigModule
             return await RunAsync(
                 WslCommand,
                 arguments,
-                Environment.CurrentDirectory,
+                AbsolutePath.CurrentWorkingDirectory.Value,
                 cancellationToken
             );
         }
@@ -174,7 +176,7 @@ public sealed class AptModule : ConfigModule
         return await RunAsync(
             command[0],
             command.Skip(1).ToArray(),
-            Environment.CurrentDirectory,
+            AbsolutePath.CurrentWorkingDirectory.Value,
             cancellationToken
         );
     }
@@ -211,9 +213,9 @@ public sealed class AptModule : ConfigModule
             return false;
         }
 
-        if (Path.IsPathRooted(commandName))
+        if (new LocalPath(commandName).IsAbsolute)
         {
-            return File.Exists(commandName);
+            return new LocalPath(commandName).ResolveToCurrentDirectory().ExistsFile();
         }
 
         var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
@@ -229,14 +231,14 @@ public sealed class AptModule : ConfigModule
 
         foreach (var directory in pathEntries)
         {
-            if (File.Exists(Path.Combine(directory, commandName)))
+            if ((new LocalPath(directory) / commandName).ResolveToCurrentDirectory().ExistsFile())
             {
                 return true;
             }
 
             foreach (var extension in extensions)
             {
-                if (File.Exists(Path.Combine(directory, commandName + extension)))
+                if ((new LocalPath(directory) / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
                 {
                     return true;
                 }
