@@ -1,7 +1,7 @@
 using Station.Abstractions.Execution;
 using Station.Core.Configuration.Loading;
 using Station.Core.Execution.Modules;
-using Station.Core.Execution.Privileges;
+using Station.Utilities.Privileges;
 
 namespace Station.Core.Execution.Running;
 

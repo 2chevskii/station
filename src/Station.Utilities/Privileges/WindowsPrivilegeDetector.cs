@@ -1,8 +1,8 @@
 using System.Security.Principal;
 
-namespace Station.Core.Execution.Privileges;
+namespace Station.Utilities.Privileges;
 
-internal sealed class WindowsPrivilegeDetector : IPrivilegeDetector
+public sealed class WindowsPrivilegeDetector : IPrivilegeDetector
 {
     public bool IsElevated()
     {

@@ -5,8 +5,8 @@ using Station.Core.Execution.Modules;
 using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Roles;
 using Station.Core.Execution.Planning;
-using Station.Core.Execution.Privileges;
 using Station.Core.Plugins.Restoration;
+using Station.Utilities.Privileges;
 using Station.Utilities.Processes;
 
 namespace Station.Core.Execution.Running;
