@@ -171,7 +171,7 @@ internal sealed class PluginRestoreInfrastructure
 
     public void ExtractArchive(string archivePath, string destinationRoot)
     {
-        using var archive = ArchiveFactory.Open(archivePath);
+        using var archive = ArchiveFactory.OpenArchive(archivePath);
         foreach (var entry in archive.Entries.Where(static entry => !entry.IsDirectory))
         {
             entry.WriteToDirectory(
