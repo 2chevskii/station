@@ -1,11 +1,8 @@
 using Station.Core.Configuration.Artifacts;
 using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Discovery;
-using Station.Core.Configuration.Loading;
-using Station.Core.Configuration.Roles;
 using Station.Plugins.Abstractions.Manifests;
-using Station.Plugins.Abstractions.Requirements;
-using TruePath;
+
 using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Plugins;
@@ -121,9 +118,8 @@ internal sealed class PluginManifestLoader
     )
     {
         var exports = (values ?? [])
-            .Select(value => value?.Trim())
+            .Select(value => value.Trim())
             .Where(static value => !string.IsNullOrWhiteSpace(value))
-            .Cast<string>()
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
 

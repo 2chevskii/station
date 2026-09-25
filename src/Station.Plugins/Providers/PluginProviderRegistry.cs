@@ -1,7 +1,9 @@
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Modules;
-using Station.Abstractions.Artifacts;
-using Station.Plugins.Restoration;
+using Station.Plugins.Providers.Git;
+using Station.Plugins.Providers.Local;
+using Station.Plugins.Providers.Npm;
+using Station.Plugins.Providers.Nuget;
+using Station.Plugins.Providers.Url;
 
 namespace Station.Plugins.Providers;
 

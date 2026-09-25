@@ -1,16 +1,10 @@
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Modules;
-using Station.Abstractions.Artifacts;
-using Station.Plugins.Abstractions.Manifests;
+using Station.Abstractions.FileSystem;
 using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
-using Station.Plugins.Caching;
-using Station.Plugins.Manifests;
 using Station.Utilities.Processes;
-using TruePath;
 
-namespace Station.Plugins.Providers;
+namespace Station.Plugins.Providers.Git;
 
 internal sealed class GitPluginProvider : IPluginProvider
 {

@@ -1,13 +1,10 @@
 using Station.Abstractions.FileSystem;
-using Station.Plugins.Abstractions.Manifests;
 using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
-using Station.Plugins.Caching;
-using Station.Plugins.Manifests;
-using TruePath;
+
 using TruePath.SystemIo;
 
-namespace Station.Plugins.Providers;
+namespace Station.Plugins.Providers.Url;
 
 internal sealed class UrlPluginProvider : IPluginProvider
 {

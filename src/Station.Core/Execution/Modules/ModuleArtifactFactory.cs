@@ -1,5 +1,5 @@
 using Station.Abstractions.FileSystem;
-using TruePath;
+
 using TruePath.SystemIo;
 
 namespace Station.Core.Execution.Modules;
@@ -24,7 +24,7 @@ internal static class ModuleArtifactFactory
         AddScope(configRoot);
         if (!string.IsNullOrWhiteSpace(roleRoot))
         {
-            AddScope(roleRoot!);
+            AddScope(roleRoot);
         }
 
         return new ModuleArtifactSet(

@@ -1,12 +1,11 @@
 using FluentAssertions;
 using Station.Abstractions.Execution;
-using Station.Abstractions.Modules;
 using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
 using Station.Abstractions.Artifacts;
 using Station.Modules.Builtin.Dotfile;
 using Station.Testing;
-using TruePath;
+
 using TruePath.SystemIo;
 
 namespace Station.IntegrationTests.Modules;
@@ -59,8 +58,7 @@ public sealed class TemplateModuleTests
                 directory.GetPath("role"),
                 variables,
                 artifacts,
-                engine,
-                ExecutionMode.Apply
+                engine
             )
         )
         {
@@ -108,7 +106,6 @@ public sealed class TemplateModuleTests
                 variables,
                 artifacts,
                 engine,
-                ExecutionMode.Apply,
                 timeProvider: new FakeTimeProvider(
                     new DateTimeOffset(2026, 4, 12, 9, 10, 11, TimeSpan.Zero)
                 )

@@ -1,6 +1,3 @@
-using Station.Abstractions.FileSystem;
-using Station.Configuration.Yaml;
-
 namespace Station.Core.Configuration.Roles;
 
 internal sealed class RoleMetadataReader(YamlConfigurationReader yamlReader)
@@ -25,7 +22,7 @@ internal sealed class RoleMetadataReader(YamlConfigurationReader yamlReader)
             return null;
         }
 
-        var description = yamlReader.Load<RoleMetadata>(metadataPath)?.Description;
+        var description = yamlReader.Load<RoleMetadata>(metadataPath).Description;
         return string.IsNullOrWhiteSpace(description) ? null : description.Trim();
     }
 }

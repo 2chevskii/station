@@ -63,7 +63,7 @@ internal static class ModuleParameterValueConverter
             );
     }
 
-    private static object? ConvertScalarValue(ConfigScalar value, Type targetType)
+    private static object ConvertScalarValue(ConfigScalar value, Type targetType)
     {
         var nonNullableType = Nullable.GetUnderlyingType(targetType) ?? targetType;
         if (value.Kind == ConfigScalarKind.String && value.Value is string stringValue)

@@ -1,5 +1,3 @@
-using Station.Abstractions.Execution;
-
 namespace Station.Core.Execution.Modules;
 
 internal static class ModuleDiagnosticFormatter

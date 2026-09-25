@@ -1,4 +1,3 @@
-using Station.Plugins.Abstractions.Manifests;
 using Station.Plugins.Abstractions.Requirements;
 
 namespace Station.Core.Configuration.Loading;

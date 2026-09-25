@@ -2,7 +2,6 @@ using FluentAssertions;
 using Station.Abstractions.Execution;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
 using Station.Modules.Builtin.Script;
 using Station.Testing;
 
@@ -54,7 +53,12 @@ public sealed class ScriptModuleTests
         directory.WriteFile("role/scripts/invalid.ps1", "Write-Output 'not json'");
         directory.WriteFile("role/scripts/fail.ps1", "Write-Error 'boom'; exit 1");
 
-        async Task<ModuleResult> ExecuteAsync(string scriptName)
+        (await ExecuteAsync(directory, "empty")).Failed.Should().BeTrue();
+        (await ExecuteAsync(directory, "invalid")).Message.Should().Contain("invalid JSON");
+        (await ExecuteAsync(directory, "fail")).Message.Should().Contain("boom");
+        return;
+
+        static async Task<ModuleResult> ExecuteAsync(TemporaryDirectory directory, string scriptName)
         {
             var module = new ScriptModule(
                 TestModuleContextFactory.Create(directory.Path, directory.GetPath("role"))
@@ -64,10 +68,6 @@ public sealed class ScriptModuleTests
             };
             return await module.ExecuteAsync(CancellationToken.None);
         }
-
-        (await ExecuteAsync("empty")).Failed.Should().BeTrue();
-        (await ExecuteAsync("invalid")).Message.Should().Contain("invalid JSON");
-        (await ExecuteAsync("fail")).Message.Should().Contain("boom");
     }
 
     [Fact]

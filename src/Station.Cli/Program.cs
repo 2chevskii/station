@@ -1,19 +1,11 @@
 using System.CommandLine;
-using System.CommandLine.Parsing;
-using Spectre.Console;
-using Station.Abstractions;
+
 using Station.Abstractions.Execution;
-using Station.Abstractions.Modules;
 using Station.Abstractions.FileSystem;
-using Station.Core;
-using Station.Core.Execution;
-using Station.Core.Execution.Modules;
+using Station.Cli;
 using Station.Core.Execution.Inventory;
-using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
-using Station.Core.Execution.Roles;
-using Station.Core.Plugins;
-using Station.Core.Plugins.Restoration;
+
 using TruePath;
 
 var stationConsole = StationConsole.CreateStandard();

@@ -4,10 +4,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Station.Abstractions.Modules;
-using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
+
 using TruePath;
 using TruePath.SystemIo;
 
@@ -222,7 +221,8 @@ public sealed class ScriptModule : ConfigModule
             startInfo.Environment[key] = value;
         }
 
-        using var process = new Process { StartInfo = startInfo };
+        using var process = new Process();
+        process.StartInfo = startInfo;
         try
         {
             process.Start();

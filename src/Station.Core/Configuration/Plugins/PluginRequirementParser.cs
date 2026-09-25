@@ -1,8 +1,5 @@
 using Station.Abstractions.FileSystem;
-using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Loading;
-using Station.Core.Configuration.Roles;
-using Station.Plugins.Abstractions.Manifests;
 using Station.Plugins.Abstractions.Requirements;
 using TruePath;
 
@@ -151,17 +148,11 @@ internal sealed class PluginRequirementParser
     private static (string Id, string? Version) SplitPackageCoordinate(string value)
     {
         var separatorIndex = value.LastIndexOf('@');
-        if (separatorIndex <= 0)
-        {
-            return (value, null);
-        }
-
-        if (separatorIndex == 0 && value.StartsWith('@'))
-        {
-            return (value, null);
-        }
-
-        if (value.StartsWith('@') && value.Count(static character => character == '@') == 1)
+        if (
+            separatorIndex == 0 && value.StartsWith('@')
+            || separatorIndex <= 0
+            || value.StartsWith('@') && value.Count(static character => character == '@') == 1
+        )
         {
             return (value, null);
         }

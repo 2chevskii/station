@@ -1,5 +1,3 @@
-using Station.Abstractions.FileSystem;
-
 namespace Station.Core.Configuration.Plugins;
 
 internal sealed class PluginModuleExportParser
@@ -13,7 +11,7 @@ internal sealed class PluginModuleExportParser
         var exports = new List<PluginModuleExport>();
         foreach (var declaration in declarations ?? [])
         {
-            var value = declaration?.Trim();
+            var value = declaration.Trim();
             if (string.IsNullOrWhiteSpace(value))
             {
                 continue;

@@ -1,10 +1,6 @@
 using Station.Abstractions.Execution;
-using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Loading;
-using Station.Core.Configuration.Plugins;
-using Station.Core.Configuration.Roles;
 using Station.Core.Execution.Modules;
-using Station.Core.Execution.Running;
 
 namespace Station.Core.Execution.Planning;
 
@@ -42,7 +38,7 @@ internal sealed class ExplainTreeBuilder(
             for (var index = 0; index < tasks.Count; index++)
             {
                 var task = tasks[index];
-                ResolvedModule? resolvedModule = null;
+                ResolvedModule? resolvedModule;
                 try
                 {
                     resolvedModule = moduleCatalog.Resolve(task.ModuleName);

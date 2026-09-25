@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Text;
 using Station.Abstractions.FileSystem;
 using TruePath;
-using TruePath.SystemIo;
 
 namespace Station.Utilities.Processes;
 
@@ -47,7 +46,8 @@ public sealed class ProcessRunner : IProcessRunner
             }
         }
 
-        using var process = new Process { StartInfo = startInfo };
+        using var process = new Process();
+        process.StartInfo = startInfo;
 
         try
         {

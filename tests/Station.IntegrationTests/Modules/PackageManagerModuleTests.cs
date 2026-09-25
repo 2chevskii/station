@@ -6,7 +6,6 @@ using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Scoop;
 using Station.Modules.Builtin.Winget;
 using Station.Testing;
-using TruePath;
 
 namespace Station.IntegrationTests.Modules;
 

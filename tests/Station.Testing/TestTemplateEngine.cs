@@ -1,6 +1,5 @@
 using Station.Abstractions.Artifacts;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Modules;
 
 namespace Station.Testing;
 

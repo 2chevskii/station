@@ -1,4 +1,3 @@
-using Station.Plugins.Abstractions.Manifests;
 using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Providers;
 using Station.Utilities.Processes;

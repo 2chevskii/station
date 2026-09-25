@@ -1,5 +1,3 @@
-using Station.Abstractions.Configuration;
-
 namespace Station.Core.Plugins.Restoration;
 
 internal static class PluginCacheDirectoryResolver
@@ -15,7 +13,7 @@ internal static class PluginCacheDirectoryResolver
         string? configuredDirectory = commandLineDirectory;
         if (configuredDirectory is null && variables.Contains(VariableName))
         {
-            if (!variables.TryGetValue<string>(VariableName, out configuredDirectory))
+            if (!variables.TryGetValue(VariableName, out configuredDirectory))
             {
                 throw new ConfigurationException($"Variable '{VariableName}' must be a path string.");
             }

@@ -1,8 +1,6 @@
 using FluentAssertions;
-using Station.Abstractions.Execution;
+
 using Station.Abstractions.Modules;
-using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
 
 namespace Station.UnitTests.Abstractions;
 
@@ -14,7 +12,7 @@ public sealed class ModulePrimitivesTests
         ModuleResult
             .NoChange("same")
             .Should()
-            .BeEquivalentTo(new ModuleResult(false, false, false, "same", null));
+            .BeEquivalentTo(new ModuleResult(false, false, false, "same"));
         ModuleResult.ChangedResult("changed").Changed.Should().BeTrue();
         ModuleResult.SkippedResult("skipped").Skipped.Should().BeTrue();
         ModuleResult.Failure("failed").Failed.Should().BeTrue();

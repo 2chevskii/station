@@ -4,10 +4,8 @@ using System.Text;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
+
 using TruePath;
-using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Apt;
 
@@ -231,7 +229,8 @@ public sealed class AptModule : ConfigModule
             startInfo.ArgumentList.Add(argument);
         }
 
-        using var process = new Process { StartInfo = startInfo };
+        using var process = new Process();
+        process.StartInfo = startInfo;
         try
         {
             process.Start();

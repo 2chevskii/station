@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using FluentAssertions;
 using Station.Abstractions.FileSystem;
+using Station.Cli;
 using Station.Testing;
 using TruePath;
 using TruePath.SystemIo;

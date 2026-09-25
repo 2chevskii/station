@@ -1,9 +1,8 @@
-using System.Text;
 using Station.Abstractions.Modules;
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Artifacts;
+
 using TruePath;
 using TruePath.SystemIo;
 
@@ -12,8 +11,6 @@ namespace Station.Modules.Builtin.Dotfile;
 [Module("copy", "Copies a file from the module artifact tree to the local machine.")]
 public sealed class CopyModule : ConfigModule
 {
-    private static readonly UTF8Encoding Utf8WithoutBom = new(false);
-
     public CopyModule(ModuleContext context)
         : base(context) { }
 

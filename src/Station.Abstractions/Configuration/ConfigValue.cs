@@ -4,7 +4,7 @@ namespace Station.Abstractions.Configuration;
 
 public abstract record ConfigValue;
 
-public sealed record ConfigNull() : ConfigValue
+public sealed record ConfigNull : ConfigValue
 {
     public static readonly ConfigNull Instance = new();
 }

@@ -4,7 +4,6 @@ using Scriban.Parsing;
 using Scriban.Runtime;
 using Station.Abstractions.Artifacts;
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Modules;
 
 namespace Station.Configuration.Yaml;
 

@@ -1,9 +1,11 @@
 using Spectre.Console;
-using Station.Core.Execution.Modules;
+
 using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;
+
+namespace Station.Cli;
 
 public sealed class StationConsole
 {

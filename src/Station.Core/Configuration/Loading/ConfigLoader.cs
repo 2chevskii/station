@@ -4,21 +4,16 @@ using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Plugins;
 using Station.Core.Configuration.Roles;
 using Station.Plugins.Abstractions.Requirements;
-using TruePath;
-using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Loading;
 
 public sealed class ConfigLoader
 {
-    private readonly IConfigArtifactResolver artifactResolver;
     private readonly ConfigTreeDiscovery configTreeDiscovery;
     private readonly LocalConfigurationDiscovery localDiscovery;
     private readonly PluginRequirementParser pluginRequirementParser;
     private readonly PluginManifestLoader pluginManifestLoader;
-    private readonly IReadOnlyList<IRoleDocumentLoader> roleLoaders;
     private readonly TaskLoader taskLoader;
-    private readonly IReadOnlyList<IVariableDocumentLoader> variableLoaders;
     private readonly VariableScopeLoader variableScopeLoader;
     private readonly YamlConfigurationReader yamlReader;
 
@@ -30,23 +25,21 @@ public sealed class ConfigLoader
         configTreeDiscovery = new ConfigTreeDiscovery();
         yamlReader = new YamlConfigurationReader();
         var javaScriptRuntime = new JavaScriptConfigRuntime();
-        roleLoaders =
-        [
+        IReadOnlyList<IRoleDocumentLoader> roleLoaders1 = [
             new YamlRoleDocumentLoader(yamlReader),
             new JavaScriptRoleDocumentLoader(javaScriptRuntime),
         ];
-        variableLoaders =
-        [
+        IReadOnlyList<IVariableDocumentLoader> variableLoaders1 = [
             new YamlVariableDocumentLoader(yamlReader),
             new JavaScriptVariableDocumentLoader(javaScriptRuntime),
         ];
-        artifactResolver = new ConfigArtifactResolver(roleLoaders, variableLoaders);
-        variableScopeLoader = new VariableScopeLoader(artifactResolver, variableLoaders);
-        taskLoader = new TaskLoader(templateEngine, artifactResolver, roleLoaders);
+        IConfigArtifactResolver artifactResolver1 = new ConfigArtifactResolver(roleLoaders1, variableLoaders1);
+        variableScopeLoader = new VariableScopeLoader(artifactResolver1, variableLoaders1);
+        taskLoader = new TaskLoader(templateEngine, artifactResolver1, roleLoaders1);
         pluginRequirementParser = new PluginRequirementParser();
         pluginManifestLoader = new PluginManifestLoader(
             yamlReader,
-            (ConfigArtifactResolver)artifactResolver,
+            (ConfigArtifactResolver)artifactResolver1,
             configTreeDiscovery
         );
         localDiscovery = new LocalConfigurationDiscovery();
@@ -213,7 +206,7 @@ internal static class ConfigLoaderValueHelpers
             );
         }
 
-        return value!.ToString()!;
+        return value.ToString()!;
     }
 
     public static string? GetOptionalString(
@@ -224,7 +217,7 @@ internal static class ConfigLoaderValueHelpers
         return
             mapping.TryGetValue(propertyName, out var value)
             && !string.IsNullOrWhiteSpace(value?.ToString())
-            ? value!.ToString()
+            ? value.ToString()
             : null;
     }
 }
