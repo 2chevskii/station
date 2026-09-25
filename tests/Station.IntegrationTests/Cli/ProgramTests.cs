@@ -1,5 +1,4 @@
 using System.Diagnostics;
-
 using FluentAssertions;
 using Station.Abstractions.FileSystem;
 using Station.Testing;

@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Station.Utilities.Processes;
 using Station.Testing;
+using Station.Utilities.Processes;
 
 namespace Station.IntegrationTests.Infrastructure;
 

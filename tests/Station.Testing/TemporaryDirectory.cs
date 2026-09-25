@@ -8,7 +8,9 @@ public sealed class TemporaryDirectory : IDisposable
 {
     public TemporaryDirectory()
     {
-        Path = (Temporary.SystemTempDirectory() / "station-tests" / Guid.NewGuid().ToString("N")).Value;
+        Path = (
+            Temporary.SystemTempDirectory() / "station-tests" / Guid.NewGuid().ToString("N")
+        ).Value;
         Path.AsAbsolutePath().CreateDirectory();
     }
 

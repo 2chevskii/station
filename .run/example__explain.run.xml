@@ -1,6 +1,14 @@
 ﻿<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="example::explain" type="DotNetProject" factoryName=".NET Project">
-    <option name="EXE_PATH" value="$PROJECT_DIR$/src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll" />
+  <configuration
+    default="false"
+    name="example::explain"
+    type="DotNetProject"
+    factoryName=".NET Project"
+  >
+    <option
+      name="EXE_PATH"
+      value="$PROJECT_DIR$/src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll"
+    />
     <option name="PROGRAM_PARAMETERS" value="explain --config examples/workstation" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/" />
     <option name="PASS_PARENT_ENVS" value="1" />

@@ -1,9 +1,9 @@
 using System.Text;
-
-using Station.Abstractions.Attributes;
-using Station.Abstractions.Enums;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Models;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Artifacts;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -97,7 +97,10 @@ public sealed class TemplateModule : ConfigModule
         if (destinationPath.ExistsFile() && Backup)
         {
             var timestamp = Context.TimeProvider.GetUtcNow().ToString("yyyyMMddHHmmss");
-            destinationPath.Copy($"{destinationPath}.bak.{timestamp}".AsAbsolutePath(), overwrite: true);
+            destinationPath.Copy(
+                $"{destinationPath}.bak.{timestamp}".AsAbsolutePath(),
+                overwrite: true
+            );
         }
 
         await destinationPath.WriteAllBytesAsync(desiredBytes, cancellationToken);

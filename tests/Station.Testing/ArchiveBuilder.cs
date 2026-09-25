@@ -1,6 +1,5 @@
 using System.Formats.Tar;
 using System.IO.Compression;
-
 using Station.Abstractions.FileSystem;
 using TruePath;
 using TruePath.SystemIo;
@@ -34,7 +33,10 @@ public static class ArchiveBuilder
         var sourceRoot = sourceDirectory.AsAbsolutePath();
         foreach (var directory in sourceRoot.GetDirectories("*", SearchOption.AllDirectories))
         {
-            var relativePath = directory.AsAbsolutePath().RelativeTo(sourceRoot).Value.Replace('\\', '/');
+            var relativePath = directory
+                .AsAbsolutePath()
+                .RelativeTo(sourceRoot)
+                .Value.Replace('\\', '/');
             writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, relativePath));
         }
 

@@ -1,6 +1,8 @@
 using Spectre.Console;
-using Station.Core.Execution.Models;
-using Station.Core.Plugins.Models;
+using Station.Core.Execution.Modules;
+using Station.Core.Execution.Planning;
+using Station.Core.Execution.Running;
+using Station.Core.Plugins.Restoration;
 
 public sealed class StationConsole
 {
@@ -140,14 +142,10 @@ public sealed class StationConsole
 
         foreach (var plugin in plugins)
         {
-            var sourceKind =
-                plugin.IsLocal ? "local"
-                : plugin.CacheHit ? "cache"
-                : "downloaded";
             table.AddRow(
                 EscapeCell(plugin.PluginName ?? plugin.Declaration),
                 EscapeCell(plugin.Version ?? "unknown"),
-                GetPluginSourceMarkup(sourceKind),
+                GetPluginSourceMarkup(plugin),
                 EscapeCell(plugin.PluginRoot)
             );
         }
@@ -211,11 +209,11 @@ public sealed class StationConsole
         : task.Result.Skipped ? "[grey]skipped[/]"
         : "[green]ok[/]";
 
-    private static string GetPluginSourceMarkup(string sourceKind) =>
-        sourceKind switch
+    private static string GetPluginSourceMarkup(PluginRestoreRecord plugin) =>
+        plugin switch
         {
-            "local" => "[green]local[/]",
-            "cache" => "[blue]cache[/]",
+            { IsLocal: true } => "[green]local[/]",
+            { CacheHit: true } => "[blue]cache[/]",
             _ => "[yellow]downloaded[/]",
         };
 

@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-
-using Station.Abstractions.Attributes;
-using Station.Abstractions.Enums;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Models;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Artifacts;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -45,7 +45,7 @@ public sealed class ScriptModule : ConfigModule
             }
 
             var runner = Runner.ToLowerInvariant();
-            if (!CommandExists(runner))
+            if (!CommandLocator.Exists(runner))
             {
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(
@@ -75,7 +75,10 @@ public sealed class ScriptModule : ConfigModule
             var scriptPath = ResolveScriptPath();
             var requestPayload = CreatePayload();
             var requestFilePath = Temporary.CreateTempFile();
-            await requestFilePath.WriteAllTextAsync(requestPayload.ToJsonString(), cancellationToken);
+            await requestFilePath.WriteAllTextAsync(
+                requestPayload.ToJsonString(),
+                cancellationToken
+            );
 
             try
             {
@@ -183,43 +186,6 @@ public sealed class ScriptModule : ConfigModule
         !string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardError.Trim()
         : !string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardOutput.Trim()
         : "Script execution failed.";
-
-    private static bool CommandExists(string commandName)
-    {
-        if (string.IsNullOrWhiteSpace(commandName))
-        {
-            return false;
-        }
-
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
-            Path.PathSeparator,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
-        var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
-                ';',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-            )
-            : [string.Empty];
-
-        foreach (var directory in pathEntries)
-        {
-            if ((directory.AsLocalPath() / commandName).ResolveToCurrentDirectory().ExistsFile())
-            {
-                return true;
-            }
-
-            foreach (var extension in extensions)
-            {
-                if ((directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
         string fileName,

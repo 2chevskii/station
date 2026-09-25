@@ -8,7 +8,9 @@ This repository contains `Station`, a local desired-state workstation configurat
   Shared contracts and path conversion helpers. Module projects are allowed to depend on this project.
 - `Station.Core`
   Orchestration plus internal `Configuration`, `Execution`, and plugin manifest validation.
-  Keep domain records in `Models/` and orchestration/loaders in `Services/`.
+  Group related records, contracts, and behavior by domain responsibility. Keep discovery,
+  loading, roles, modules, planning, execution, and restoration in focused folders.
+  Do not introduce generic `Models/`, `Services/`, or `Interfaces/` folders.
 - `Station.Plugins.Abstractions`
   Plugin declaration and manifest document contracts shared by Core and plugin restoration.
 - `Station.Plugins`

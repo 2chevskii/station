@@ -1,10 +1,8 @@
-using System.Text;
-using System.Text.Json;
-
 using Jint;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Models;
-using Station.Configuration.Abstractions;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Artifacts;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -12,15 +10,13 @@ namespace Station.Configuration.JavaScript;
 
 public sealed class JavaScriptConfigRuntime
 {
-    private static readonly string[] BuiltInModules =
-    [
-        "copy",
-        "template",
-        "script",
-        "winget",
-        "scoop",
-        "apt",
-    ];
+    private const string DefaultExportName = "default";
+    private const string TaskRegistrationFunctionName = "task";
+    private const string VariablesModuleSpecifier = "station:vars";
+    private const string BuiltInModulesSpecifier = "station:modules/builtin";
+    private const long MaximumMemoryBytes = 4_000_000;
+    private const int MaximumStatements = 10_000;
+    private static readonly TimeSpan EvaluationTimeout = TimeSpan.FromSeconds(2);
 
     public ConfigObject LoadVariables(
         ResolvedConfigArtifact artifact,
@@ -29,7 +25,7 @@ public sealed class JavaScriptConfigRuntime
     {
         var engine = CreateEngine(artifact, context);
         var module = engine.Modules.Import(GetImportSpecifier(artifact));
-        var exportValue = module.Get("default").ToObject();
+        var exportValue = module.Get(DefaultExportName).ToObject();
         return ConfigValueFactory.RequireObject(
             ConfigValueFactory.FromClrValue(exportValue),
             artifact.DisplayName
@@ -44,7 +40,7 @@ public sealed class JavaScriptConfigRuntime
         var taskRegistrations = new List<object?>();
         var engine = CreateEngine(artifact, context);
         engine.SetValue(
-            "task",
+            TaskRegistrationFunctionName,
             new Func<object?, object?, object?, object?>(
                 (first, second, third) =>
                 {
@@ -73,122 +69,27 @@ public sealed class JavaScriptConfigRuntime
         var engine = new Engine(options =>
             options
                 .EnableModules(moduleRoot, restrictToBasePath: false)
-                .LimitMemory(4_000_000)
-                .MaxStatements(10_000)
-                .TimeoutInterval(TimeSpan.FromSeconds(2))
+                .LimitMemory(MaximumMemoryBytes)
+                .MaxStatements(MaximumStatements)
+                .TimeoutInterval(EvaluationTimeout)
         );
 
         engine.Modules.Add(
-            "station:vars",
-            builder => builder.AddSource(BuildVarsModuleSource(context.VisibleVariables))
+            VariablesModuleSpecifier,
+            builder =>
+                builder.AddSource(
+                    JavaScriptModuleSource.BuildVarsModuleSource(context.VisibleVariables)
+                )
         );
         engine.Modules.Add(
-            "station:modules/builtin",
-            builder => builder.AddSource(BuildBuiltinModuleSource())
+            BuiltInModulesSpecifier,
+            builder => builder.AddSource(JavaScriptModuleSource.BuildBuiltinModuleSource())
         );
         return engine;
     }
 
     private static string GetImportSpecifier(ResolvedConfigArtifact artifact) =>
         $"./{artifact.FullPath.AsAbsolutePath().FileName}";
-
-    private static string BuildBuiltinModuleSource()
-    {
-        var builder = new StringBuilder();
-        foreach (var module in BuiltInModules)
-        {
-            builder
-                .Append("export const ")
-                .Append(module)
-                .Append(" = ")
-                .Append(JsonSerializer.Serialize(module))
-                .AppendLine(";");
-        }
-
-        return builder.ToString();
-    }
-
-    private static string BuildVarsModuleSource(VariableSet variables)
-    {
-        var builder = new StringBuilder();
-        builder.AppendLine(
-            """
-            class StationVariableReference {
-              constructor(name) {
-                this.$type = 'variable_reference';
-                this.name = name;
-              }
-
-              toString() {
-                return `{{ ${this.name} }}`;
-              }
-
-              valueOf() {
-                return this.toString();
-              }
-
-              [Symbol.toPrimitive]() {
-                return this.toString();
-              }
-            }
-            """
-        );
-        builder.AppendLine("const __ref = path => new StationVariableReference(path);");
-        builder.AppendLine("const __default = {};");
-
-        foreach (var (key, value) in variables.Root)
-        {
-            builder
-                .Append("__default[")
-                .Append(JsonSerializer.Serialize(key))
-                .Append("] = ")
-                .Append(BuildVarsValueExpression(key, value))
-                .AppendLine(";");
-
-            if (IsValidIdentifier(key))
-            {
-                builder
-                    .Append("export const ")
-                    .Append(key)
-                    .Append(" = __ref(")
-                    .Append(JsonSerializer.Serialize(key))
-                    .AppendLine(");");
-            }
-        }
-
-        builder.AppendLine("export default __default;");
-        return builder.ToString();
-    }
-
-    private static string BuildVarsValueExpression(string path, ConfigValue value)
-    {
-        if (value is ConfigObject configObject)
-        {
-            var children = configObject.Select(pair =>
-                $"{JsonSerializer.Serialize(pair.Key)}: {BuildVarsValueExpression($"{path}.{pair.Key}", pair.Value)}"
-            );
-            return $"{{ {string.Join(", ", children)} }}";
-        }
-
-        return $"__ref({JsonSerializer.Serialize(path)})";
-    }
-
-    private static bool IsValidIdentifier(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return false;
-        }
-
-        if (!(char.IsLetter(value[0]) || value[0] == '_' || value[0] == '$'))
-        {
-            return false;
-        }
-
-        return value
-            .Skip(1)
-            .All(static character => char.IsLetterOrDigit(character) || character is '_' or '$');
-    }
 
     private static void RegisterTask(
         ICollection<object?> tasks,

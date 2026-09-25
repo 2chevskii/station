@@ -1,5 +1,6 @@
 using FluentAssertions;
-using Station.Abstractions.Enums;
+using Station.Abstractions.Execution;
+using Station.Abstractions.Modules;
 using Station.Abstractions.FileSystem;
 using Station.Modules.Builtin.Apt;
 using Station.Modules.Builtin.Scoop;

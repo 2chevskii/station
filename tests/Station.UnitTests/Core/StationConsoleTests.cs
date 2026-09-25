@@ -1,9 +1,13 @@
 using FluentAssertions;
 using Spectre.Console.Testing;
-using Station.Abstractions.Enums;
-using Station.Abstractions.Models;
-using Station.Core.Execution.Models;
-using Station.Core.Plugins.Models;
+using Station.Abstractions.Execution;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Artifacts;
+using Station.Core.Execution.Modules;
+using Station.Core.Execution.Planning;
+using Station.Core.Execution.Running;
+using Station.Core.Plugins.Restoration;
 
 namespace Station.UnitTests.Core;
 

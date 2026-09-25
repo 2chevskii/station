@@ -18,17 +18,42 @@ The current codebase already implements the new architecture we planned:
 ```text
 src/
   Station.Abstractions/
+    Artifacts/
+    Configuration/
+    Execution/
+    FileSystem/
+    Modules/
+  Station.Configuration.Abstractions/
+    Documents/
+    Values/
+  Station.Configuration.JavaScript/
+  Station.Configuration.Yaml/
   Station.Core/
     Configuration/
-      Models/
-      Services/
+      Artifacts/
+      Discovery/
+      Loading/
+      Plugins/
+      Roles/
+      Values/
     Execution/
-      Models/
-      Services/
+      Modules/
+      Planning/
+      Privileges/
+      Roles/
+      Running/
     Plugins/
-      Models/
-      Providers/
-      Services/
+      Restoration/
+  Station.Plugins.Abstractions/
+    Manifests/
+    Sources/
+  Station.Plugins/
+    Caching/
+    Manifests/
+    Providers/
+    Restoration/
+  Station.Utilities/
+    Processes/
   Station.Cli/
   Modules/
     Station.Modules.Builtin.Apt/

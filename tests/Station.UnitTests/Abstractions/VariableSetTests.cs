@@ -1,5 +1,7 @@
 using FluentAssertions;
-using Station.Abstractions.Models;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Artifacts;
 using Station.Testing;
 
 namespace Station.UnitTests.Abstractions;

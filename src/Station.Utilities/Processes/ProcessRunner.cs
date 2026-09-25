@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-
 using Station.Abstractions.FileSystem;
 using TruePath;
 using TruePath.SystemIo;
@@ -10,50 +9,7 @@ namespace Station.Utilities.Processes;
 
 public sealed class ProcessRunner : IProcessRunner
 {
-    public bool CommandExists(string commandName)
-    {
-        if (string.IsNullOrWhiteSpace(commandName))
-        {
-            return false;
-        }
-
-        if (commandName.AsLocalPath().IsAbsolute)
-        {
-            return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
-        }
-
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
-            Path.PathSeparator,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
-
-        var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
-                ';',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-            )
-            : [string.Empty];
-
-        foreach (var directory in pathEntries)
-        {
-            var directPath = (directory.AsLocalPath() / commandName).ResolveToCurrentDirectory();
-            if (directPath.ExistsFile())
-            {
-                return true;
-            }
-
-            foreach (var extension in extensions)
-            {
-                var candidate = (directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory();
-                if (candidate.ExistsFile())
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
+    public bool CommandExists(string commandName) => CommandLocator.Exists(commandName);
 
     public async Task<ProcessResult> RunAsync(
         ProcessCommand command,
@@ -66,7 +22,8 @@ public sealed class ProcessRunner : IProcessRunner
             RedirectStandardError = true,
             RedirectStandardOutput = true,
             UseShellExecute = false,
-            WorkingDirectory = command.WorkingDirectory ?? AbsolutePath.CurrentWorkingDirectory.Value,
+            WorkingDirectory =
+                command.WorkingDirectory ?? AbsolutePath.CurrentWorkingDirectory.Value,
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
         };

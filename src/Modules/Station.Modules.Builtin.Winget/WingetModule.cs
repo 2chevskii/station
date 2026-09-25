@@ -1,11 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
-
-using Station.Abstractions.Attributes;
-using Station.Abstractions.Enums;
+using Station.Abstractions.Modules;
+using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
-using Station.Abstractions.Models;
+using Station.Abstractions.Configuration;
+using Station.Abstractions.Artifacts;
 using TruePath;
 using TruePath.SystemIo;
 
@@ -36,7 +36,7 @@ public sealed class WingetModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
-        if (!CommandExists(Command))
+        if (!CommandLocator.Exists(Command))
         {
             return ValueTask.FromResult(
                 ModuleInspectionResult.Failure(
@@ -172,49 +172,6 @@ public sealed class WingetModule : ConfigModule
         !string.IsNullOrWhiteSpace(result.StandardError) ? result.StandardError.Trim()
         : !string.IsNullOrWhiteSpace(result.StandardOutput) ? result.StandardOutput.Trim()
         : "winget failed.";
-
-    private static bool CommandExists(string commandName)
-    {
-        if (string.IsNullOrWhiteSpace(commandName))
-        {
-            return false;
-        }
-
-        if (commandName.AsLocalPath().IsAbsolute)
-        {
-            return commandName.AsLocalPath().ResolveToCurrentDirectory().ExistsFile();
-        }
-
-        var pathEntries = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(
-            Path.PathSeparator,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
-        var extensions = OperatingSystem.IsWindows()
-            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT;.COM;.PS1").Split(
-                ';',
-                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-            )
-            : [string.Empty];
-
-        foreach (var directory in pathEntries)
-        {
-            var directPath = (directory.AsLocalPath() / commandName).ResolveToCurrentDirectory();
-            if (directPath.ExistsFile())
-            {
-                return true;
-            }
-
-            foreach (var extension in extensions)
-            {
-                if ((directory.AsLocalPath() / (commandName + extension)).ResolveToCurrentDirectory().ExistsFile())
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
         string fileName,
