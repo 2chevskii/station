@@ -1,0 +1,44 @@
+{
+  "profiles": {
+    "Station - restore": {
+      "commandName": "Project",
+      "commandLineArgs": "restore",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - explain": {
+      "commandName": "Project",
+      "commandLineArgs": "explain",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - list": {
+      "commandName": "Project",
+      "commandLineArgs": "list",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - list roles": {
+      "commandName": "Project",
+      "commandLineArgs": "list roles",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - list modules": {
+      "commandName": "Project",
+      "commandLineArgs": "list modules",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - validate": {
+      "commandName": "Project",
+      "commandLineArgs": "validate",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - check": {
+      "commandName": "Project",
+      "commandLineArgs": "check",
+      "workingDirectory": "../../examples/workstation"
+    },
+    "Station - apply": {
+      "commandName": "Project",
+      "commandLineArgs": "apply",
+      "workingDirectory": "../../examples/workstation"
+    }
+  }
+}

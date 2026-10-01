@@ -5,24 +5,42 @@
         <File Path="global.json"/>
         <File Path="NuGet.Config"/>
     </Folder>
-    <Folder Name="/examples/"/>
     <Folder Name="/examples/workstation/">
         <File Path="examples/workstation/station.yaml"/>
     </Folder>
-    <Folder Name="/examples/workstation/roles/">
+    <Folder Name="/examples/workstation/modules/">
+        <File Path="examples/workstation/modules/README.md"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/git/">
         <File Path="examples/workstation/roles/git/defaults.yaml"/>
-        <File Path="examples/workstation/roles/git/files/git/.gitignore_global"/>
         <File Path="examples/workstation/roles/git/role.yaml"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/git/files/git/">
+        <File Path="examples/workstation/roles/git/files/git/.gitignore_global"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/git/templates/git/">
         <File Path="examples/workstation/roles/git/templates/git/.gitconfig.scriban"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/jsexample/">
         <File Path="examples/workstation/roles/jsexample/defaults.js"/>
         <File Path="examples/workstation/roles/jsexample/role.js"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/shell/">
         <File Path="examples/workstation/roles/shell/defaults.yaml"/>
         <File Path="examples/workstation/roles/shell/role.yaml"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/shell/templates/powershell/">
         <File
                 Path="examples/workstation/roles/shell/templates/powershell/Microsoft.PowerShell_profile.ps1.scriban"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/shell/templates/starship/">
         <File Path="examples/workstation/roles/shell/templates/starship/starship.toml.scriban"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/terminal/">
         <File Path="examples/workstation/roles/terminal/defaults.yaml"/>
         <File Path="examples/workstation/roles/terminal/role.yaml"/>
+    </Folder>
+    <Folder Name="/examples/workstation/roles/terminal/templates/windows-terminal/">
         <File
                 Path="examples/workstation/roles/terminal/templates/windows-terminal/settings.json.scriban"/>
     </Folder>
