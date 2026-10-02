@@ -7,14 +7,13 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Providers.Local;
 
-internal sealed class LocalPluginProvider : IPluginProvider
+internal sealed class LocalPluginProvider( PluginRestoreInfrastructure infrastructure ) : IPluginProvider
 {
     public string Name => "local";
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
@@ -47,8 +46,8 @@ internal sealed class LocalPluginProvider : IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     )
     {
         if ( source.IsLocalDirectory )
@@ -57,6 +56,13 @@ internal sealed class LocalPluginProvider : IPluginProvider
             return new RestoredPluginLocation( source.PluginRoot, true, true );
         }
 
-        return infrastructure.RestoreToCache( configRoot, requirement, source, log, true );
+        return infrastructure.RestoreToCache(
+            configRoot,
+            requirement,
+            source,
+            log,
+            cacheRootOverride,
+            isLocal: true
+        );
     }
 }

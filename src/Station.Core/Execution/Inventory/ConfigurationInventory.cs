@@ -10,7 +10,8 @@ namespace Station.Core.Execution.Inventory;
 internal sealed class ConfigurationInventory(
     ConfigLoader configLoader,
     PluginRestorer pluginRestorer,
-    IReadOnlyList<ModuleRegistration> builtInModules
+    IEnumerable<ModuleRegistration> builtInModules,
+    PluginCacheDirectoryResolver cacheDirectoryResolver
 )
 {
     public Task<InventoryResult> ListRolesAsync(
@@ -67,7 +68,7 @@ internal sealed class ConfigurationInventory(
                 configRoot,
                 cliVariables
             );
-            var cacheRoot = PluginCacheDirectoryResolver.Resolve(
+            var cacheRoot = cacheDirectoryResolver.Resolve(
                 root,
                 variables,
                 pluginCacheDirectory

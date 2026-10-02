@@ -10,7 +10,6 @@ internal interface IPluginProvider
     Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     );
 
@@ -18,7 +17,7 @@ internal interface IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     );
 }

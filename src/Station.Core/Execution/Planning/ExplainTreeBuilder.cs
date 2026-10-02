@@ -6,7 +6,8 @@ namespace Station.Core.Execution.Planning;
 
 internal sealed class ExplainTreeBuilder(
     ModuleBinder moduleBinder,
-    ScribanTemplateRenderer templateEngine
+    ITemplateEngine templateEngine,
+    TimeProvider timeProvider
 )
 {
     public ExplainResult Build(
@@ -79,7 +80,7 @@ internal sealed class ExplainTreeBuilder(
                     ),
                     templateEngine,
                     false,
-                    TimeProvider.System
+                    timeProvider
                 );
                 var binding = moduleBinder.Bind(
                     resolvedModule.Schema,

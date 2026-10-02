@@ -12,14 +12,16 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Providers.Nuget;
 
-internal sealed class NuGetPluginProvider : IPluginProvider
+internal sealed class NuGetPluginProvider(
+    PluginRestoreInfrastructure infrastructure,
+    HttpClient httpClient
+) : IPluginProvider
 {
     public string Name => "nuget";
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
@@ -73,8 +75,8 @@ internal sealed class NuGetPluginProvider : IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     )
     {
         var feed = string.IsNullOrWhiteSpace( requirement.Feed )
@@ -87,17 +89,17 @@ internal sealed class NuGetPluginProvider : IPluginProvider
                 Feed = feed,
             },
             source,
-            log
+            log,
+            cacheRootOverride
         );
     }
 
-    private static async Task<JsonObject> GetVersionsAsync(
+    private async Task<JsonObject> GetVersionsAsync(
         string versionsUri,
         CancellationToken cancellationToken
     )
     {
-        using var client = new HttpClient();
-        return await client.GetFromJsonAsync<JsonObject>( versionsUri, cancellationToken )
+        return await httpClient.GetFromJsonAsync<JsonObject>( versionsUri, cancellationToken )
                ?? throw new ConfigurationException(
                    $"NuGet feed returned an empty version index for '{versionsUri}'."
                );

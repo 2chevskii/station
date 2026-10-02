@@ -1,55 +1,40 @@
 using Station.Abstractions.Execution;
 using Station.Core.Configuration.Loading;
-using Station.Core.Configuration.Plugins;
 using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Modules;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Roles;
 using Station.Core.Plugins.Restoration;
-using Station.Utilities.Privileges;
-using Station.Utilities.Processes;
 
 namespace Station.Core.Execution.Running;
 
 public sealed class ConfigEngine
 {
     private readonly IReadOnlyList<ModuleRegistration> builtInModules;
-    private readonly ModuleBinder moduleBinder = new ModuleBinder();
     private readonly ConfigLoader configLoader;
     private readonly PluginRestorer pluginRestorer;
-    private readonly IPrivilegeDetector privilegeDetector;
     private readonly ConfigurationInventory inventory;
-    private readonly ScribanTemplateRenderer templateEngine = new ScribanTemplateRenderer();
-
-    public ConfigEngine()
-        : this(
-            new ConfigLoader( new ScribanTemplateRenderer() ),
-            new PluginRestorer(
-                new PluginManifestLoader( new YamlConfigurationReader() ),
-                new ProcessRunner()
-            ),
-            new WindowsPrivilegeDetector(),
-            []
-        )
-    {
-    }
+    private readonly TaskExecutionPipeline executionPipeline;
+    private readonly ExplainTreeBuilder explainTreeBuilder;
+    private readonly PluginCacheDirectoryResolver cacheDirectoryResolver;
 
     internal ConfigEngine(
         ConfigLoader configLoader,
         PluginRestorer pluginRestorer,
-        IPrivilegeDetector privilegeDetector,
-        IEnumerable<ModuleRegistration> builtInModules
+        IEnumerable<ModuleRegistration> builtInModules,
+        ConfigurationInventory inventory,
+        TaskExecutionPipeline executionPipeline,
+        ExplainTreeBuilder explainTreeBuilder,
+        PluginCacheDirectoryResolver cacheDirectoryResolver
     )
     {
         this.configLoader = configLoader;
         this.pluginRestorer = pluginRestorer;
-        this.privilegeDetector = privilegeDetector;
         this.builtInModules = builtInModules.ToArray();
-        inventory = new ConfigurationInventory(
-            this.configLoader,
-            this.pluginRestorer,
-            this.builtInModules
-        );
+        this.inventory = inventory;
+        this.executionPipeline = executionPipeline;
+        this.explainTreeBuilder = explainTreeBuilder;
+        this.cacheDirectoryResolver = cacheDirectoryResolver;
     }
 
     public Task<InventoryResult> ListRolesAsync(
@@ -93,7 +78,7 @@ public sealed class ConfigEngine
         try
         {
             var configuration = configLoader.Load( configRoot, cliVariables );
-            var cacheRoot = PluginCacheDirectoryResolver.Resolve(
+            var cacheRoot = cacheDirectoryResolver.Resolve(
                 configuration.ConfigRoot,
                 configuration.RootVariables,
                 pluginCacheDirectory
@@ -150,11 +135,7 @@ public sealed class ConfigEngine
             return new EngineRunResult( mode, false, exception.Message, [exception.Message], [] );
         }
 
-        return await new TaskExecutionPipeline(
-            moduleBinder,
-            privilegeDetector,
-            templateEngine
-        ).RunAsync(
+        return await executionPipeline.RunAsync(
             prepared.Configuration,
             prepared.ModuleCatalog!,
             prepared.Tasks!,
@@ -197,7 +178,7 @@ public sealed class ConfigEngine
             return new ExplainResult( false, exception.Message, [exception.Message], null );
         }
 
-        return new ExplainTreeBuilder( moduleBinder, templateEngine ).Build(
+        return explainTreeBuilder.Build(
             prepared.Configuration,
             prepared.ModuleCatalog!,
             prepared.Tasks!
@@ -213,7 +194,7 @@ public sealed class ConfigEngine
     )
     {
         var configuration = configLoader.Load( configRoot, cliVariables );
-        var cacheRoot = PluginCacheDirectoryResolver.Resolve(
+        var cacheRoot = cacheDirectoryResolver.Resolve(
             configuration.ConfigRoot,
             configuration.RootVariables,
             pluginCacheDirectory

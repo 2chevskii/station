@@ -6,10 +6,8 @@ using TruePath.SystemIo;
 
 namespace Station.Core.Configuration.Discovery;
 
-internal sealed class LocalConfigurationDiscovery
+internal sealed class LocalConfigurationDiscovery( ConfigTreeDiscovery treeDiscovery )
 {
-    private readonly ConfigTreeDiscovery treeDiscovery = new ConfigTreeDiscovery();
-
     public IReadOnlyList<ResolvedRole> DiscoverLocalRoles( string configRoot )
     {
         var tree = treeDiscovery.Discover( configRoot );

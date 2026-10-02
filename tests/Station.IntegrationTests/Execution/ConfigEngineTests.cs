@@ -1,8 +1,11 @@
 using FluentAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Core.Execution.Running;
+using Station.IntegrationTests.Infrastructure;
 using Station.Testing;
 
 using TruePath.SystemIo;
@@ -33,7 +36,8 @@ public sealed class ConfigEngineTests
             "description: Shared plugin setup\ntasks: []\n"
         );
 
-        var result = await new ConfigEngine().ListRolesAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().ListRolesAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         result.Components.Should().HaveCount( 3 );
@@ -85,7 +89,10 @@ public sealed class ConfigEngineTests
             .Assembly.Location.AsAbsolutePath()
             .Copy( assemblyPath, true );
 
-        var result = await new ConfigEngine().ListModulesAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().ListModulesAsync(
+            directory.Path
+        );
 
         result.Succeeded.Should().BeTrue();
         result
@@ -128,7 +135,8 @@ public sealed class ConfigEngineTests
             """
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
@@ -163,7 +171,8 @@ public sealed class ConfigEngineTests
             """
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var first = await engine.RestoreAsync( directory.Path );
         var second = await engine.RestoreAsync( directory.Path );
 
@@ -218,7 +227,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
         result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "no plugin manifest" );
@@ -240,7 +250,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         result.Plugins.Should().ContainSingle().Which.PluginName.Should().Be( "example.plugin" );
@@ -262,7 +273,8 @@ public sealed class ConfigEngineTests
         ArchiveBuilder.CreateZip( pluginRoot, archivePath );
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
         result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "valid directory name" );
@@ -387,7 +399,8 @@ public sealed class ConfigEngineTests
               """
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
@@ -421,7 +434,8 @@ public sealed class ConfigEngineTests
             """
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
@@ -472,7 +486,11 @@ public sealed class ConfigEngineTests
               """
         );
 
-        var result = await new ConfigEngine().RunAsync( directory.Path, ExecutionMode.Validate );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RunAsync(
+            directory.Path,
+            ExecutionMode.Validate
+        );
 
         result.Succeeded.Should().BeTrue();
         result.Message.Should().Be( "Validated 3 task(s)." );
@@ -499,7 +517,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeFalse();
         result
@@ -536,7 +555,11 @@ public sealed class ConfigEngineTests
             .Copy( assemblyPath, true );
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin]\n" );
 
-        var result = await new ConfigEngine().RunAsync( directory.Path, ExecutionMode.Validate );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RunAsync(
+            directory.Path,
+            ExecutionMode.Validate
+        );
 
         result.Succeeded.Should().BeFalse();
         result.Diagnostics.Should().ContainSingle().Which.Should().Contain( "Example.MissingModule" );
@@ -574,7 +597,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "roles/base/scripts/test.ps1", "Write-Output '{\"changed\":false}'" );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeFalse();
@@ -607,7 +631,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "roles/base/templates/sample.scriban", "{{ greeting }}" );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.ExplainAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
@@ -671,7 +696,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "roles/base/files/sample.txt", "hello" );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
@@ -706,7 +732,8 @@ public sealed class ConfigEngineTests
         );
         directory.WriteFile( "roles/base/files/sample.txt", "hello" );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();
@@ -737,7 +764,8 @@ public sealed class ConfigEngineTests
             """
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var result = await engine.RunAsync( directory.Path, ExecutionMode.Validate );
 
         result.Succeeded.Should().BeTrue();

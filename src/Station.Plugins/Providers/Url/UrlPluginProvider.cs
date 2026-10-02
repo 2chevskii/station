@@ -6,14 +6,13 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Providers.Url;
 
-internal sealed class UrlPluginProvider : IPluginProvider
+internal sealed class UrlPluginProvider( PluginRestoreInfrastructure infrastructure ) : IPluginProvider
 {
     public string Name => "url";
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
@@ -39,8 +38,8 @@ internal sealed class UrlPluginProvider : IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     ) =>
-        infrastructure.RestoreToCache( configRoot, requirement, source, log );
+        infrastructure.RestoreToCache( configRoot, requirement, source, log, cacheRootOverride );
 }

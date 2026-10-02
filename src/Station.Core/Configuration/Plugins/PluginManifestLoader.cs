@@ -9,38 +9,22 @@ namespace Station.Core.Configuration.Plugins;
 
 internal sealed class PluginManifestLoader
 {
-    private readonly ConfigArtifactResolver artifactResolver;
+    private readonly IConfigArtifactResolver artifactResolver;
     private readonly ConfigTreeDiscovery treeDiscovery;
     private readonly YamlConfigurationReader yamlReader;
-    private readonly PluginModuleExportParser moduleExportParser = new PluginModuleExportParser();
-
-    public PluginManifestLoader( YamlConfigurationReader yamlReader )
-        : this(
-            yamlReader,
-            new ConfigArtifactResolver(
-                [
-                    new YamlRoleDocumentLoader( yamlReader ),
-                    new JavaScriptRoleDocumentLoader( new JavaScriptConfigRuntime() ),
-                ],
-                [
-                    new YamlVariableDocumentLoader( yamlReader ),
-                    new JavaScriptVariableDocumentLoader( new JavaScriptConfigRuntime() ),
-                ]
-            ),
-            new ConfigTreeDiscovery()
-        )
-    {
-    }
+    private readonly PluginModuleExportParser moduleExportParser;
 
     public PluginManifestLoader(
         YamlConfigurationReader yamlReader,
-        ConfigArtifactResolver artifactResolver,
-        ConfigTreeDiscovery treeDiscovery
+        IConfigArtifactResolver artifactResolver,
+        ConfigTreeDiscovery treeDiscovery,
+        PluginModuleExportParser moduleExportParser
     )
     {
         this.yamlReader = yamlReader;
         this.artifactResolver = artifactResolver;
         this.treeDiscovery = treeDiscovery;
+        this.moduleExportParser = moduleExportParser;
     }
 
     public ResolvedPluginManifest Load( string pluginRoot )

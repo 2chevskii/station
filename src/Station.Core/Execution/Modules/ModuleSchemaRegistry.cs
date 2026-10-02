@@ -23,16 +23,14 @@ internal static class ModuleSchemaRegistry
                 $"Module type '{moduleType.FullName}' must declare [{nameof( ModuleAttribute )}]."
             );
 
-        var constructor =
-            moduleType
-                .GetConstructors( BindingFlags.Public | BindingFlags.Instance )
-                .SingleOrDefault( ctor =>
-                {
-                    var parameters = ctor.GetParameters();
-                    return parameters.Length == 1
-                           && parameters[0].ParameterType == typeof( ModuleContext );
-                } )
-            ?? throw new ConfigurationException(
+        var constructors = moduleType.GetConstructors( BindingFlags.Public | BindingFlags.Instance );
+        if (
+            constructors.Length != 1
+            || constructors[0].GetParameters().Count( parameter =>
+                parameter.ParameterType == typeof( ModuleContext )
+            ) != 1
+        )
+            throw new ConfigurationException(
                 $"Module type '{moduleType.FullName}' must expose a single public constructor accepting {nameof( ModuleContext )}."
             );
 
@@ -84,7 +82,6 @@ internal static class ModuleSchemaRegistry
             moduleType,
             attribute.Name,
             attribute.Description,
-            constructor,
             parameters
         );
     }

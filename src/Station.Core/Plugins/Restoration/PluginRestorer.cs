@@ -1,7 +1,6 @@
 using Station.Core.Configuration.Plugins;
 using Station.Plugins.Abstractions.Requirements;
 using Station.Plugins.Restoration;
-using Station.Utilities.Processes;
 
 namespace Station.Core.Plugins.Restoration;
 
@@ -10,10 +9,13 @@ internal sealed class PluginRestorer
     private readonly PluginManifestLoader pluginManifestLoader;
     private readonly PluginSourceRestorer sourceRestorer;
 
-    public PluginRestorer( PluginManifestLoader pluginManifestLoader, IProcessRunner processRunner )
+    public PluginRestorer(
+        PluginManifestLoader pluginManifestLoader,
+        PluginSourceRestorer sourceRestorer
+    )
     {
         this.pluginManifestLoader = pluginManifestLoader;
-        sourceRestorer = new PluginSourceRestorer( processRunner );
+        this.sourceRestorer = sourceRestorer;
     }
 
     public async Task<PluginRestoreResult> RestoreAsync(

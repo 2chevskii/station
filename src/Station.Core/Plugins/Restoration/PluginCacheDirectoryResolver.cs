@@ -1,10 +1,10 @@
 namespace Station.Core.Plugins.Restoration;
 
-internal static class PluginCacheDirectoryResolver
+internal sealed class PluginCacheDirectoryResolver( ITemplateEngine templateEngine )
 {
     public const string VariableName = "plugin_cache_dir";
 
-    public static string? Resolve(
+    public string? Resolve(
         string configRoot,
         VariableSet variables,
         string? commandLineDirectory
@@ -21,7 +21,7 @@ internal static class PluginCacheDirectoryResolver
             return null;
 
         if ( ConfigValueUtilities.IsTemplateMarkup( configuredDirectory ) )
-            configuredDirectory = new ScribanTemplateRenderer().Render(
+            configuredDirectory = templateEngine.Render(
                 configuredDirectory,
                 variables,
                 VariableName

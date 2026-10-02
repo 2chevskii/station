@@ -1,5 +1,7 @@
 using System.CommandLine;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Cli;
@@ -8,7 +10,11 @@ using Station.Core.Execution.Running;
 
 using TruePath;
 
-var stationConsole = StationConsole.CreateStandard();
+await using var services = new ServiceCollection().AddStation().BuildServiceProvider(
+    new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true }
+);
+var stationConsole = services.GetRequiredService<StationConsole>();
+var engine = services.GetRequiredService<ConfigEngine>();
 
 var configOption = new Option<string>( "--config" )
 {
@@ -53,7 +59,6 @@ Command CreateRestoreCommand()
         {
             var configRoot = ResolveConfigRoot( parseResult );
             var cliVariables = ParseCliVariables( parseResult.GetValue( setOption ) );
-            var engine = new ConfigEngine();
             var result = await engine.RestoreAsync(
                 configRoot,
                 cliVariables,
@@ -82,7 +87,6 @@ Command CreateExplainCommand()
         {
             var configRoot = ResolveConfigRoot( parseResult );
             var cliVariables = ParseCliVariables( parseResult.GetValue( setOption ) );
-            var engine = new ConfigEngine();
             var result = await engine.ExplainAsync(
                 configRoot,
                 cliVariables,
@@ -151,7 +155,6 @@ Command CreateInventoryCommand(
     command.Options.Add( pluginCacheDirectoryOption );
     command.SetAction( async ( parseResult, cancellationToken ) =>
         {
-            var engine = new ConfigEngine();
             var result = await list(
                 engine,
                 ResolveConfigRoot( parseResult ),
@@ -187,7 +190,6 @@ async Task<int> ExecuteCommandAsync(
     var configRoot = ResolveConfigRoot( parseResult );
     var cliVariables = ParseCliVariables( parseResult.GetValue( setOption ) );
 
-    var engine = new ConfigEngine();
     var result = await engine.RunAsync(
         configRoot,
         mode,

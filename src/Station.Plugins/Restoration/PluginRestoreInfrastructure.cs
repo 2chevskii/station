@@ -19,15 +19,22 @@ namespace Station.Plugins.Restoration;
 
 internal sealed class PluginRestoreInfrastructure
 {
-    private static readonly HttpClient HttpClient = new HttpClient();
+    private readonly HttpClient httpClient;
     private readonly IProcessRunner processRunner;
-    private readonly PluginManifestReader manifestReader = new PluginManifestReader();
+    private readonly PluginManifestReader manifestReader;
     private readonly PluginCacheStore cacheStore;
 
-    public PluginRestoreInfrastructure( IProcessRunner processRunner, string? cacheRootOverride )
+    public PluginRestoreInfrastructure(
+        IProcessRunner processRunner,
+        PluginManifestReader manifestReader,
+        PluginCacheStore cacheStore,
+        HttpClient httpClient
+    )
     {
         this.processRunner = processRunner;
-        cacheStore = new PluginCacheStore( manifestReader, cacheRootOverride );
+        this.manifestReader = manifestReader;
+        this.cacheStore = cacheStore;
+        this.httpClient = httpClient;
     }
 
     public IProcessRunner ProcessRunner => processRunner;
@@ -63,8 +70,9 @@ internal sealed class PluginRestoreInfrastructure
         PluginRequirement requirement,
         PluginSourceSnapshot source,
         Action<string>? log,
+        string? cacheRootOverride,
         bool isLocal = false
-    ) => cacheStore.RestoreToCache( configRoot, requirement, source, log, isLocal );
+    ) => cacheStore.RestoreToCache( configRoot, requirement, source, log, cacheRootOverride, isLocal );
 
     public async Task DownloadFileAsync(
         string url,
@@ -72,7 +80,7 @@ internal sealed class PluginRestoreInfrastructure
         CancellationToken cancellationToken
     )
     {
-        using var response = await HttpClient.GetAsync(
+        using var response = await httpClient.GetAsync(
             url,
             HttpCompletionOption.ResponseHeadersRead,
             cancellationToken
@@ -132,7 +140,7 @@ internal sealed class PluginRestoreInfrastructure
     )
     {
         var serviceIndex =
-            await HttpClient.GetFromJsonAsync<JsonObject>( feed, cancellationToken )
+            await httpClient.GetFromJsonAsync<JsonObject>( feed, cancellationToken )
             ?? throw new ConfigurationException(
                 $"NuGet feed '{feed}' returned an empty service index."
             );

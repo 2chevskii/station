@@ -8,7 +8,8 @@ namespace Station.Core.Execution.Running;
 internal sealed class TaskExecutionPipeline(
     ModuleBinder moduleBinder,
     IPrivilegeDetector privilegeDetector,
-    ScribanTemplateRenderer templateEngine
+    ITemplateEngine templateEngine,
+    TimeProvider timeProvider
 )
 {
     public async Task<EngineRunResult> RunAsync(
@@ -55,7 +56,7 @@ internal sealed class TaskExecutionPipeline(
                 ),
                 templateEngine,
                 isElevated,
-                TimeProvider.System
+                timeProvider
             );
             var binding = moduleBinder.Bind(
                 resolvedModule.Schema,

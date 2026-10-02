@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Station.Core.Execution.Modules;
 
-internal sealed class ModuleBinder
+internal sealed class ModuleBinder( ModuleActivator moduleActivator )
 {
     public ModuleBindingResult Bind(
         ModuleSchema schema,
@@ -19,7 +19,20 @@ internal sealed class ModuleBinder
             StringComparer.OrdinalIgnoreCase
         );
         var usedEntries = new HashSet<string>( StringComparer.OrdinalIgnoreCase );
-        var module = (ConfigModule)schema.Constructor.Invoke( [context] );
+        ConfigModule module;
+        try
+        {
+            module = moduleActivator.Create( schema.ModuleType, context );
+        }
+        catch ( ConfigurationException exception )
+        {
+            return new ModuleBindingResult(
+                null,
+                [new ModuleDiagnostic( exception.Message )],
+                [],
+                false
+            );
+        }
 
         foreach ( var parameter in schema.Parameters )
         {

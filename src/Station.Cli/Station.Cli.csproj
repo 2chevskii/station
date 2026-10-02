@@ -17,6 +17,7 @@
 
     <ItemGroup>
         <PackageReference Include="Spectre.Console"/>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
         <PackageReference Include="System.CommandLine"/>
     </ItemGroup>
     <ItemGroup>

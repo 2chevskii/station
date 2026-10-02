@@ -19,6 +19,12 @@ Station targets .NET 10. Its projects separate contracts, configuration loading,
 
 The core task model is Ansible-like: optional name, one module key and a nested parameter object. YAML is a serialization format; the in-memory .NET model is the source of truth.
 
+## Dependency injection
+
+`Station.Cli` composes services through `StationServices.AddStation` and creates and disposes the container in `Program.cs`. Core and plugin services receive their dependencies through constructors. `AddStationCore` and `AddStationPlugins` register their respective internal services without creating a container.
+
+Configuration loaders, plugin providers, the template engine, process runner, privilege detector, HTTP client and time provider are shared services. Modules are created for each task through `ActivatorUtilities`, with a fresh `ModuleContext` and any additional constructor dependencies resolved from DI. Integration tests use the CLI registrations and can replace individual dependencies before building the container.
+
 ## Build and test
 
 From the repository root:

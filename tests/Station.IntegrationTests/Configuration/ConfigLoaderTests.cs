@@ -1,7 +1,10 @@
 using FluentAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Station.Abstractions.Configuration;
 using Station.Core.Configuration.Loading;
+using Station.IntegrationTests.Infrastructure;
 using Station.Testing;
 
 namespace Station.IntegrationTests.Configuration;
@@ -51,7 +54,8 @@ public sealed class ConfigLoaderTests
             """
         );
 
-        var loader = new ConfigLoader();
+        using var services = IntegrationServices.Create();
+        var loader = services.GetRequiredService<ConfigLoader>();
         var configuration = loader.Load(
             directory.Path,
             new Dictionary<string, string>( StringComparer.OrdinalIgnoreCase )
@@ -143,7 +147,8 @@ public sealed class ConfigLoaderTests
             """
         );
 
-        var loader = new ConfigLoader();
+        using var services = IntegrationServices.Create();
+        var loader = services.GetRequiredService<ConfigLoader>();
         var configuration = loader.Load( directory.Path );
 
         configuration.RootVariables.Get<string>( "greeting" ).Should().Be( "root" );
@@ -204,7 +209,8 @@ public sealed class ConfigLoaderTests
             """
         );
 
-        var loader = new ConfigLoader();
+        using var services = IntegrationServices.Create();
+        var loader = services.GetRequiredService<ConfigLoader>();
         var configuration = loader.Load( directory.Path );
         var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
         var task = loader
@@ -232,7 +238,8 @@ public sealed class ConfigLoaderTests
         directory.WriteFile( "station.yaml", "roles: [base]\n" );
         directory.WriteFile( "roles/base/role.yaml", roleContents );
 
-        var loader = new ConfigLoader();
+        using var services = IntegrationServices.Create();
+        var loader = services.GetRequiredService<ConfigLoader>();
         var configuration = loader.Load( directory.Path );
         var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
 
@@ -267,7 +274,8 @@ public sealed class ConfigLoaderTests
             """
         );
 
-        var loader = new ConfigLoader();
+        using var services = IntegrationServices.Create();
+        var loader = services.GetRequiredService<ConfigLoader>();
         var configuration = loader.Load( directory.Path );
         var role = loader.DiscoverLocalRoles( directory.Path ).Should().ContainSingle().Subject;
         var roleTask = loader

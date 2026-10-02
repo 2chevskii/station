@@ -7,7 +7,7 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Manifests;
 
-internal sealed class PluginManifestReader
+internal sealed class PluginManifestReader( YamlConfigurationReader yamlReader )
 {
     public PluginManifest ReadManifest( string pluginRoot )
     {
@@ -24,7 +24,7 @@ internal sealed class PluginManifestReader
                     ? ymlPath
                     : throw new ConfigurationException(
                         $"Plugin root '{root}' has no plugin manifest." );
-        var manifest = new YamlConfigurationReader().Load<PluginManifest>( manifestPath.Value );
+        var manifest = yamlReader.Load<PluginManifest>( manifestPath.Value );
         if ( string.IsNullOrWhiteSpace( manifest.Name ) || string.IsNullOrWhiteSpace( manifest.Version ) )
             throw new ConfigurationException(
                 $"Plugin manifest '{manifestPath}' must declare a name and version."

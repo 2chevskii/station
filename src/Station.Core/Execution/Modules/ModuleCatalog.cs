@@ -3,11 +3,6 @@ using System.Runtime.Loader;
 
 using Station.Abstractions.FileSystem;
 using Station.Core.Configuration.Plugins;
-using Station.Modules.Builtin.Apt;
-using Station.Modules.Builtin.Dotfile;
-using Station.Modules.Builtin.Scoop;
-using Station.Modules.Builtin.Script;
-using Station.Modules.Builtin.Winget;
 
 using TruePath;
 using TruePath.SystemIo;
@@ -29,7 +24,7 @@ internal sealed class ModuleCatalog
     }
 
     public static ModuleCatalog Create(
-        IEnumerable<ModuleRegistration>? additionalBuiltInModules,
+        IEnumerable<ModuleRegistration> builtInModules,
         IEnumerable<string> localModulePaths,
         IEnumerable<ResolvedPluginManifest> plugins
     )
@@ -37,7 +32,7 @@ internal sealed class ModuleCatalog
         var resolvedModules = new List<ResolvedModule>();
         var loadedAssemblies = new Dictionary<string, Assembly>( StringComparer.Ordinal );
 
-        foreach ( var registration in CreateDefaultBuiltIns().Concat( additionalBuiltInModules ?? [] ) )
+        foreach ( var registration in builtInModules )
         {
             var schema = ModuleSchemaRegistry.Get( registration.ModuleType );
             ValidateShortName( schema.Name, $"built-in module '{schema.Name}'" );
@@ -99,16 +94,6 @@ internal sealed class ModuleCatalog
 
         return new ModuleCatalog( modulesByFullName, modulesByShortName );
     }
-
-    private static IReadOnlyList<ModuleRegistration> CreateDefaultBuiltIns() =>
-    [
-        new ModuleRegistration( "station.builtin", typeof( AptModule ) ),
-        new ModuleRegistration( "station.builtin", typeof( CopyModule ) ),
-        new ModuleRegistration( "station.builtin", typeof( TemplateModule ) ),
-        new ModuleRegistration( "station.builtin", typeof( ScriptModule ) ),
-        new ModuleRegistration( "station.builtin", typeof( ScoopModule ) ),
-        new ModuleRegistration( "station.builtin", typeof( WingetModule ) ),
-    ];
 
     public IReadOnlyList<ResolvedModule> All =>
         modulesByFullName

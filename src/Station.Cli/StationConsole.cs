@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 using Spectre.Console;
 
 using Station.Core.Execution.Inventory;
@@ -12,24 +14,14 @@ public sealed class StationConsole
     private readonly IAnsiConsole standardConsole;
     private readonly IAnsiConsole errorConsole;
 
-    public StationConsole( IAnsiConsole standardConsole, IAnsiConsole errorConsole )
+    public StationConsole(
+        [FromKeyedServices( "stdout" )] IAnsiConsole standardConsole,
+        [FromKeyedServices( "stderr" )] IAnsiConsole errorConsole
+    )
     {
         this.standardConsole = standardConsole;
         this.errorConsole = errorConsole;
     }
-
-    public static StationConsole CreateStandard() =>
-        new StationConsole(
-            AnsiConsole.Create(
-                new AnsiConsoleSettings
-                {
-                    Out = new AnsiConsoleOutput( Console.Out ),
-                } ),
-            AnsiConsole.Create(
-                new AnsiConsoleSettings
-                {
-                    Out = new AnsiConsoleOutput( Console.Error ),
-                } ) );
 
     public void WriteLogMessage( string message )
     {

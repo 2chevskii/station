@@ -1,8 +1,11 @@
 using FluentAssertions;
 
+using Microsoft.Extensions.DependencyInjection;
+
 using Station.Abstractions.Execution;
 using Station.Abstractions.FileSystem;
 using Station.Core.Execution.Running;
+using Station.IntegrationTests.Infrastructure;
 using Station.Testing;
 
 using TruePath.SystemIo;
@@ -22,7 +25,8 @@ public sealed class PluginCacheDirectoryTests
             """
         );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         result
@@ -46,7 +50,8 @@ public sealed class PluginCacheDirectoryTests
             "environment-cache"
         );
 
-        var result = await new ConfigEngine().RestoreAsync( directory.Path );
+        using var services = IntegrationServices.Create();
+        var result = await services.GetRequiredService<ConfigEngine>().RestoreAsync( directory.Path );
 
         result.Succeeded.Should().BeTrue();
         result
@@ -70,7 +75,8 @@ public sealed class PluginCacheDirectoryTests
             "environment-cache"
         );
 
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
         var variables = new Dictionary<string, string> { ["plugin_cache_dir"] = "set-cache" };
         var fromSet = await engine.RestoreAsync( directory.Path, variables );
         var fromFlag = await engine.RestoreAsync(
@@ -102,7 +108,8 @@ public sealed class PluginCacheDirectoryTests
               plugin_cache_dir: shared-cache
             """
         );
-        var engine = new ConfigEngine();
+        using var services = IntegrationServices.Create();
+        var engine = services.GetRequiredService<ConfigEngine>();
 
         var listed = await engine.ListRolesAsync( directory.Path );
         var validated = await engine.RunAsync( directory.Path, ExecutionMode.Validate );

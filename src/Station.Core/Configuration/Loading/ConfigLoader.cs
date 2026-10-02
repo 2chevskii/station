@@ -1,5 +1,4 @@
 using Station.Abstractions.FileSystem;
-using Station.Core.Configuration.Artifacts;
 using Station.Core.Configuration.Discovery;
 using Station.Core.Configuration.Plugins;
 using Station.Core.Configuration.Roles;
@@ -17,39 +16,23 @@ public sealed class ConfigLoader
     private readonly VariableScopeLoader variableScopeLoader;
     private readonly YamlConfigurationReader yamlReader;
 
-    public ConfigLoader()
-        : this( new ScribanTemplateRenderer() )
+    internal ConfigLoader(
+        ConfigTreeDiscovery configTreeDiscovery,
+        LocalConfigurationDiscovery localDiscovery,
+        PluginRequirementParser pluginRequirementParser,
+        PluginManifestLoader pluginManifestLoader,
+        TaskLoader taskLoader,
+        VariableScopeLoader variableScopeLoader,
+        YamlConfigurationReader yamlReader
+    )
     {
-    }
-
-    internal ConfigLoader( ITemplateEngine templateEngine )
-    {
-        configTreeDiscovery = new ConfigTreeDiscovery();
-        yamlReader = new YamlConfigurationReader();
-        var javaScriptRuntime = new JavaScriptConfigRuntime();
-        IReadOnlyList<IRoleDocumentLoader> roleLoaders1 =
-        [
-            new YamlRoleDocumentLoader( yamlReader ),
-            new JavaScriptRoleDocumentLoader( javaScriptRuntime ),
-        ];
-        IReadOnlyList<IVariableDocumentLoader> variableLoaders1 =
-        [
-            new YamlVariableDocumentLoader( yamlReader ),
-            new JavaScriptVariableDocumentLoader( javaScriptRuntime ),
-        ];
-        IConfigArtifactResolver artifactResolver1 = new ConfigArtifactResolver(
-            roleLoaders1,
-            variableLoaders1
-        );
-        variableScopeLoader = new VariableScopeLoader( artifactResolver1, variableLoaders1 );
-        taskLoader = new TaskLoader( templateEngine, artifactResolver1, roleLoaders1 );
-        pluginRequirementParser = new PluginRequirementParser();
-        pluginManifestLoader = new PluginManifestLoader(
-            yamlReader,
-            (ConfigArtifactResolver)artifactResolver1,
-            configTreeDiscovery
-        );
-        localDiscovery = new LocalConfigurationDiscovery();
+        this.configTreeDiscovery = configTreeDiscovery;
+        this.localDiscovery = localDiscovery;
+        this.pluginRequirementParser = pluginRequirementParser;
+        this.pluginManifestLoader = pluginManifestLoader;
+        this.taskLoader = taskLoader;
+        this.variableScopeLoader = variableScopeLoader;
+        this.yamlReader = yamlReader;
     }
 
     public LoadedConfiguration Load(

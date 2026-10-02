@@ -9,10 +9,7 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Caching;
 
-internal sealed class PluginCacheStore(
-    PluginManifestReader manifestReader,
-    string? cacheRootOverride = null
-)
+internal sealed class PluginCacheStore( PluginManifestReader manifestReader )
 {
     private const string CacheDirectoryName = ".station";
     private const string PluginCacheDirectoryName = "plugin_cache";
@@ -22,12 +19,13 @@ internal sealed class PluginCacheStore(
         PluginRequirement requirement,
         PluginSourceSnapshot source,
         Action<string>? log,
+        string? cacheRootOverride,
         bool isLocal = false
     )
     {
         var pluginName = GetCacheSegment( source.Manifest.Name, "name" );
         var pluginVersion = GetCacheSegment( source.Manifest.Version, "version" );
-        var pluginCacheRoot = GetCacheRoot( configRoot ) / pluginName;
+        var pluginCacheRoot = GetCacheRoot( configRoot, cacheRootOverride ) / pluginName;
         pluginCacheRoot.CreateDirectory();
 
         var destinationRoot = pluginCacheRoot / pluginVersion;
@@ -110,7 +108,7 @@ internal sealed class PluginCacheStore(
         }
     }
 
-    private AbsolutePath GetCacheRoot( string configRoot ) =>
+    private static AbsolutePath GetCacheRoot( string configRoot, string? cacheRootOverride ) =>
         cacheRootOverride is null
             ? configRoot.AsLocalPath().ResolveToCurrentDirectory()
               / CacheDirectoryName

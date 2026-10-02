@@ -6,14 +6,13 @@ using Station.Utilities.Processes;
 
 namespace Station.Plugins.Providers.Git;
 
-internal sealed class GitPluginProvider : IPluginProvider
+internal sealed class GitPluginProvider( PluginRestoreInfrastructure infrastructure ) : IPluginProvider
 {
     public string Name => "git";
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
@@ -52,8 +51,8 @@ internal sealed class GitPluginProvider : IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     ) =>
-        infrastructure.RestoreToCache( configRoot, requirement, source, log );
+        infrastructure.RestoreToCache( configRoot, requirement, source, log, cacheRootOverride );
 }

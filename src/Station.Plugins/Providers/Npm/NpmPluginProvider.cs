@@ -10,14 +10,16 @@ using TruePath.SystemIo;
 
 namespace Station.Plugins.Providers.Npm;
 
-internal sealed class NpmPluginProvider : IPluginProvider
+internal sealed class NpmPluginProvider(
+    PluginRestoreInfrastructure infrastructure,
+    HttpClient httpClient
+) : IPluginProvider
 {
     public string Name => "npm";
 
     public Task<PluginSourceSnapshot> GetManifestAsync(
         string configRoot,
         PluginRequirement requirement,
-        PluginRestoreInfrastructure infrastructure,
         CancellationToken cancellationToken
     )
     {
@@ -62,8 +64,8 @@ internal sealed class NpmPluginProvider : IPluginProvider
         string configRoot,
         PluginRequirement requirement,
         PluginSourceSnapshot source,
-        PluginRestoreInfrastructure infrastructure,
-        Action<string>? log
+        Action<string>? log,
+        string? cacheRootOverride
     )
     {
         var registry = string.IsNullOrWhiteSpace( requirement.Registry )
@@ -76,17 +78,17 @@ internal sealed class NpmPluginProvider : IPluginProvider
                 Registry = registry,
             },
             source,
-            log
+            log,
+            cacheRootOverride
         );
     }
 
-    private static async Task<JsonObject> GetMetadataAsync(
+    private async Task<JsonObject> GetMetadataAsync(
         string metadataUrl,
         CancellationToken cancellationToken
     )
     {
-        using var client = new HttpClient();
-        return await client.GetFromJsonAsync<JsonObject>( metadataUrl, cancellationToken )
+        return await httpClient.GetFromJsonAsync<JsonObject>( metadataUrl, cancellationToken )
                ?? throw new ConfigurationException(
                    $"npm registry returned an empty metadata document for '{metadataUrl}'."
                );
