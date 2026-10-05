@@ -17,8 +17,8 @@ internal sealed class LocalPluginProvider( PluginRestoreInfrastructure infrastru
         CancellationToken cancellationToken
     )
     {
-        var pluginsRoot = infrastructure.GetPluginsDirectory( configRoot );
-        var candidate = infrastructure.ResolveLocalPluginCandidate( pluginsRoot, requirement.Name! );
+        var pluginsRoot = LocalPluginSourceResolver.GetPluginsDirectory( configRoot );
+        var candidate = LocalPluginSourceResolver.ResolveCandidate( pluginsRoot, requirement.Name! );
         if ( string.IsNullOrWhiteSpace( candidate ) )
             throw new ConfigurationException(
                 $"Local plugin '{requirement.Name}' was not found under '{pluginsRoot}'."
@@ -37,7 +37,7 @@ internal sealed class LocalPluginProvider( PluginRestoreInfrastructure infrastru
         {
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive( candidate, extractRoot );
+            PluginArchiveExtractor.Extract( candidate, extractRoot );
             return Task.FromResult( extractRoot );
         } );
     }

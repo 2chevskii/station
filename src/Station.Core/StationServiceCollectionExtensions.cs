@@ -26,6 +26,7 @@ public static class StationServiceCollectionExtensions
         services.AddSingleton<IConfigArtifactResolver, ConfigArtifactResolver>();
         services.AddSingleton<VariableScopeLoader>();
         services.AddSingleton<TaskLoader>();
+        services.AddSingleton<TaskDefinitionParser>();
         services.AddSingleton<PluginRequirementParser>();
         services.AddSingleton<PluginModuleExportParser>();
         services.AddSingleton<PluginManifestLoader>();
@@ -33,6 +34,7 @@ public static class StationServiceCollectionExtensions
         services.AddSingleton<PluginCacheDirectoryResolver>();
         services.AddSingleton<ModuleActivator>();
         services.AddSingleton<ModuleBinder>();
+        services.AddSingleton<ModuleContextFactory>();
         services.AddSingleton<ConfigurationInventory>();
         services.AddSingleton<TaskExecutionPipeline>();
         services.AddSingleton<ExplainTreeBuilder>();

@@ -55,7 +55,7 @@ internal sealed class NpmPluginProvider(
 
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive( archivePath, extractRoot );
+            PluginArchiveExtractor.Extract( archivePath, extractRoot );
             return extractRoot;
         } );
     }

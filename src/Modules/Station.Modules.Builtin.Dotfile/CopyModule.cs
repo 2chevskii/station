@@ -1,8 +1,5 @@
 using Station.Abstractions.Configuration;
-using Station.Abstractions.Execution;
 using Station.Abstractions.Modules;
-
-using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Dotfile;
 
@@ -52,31 +49,15 @@ public sealed class CopyModule : ConfigModule
             var destinationPath = HostFilePaths.ResolveDestination( Destination );
             var targetPath = HostFilePaths.ResolveTarget( destinationPath );
             var desiredBytes = sourceFile.ReadAllBytes();
-            var existingBytes = targetPath.ExistsFile()
-                ? await targetPath.ReadAllBytesAsync( cancellationToken )
-                : null;
-            var changed = existingBytes is null || !existingBytes.SequenceEqual( desiredBytes );
-
-            if ( Context.Mode == ExecutionMode.Check )
-                return changed
-                    ? ModuleResult.ChangedResult( $"File '{destinationPath}' would change." )
-                    : ModuleResult.NoChange(
-                        $"File '{destinationPath}' is already in the desired state."
-                    );
-
-            if ( !changed )
-                return ModuleResult.NoChange(
-                    $"File '{destinationPath}' is already in the desired state."
-                );
-
-            await AtomicFileWriter.WriteAsync(
+            return await FileDeployment.ApplyAsync(
                 destinationPath,
+                targetPath,
                 desiredBytes,
                 Backup,
-                Context.TimeProvider,
+                Context,
+                "File",
                 cancellationToken
             );
-            return ModuleResult.ChangedResult( $"File '{destinationPath}' was updated." );
         }
         catch ( Exception exception ) when (
             exception is ConfigurationException or IOException or UnauthorizedAccessException

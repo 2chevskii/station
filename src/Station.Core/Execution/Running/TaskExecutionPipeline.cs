@@ -8,8 +8,7 @@ namespace Station.Core.Execution.Running;
 internal sealed class TaskExecutionPipeline(
     ModuleBinder moduleBinder,
     IPrivilegeDetector privilegeDetector,
-    ITemplateEngine templateEngine,
-    TimeProvider timeProvider
+    ModuleContextFactory contextFactory
 )
 {
     public async Task<EngineRunResult> RunAsync(
@@ -45,23 +44,11 @@ internal sealed class TaskExecutionPipeline(
                 continue;
             }
 
-            var context = new ModuleContext(
-                mode,
-                task.Name,
+            var context = contextFactory.Create(
                 configuration.ConfigRoot,
-                task.TaskRoot,
-                task.RoleName,
-                task.RoleRoot,
-                task.Variables,
-                ModuleArtifactFactory.Create(
-                    configuration.ConfigRoot,
-                    task.RoleRoot,
-                    task.Variables,
-                    templateEngine
-                ),
-                templateEngine,
-                isElevated,
-                timeProvider
+                task,
+                mode,
+                isElevated
             );
             var binding = moduleBinder.Bind(
                 resolvedModule.Schema,

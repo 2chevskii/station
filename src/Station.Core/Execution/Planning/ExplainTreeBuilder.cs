@@ -6,8 +6,7 @@ namespace Station.Core.Execution.Planning;
 
 internal sealed class ExplainTreeBuilder(
     ModuleBinder moduleBinder,
-    ITemplateEngine templateEngine,
-    TimeProvider timeProvider
+    ModuleContextFactory contextFactory
 )
 {
     public ExplainResult Build(
@@ -64,23 +63,11 @@ internal sealed class ExplainTreeBuilder(
                     continue;
                 }
 
-                var context = new ModuleContext(
-                    ExecutionMode.Validate,
-                    task.Name,
+                var context = contextFactory.Create(
                     configuration.ConfigRoot,
-                    task.TaskRoot,
-                    task.RoleName,
-                    task.RoleRoot,
-                    task.Variables,
-                    ModuleArtifactFactory.Create(
-                        configuration.ConfigRoot,
-                        task.RoleRoot,
-                        task.Variables,
-                        templateEngine
-                    ),
-                    templateEngine,
-                    false,
-                    timeProvider
+                    task,
+                    ExecutionMode.Validate,
+                    false
                 );
                 var binding = moduleBinder.Bind(
                     resolvedModule.Schema,

@@ -31,7 +31,7 @@ internal sealed class NuGetPluginProvider(
 
         return infrastructure.StageAsync( async tempRoot =>
         {
-            var packageBaseAddress = await infrastructure.ResolveNuGetPackageBaseAddressAsync(
+            var packageBaseAddress = await ResolvePackageBaseAddressAsync(
                 feed,
                 cancellationToken
             );
@@ -66,7 +66,7 @@ internal sealed class NuGetPluginProvider(
 
             var extractRoot = (tempRoot.AsAbsolutePath() / "extract").Value;
             extractRoot.AsAbsolutePath().CreateDirectory();
-            infrastructure.ExtractArchive( packagePath, extractRoot );
+            PluginArchiveExtractor.Extract( packagePath, extractRoot );
             return extractRoot;
         } );
     }
@@ -91,6 +91,39 @@ internal sealed class NuGetPluginProvider(
             source,
             log,
             cacheRootOverride
+        );
+    }
+
+    private async Task<string> ResolvePackageBaseAddressAsync(
+        string feed,
+        CancellationToken cancellationToken
+    )
+    {
+        var serviceIndex =
+            await infrastructure.HttpClient.GetFromJsonAsync<JsonObject>( feed, cancellationToken )
+            ?? throw new ConfigurationException(
+                $"NuGet feed '{feed}' returned an empty service index."
+            );
+
+        var resources =
+            serviceIndex["resources"] as JsonArray
+            ?? throw new ConfigurationException(
+                $"NuGet feed '{feed}' did not expose any resources."
+            );
+        foreach ( var resource in resources.OfType<JsonObject>() )
+        {
+            var type = resource["@type"]?.GetValue<string>();
+            var id = resource["@id"]?.GetValue<string>();
+            if (
+                type is not null
+                && id is not null
+                && type.StartsWith( "PackageBaseAddress", StringComparison.OrdinalIgnoreCase )
+            )
+                return id;
+        }
+
+        throw new ConfigurationException(
+            $"NuGet feed '{feed}' does not expose a PackageBaseAddress resource."
         );
     }
 
