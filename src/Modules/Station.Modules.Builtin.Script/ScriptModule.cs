@@ -1,12 +1,9 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 using Station.Abstractions.Configuration;
 using Station.Abstractions.FileSystem;
 using Station.Abstractions.Modules;
+using Station.Abstractions.Processes;
 
 using TruePath;
 using TruePath.SystemIo;
@@ -16,9 +13,12 @@ namespace Station.Modules.Builtin.Script;
 [Module( "script", "Runs local scripts with a JSON request contract." )]
 public sealed class ScriptModule : ConfigModule
 {
-    public ScriptModule( ModuleContext context )
+    private readonly IProcessRunner processRunner;
+
+    public ScriptModule( ModuleContext context, IProcessRunner processRunner )
         : base( context )
     {
+        this.processRunner = processRunner;
     }
 
     [Parameter( "path", Required = true )] public string ScriptPath { get; set; } = string.Empty;
@@ -41,11 +41,10 @@ public sealed class ScriptModule : ConfigModule
                     )
                 );
 
-            var runner = Runner.ToLowerInvariant();
-            if ( !CommandLocator.Exists( runner ) )
+            if ( !processRunner.CommandExists( Runner ) )
                 return ValueTask.FromResult(
                     ModuleInspectionResult.Failure(
-                        new ModuleDiagnostic( $"Runner '{runner}' is not available on PATH." )
+                        new ModuleDiagnostic( $"Runner '{Runner}' is not available on PATH." )
                     )
                 );
 
@@ -65,33 +64,35 @@ public sealed class ScriptModule : ConfigModule
 
     public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var scriptPath = ResolveScriptPath();
             var requestPayload = CreatePayload();
             var requestFilePath = Temporary.CreateTempFile();
-            await requestFilePath.WriteAllTextAsync(
-                requestPayload.ToJsonString(),
-                cancellationToken
-            );
 
             try
             {
-                var runner = Runner.ToLowerInvariant();
-                var result = await RunAsync(
-                    runner,
-                    ["-NoLogo", "-NoProfile", "-File", scriptPath.Value, requestFilePath.Value],
-                    Context.WorkingDirectory,
-                    new Dictionary<string, string?>
-                    {
-                        ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath.Value,
-                    },
+                await requestFilePath.WriteAllTextAsync(
+                    requestPayload.ToJsonString(),
+                    cancellationToken
+                );
+                var result = await processRunner.RunAsync(
+                    new ProcessCommand(
+                        Runner,
+                        ["-NoLogo", "-NoProfile", "-File", scriptPath.Value, requestFilePath.Value],
+                        Context.WorkingDirectory,
+                        new Dictionary<string, string?>
+                        {
+                            ["CONFIG_TOOL_REQUEST_PATH"] = requestFilePath.Value,
+                        }
+                    ),
                     cancellationToken
                 );
                 if ( result.ExitCode != 0 )
                     return ModuleResult.Failure( SelectProcessError( result ) );
 
-                return ParseResult( result.StandardOutput );
+                return ScriptResultParser.Parse( result.StandardOutput );
             }
             finally
             {
@@ -102,34 +103,6 @@ public sealed class ScriptModule : ConfigModule
         {
             return ModuleResult.Failure( exception.Message );
         }
-    }
-
-    private static ModuleResult ParseResult( string stdout )
-    {
-        if ( string.IsNullOrWhiteSpace( stdout ) )
-            return ModuleResult.Failure( "Script module produced no JSON output." );
-
-        JsonObject payload;
-        try
-        {
-            payload =
-                JsonNode.Parse( stdout )?.AsObject()
-                ?? throw new JsonException( "Output was not a JSON object." );
-        }
-        catch ( JsonException exception )
-        {
-            return ModuleResult.Failure(
-                $"Script module returned invalid JSON: {exception.Message}"
-            );
-        }
-
-        var changed = payload["changed"]?.GetValue<bool>() ?? false;
-        var failed = payload["failed"]?.GetValue<bool>() ?? false;
-        var skipped = payload["skipped"]?.GetValue<bool>() ?? false;
-        var message = payload["message"]?.GetValue<string>();
-        var outputs = payload["outputs"] as JsonObject;
-
-        return new ModuleResult( changed, failed, skipped, message, outputs );
     }
 
     private JsonObject CreatePayload() =>
@@ -166,62 +139,10 @@ public sealed class ScriptModule : ConfigModule
         return false;
     }
 
-    private static string SelectProcessError(
-        (int ExitCode, string StandardOutput, string StandardError) result
-    ) =>
+    private static string SelectProcessError( ProcessResult result ) =>
         !string.IsNullOrWhiteSpace( result.StandardError )
             ? result.StandardError.Trim()
             : !string.IsNullOrWhiteSpace( result.StandardOutput )
                 ? result.StandardOutput.Trim()
                 : "Script execution failed.";
-
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
-        string fileName,
-        IReadOnlyList<string> arguments,
-        string workingDirectory,
-        IReadOnlyDictionary<string, string?> environment,
-        CancellationToken cancellationToken
-    )
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = workingDirectory,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        foreach ( var argument in arguments )
-            startInfo.ArgumentList.Add( argument );
-
-        foreach ( var (key, value) in environment )
-        {
-            if ( value is null )
-            {
-                startInfo.Environment.Remove( key );
-                continue;
-            }
-
-            startInfo.Environment[key] = value;
-        }
-
-        using var process = new Process();
-        process.StartInfo = startInfo;
-        try
-        {
-            process.Start();
-        }
-        catch ( Exception exception ) when ( exception is InvalidOperationException or Win32Exception )
-        {
-            return (-1, string.Empty, exception.Message);
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync( cancellationToken );
-        var stderrTask = process.StandardError.ReadToEndAsync( cancellationToken );
-        await Task.WhenAll( stdoutTask, stderrTask, process.WaitForExitAsync( cancellationToken ) );
-        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
-    }
 }
