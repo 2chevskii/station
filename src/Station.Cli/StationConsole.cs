@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
+using Station.Cli.Output;
 using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
@@ -9,7 +10,7 @@ using Station.Core.Plugins.Restoration;
 
 namespace Station.Cli;
 
-public sealed class StationConsole
+public sealed class StationConsole : ICommandOutput
 {
     private readonly IAnsiConsole standardConsole;
     private readonly IAnsiConsole errorConsole;
@@ -74,6 +75,17 @@ public sealed class StationConsole
             console.Write( BuildInventoryTable( result.Components, kind ) );
 
         WriteDiagnostics( console, result.Diagnostics );
+    }
+
+    public void WriteError(
+        string command,
+        string message,
+        IReadOnlyList<string> diagnostics,
+        int exitCode = 1
+    )
+    {
+        WriteSummary( errorConsole, false, message, command );
+        WriteDiagnostics( errorConsole, diagnostics );
     }
 
     private IAnsiConsole GetConsole( bool succeeded ) => succeeded ? standardConsole : errorConsole;
@@ -214,13 +226,13 @@ public sealed class StationConsole
         };
 
     private static string GetTaskStatusMarkup( EngineTaskRecord task ) =>
-        task.Result.Failed
-            ? "[red]failed[/]"
-            : task.Result.Changed
-                ? "[yellow]changed[/]"
-                : task.Result.Skipped
-                    ? "[grey]skipped[/]"
-                    : "[green]ok[/]";
+        TaskReportStatus.Get( task.Result ) switch
+        {
+            "failed" => "[red]failed[/]",
+            "changed" => "[yellow]changed[/]",
+            "skipped" => "[grey]skipped[/]",
+            _ => "[green]ok[/]",
+        };
 
     private static string GetPluginSourceMarkup( PluginRestoreRecord plugin ) =>
         plugin switch

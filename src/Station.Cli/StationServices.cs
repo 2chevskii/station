@@ -4,6 +4,8 @@ using Spectre.Console;
 
 using Station.Abstractions.Artifacts;
 using Station.Abstractions.Processes;
+using Station.Cli.Commands;
+using Station.Cli.Output;
 using Station.Configuration.Abstractions.Documents;
 using Station.Configuration.JavaScript;
 using Station.Configuration.Yaml;
@@ -32,13 +34,23 @@ public static class StationServices
         services.AddStationPlugins();
         services.AddStationCore();
 
-        services.AddKeyedSingleton<IAnsiConsole>( "stdout", ( _, _ ) => AnsiConsole.Create(
-            new AnsiConsoleSettings { Out = new AnsiConsoleOutput( Console.Out ) }
+        services.AddKeyedSingleton<TextWriter>( "stdout", Console.Out );
+        services.AddKeyedSingleton<TextWriter>( "stderr", Console.Error );
+        services.AddKeyedSingleton<IAnsiConsole>( "stdout", ( provider, _ ) => AnsiConsole.Create(
+            new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput( provider.GetRequiredKeyedService<TextWriter>( "stdout" ) ),
+            }
         ) );
-        services.AddKeyedSingleton<IAnsiConsole>( "stderr", ( _, _ ) => AnsiConsole.Create(
-            new AnsiConsoleSettings { Out = new AnsiConsoleOutput( Console.Error ) }
+        services.AddKeyedSingleton<IAnsiConsole>( "stderr", ( provider, _ ) => AnsiConsole.Create(
+            new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput( provider.GetRequiredKeyedService<TextWriter>( "stderr" ) ),
+            }
         ) );
         services.AddSingleton<StationConsole>();
+        services.AddSingleton<JsonCommandOutput>();
+        services.AddSingleton<StationCommandLine>();
 
         return services;
     }

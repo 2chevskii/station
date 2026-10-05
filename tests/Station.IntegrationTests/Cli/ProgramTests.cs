@@ -1,12 +1,8 @@
-using System.Diagnostics;
-
 using FluentAssertions;
 
 using Station.Abstractions.FileSystem;
-using Station.Cli;
 using Station.Testing;
 
-using TruePath;
 using TruePath.SystemIo;
 
 namespace Station.IntegrationTests.Cli;
@@ -14,9 +10,41 @@ namespace Station.IntegrationTests.Cli;
 public sealed class ProgramTests
 {
     [Fact]
+    public async Task Apply_command_returns_failure_and_stops_at_an_unknown_module()
+    {
+        using var directory = new TemporaryDirectory();
+        directory.WriteFile( "files/input.txt", "copied" );
+        directory.WriteFile( "roles/empty/role.yaml", "[]" );
+        directory.WriteFile(
+            "station.yaml",
+            $$"""
+              roles: [empty]
+              tasks:
+                - name: completed
+                  copy:
+                    file: input.txt
+                    destination: {{directory.GetPath( "completed.txt" )}}
+                - name: broken
+                  missing.module: {}
+                - name: unreachable
+                  copy:
+                    file: input.txt
+                    destination: {{directory.GetPath( "unreachable.txt" )}}
+              """
+        );
+
+        var result = await CliRunner.RunAsync( "apply", "--config", directory.Path );
+
+        result.ExitCode.Should().Be( 1 );
+        result.StandardError.Should().ContainAll( "broken", "missing.module", "completed" );
+        File.ReadAllText( directory.GetPath( "completed.txt" ) ).Should().Be( "copied" );
+        File.Exists( directory.GetPath( "unreachable.txt" ) ).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Help_command_returns_zero_and_lists_commands()
     {
-        var result = await RunCliAsync( "--help" );
+        var result = await CliRunner.RunAsync( "--help" );
 
         result.ExitCode.Should().Be( 0 );
         result
@@ -27,9 +55,9 @@ public sealed class ProgramTests
     [Fact]
     public async Task Explain_command_renders_plan_for_example_config()
     {
-        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
+        var configRoot = (CliRunner.FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync( "explain", "--config", configRoot );
+        var result = await CliRunner.RunAsync( "explain", "--config", configRoot );
 
         result.ExitCode.Should().Be( 0 );
         result.StandardOutput.Should().Contain( "station" );
@@ -39,9 +67,9 @@ public sealed class ProgramTests
     [Fact]
     public async Task List_roles_command_shows_descriptions_and_sources()
     {
-        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
+        var configRoot = (CliRunner.FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync( "list", "roles", "--config", configRoot );
+        var result = await CliRunner.RunAsync( "list", "roles", "--config", configRoot );
 
         result.ExitCode.Should().Be( 0 );
         result
@@ -52,9 +80,9 @@ public sealed class ProgramTests
     [Fact]
     public async Task List_modules_command_shows_descriptions_and_sources()
     {
-        var configRoot = (FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
+        var configRoot = (CliRunner.FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;
 
-        var result = await RunCliAsync( "list", "modules", "--config", configRoot );
+        var result = await CliRunner.RunAsync( "list", "modules", "--config", configRoot );
 
         result.ExitCode.Should().Be( 0 );
         result
@@ -79,7 +107,7 @@ public sealed class ProgramTests
         directory.WriteFile( "station.yaml", "roles: [plugin-role]\nplugins: [demo_plugin.zip]\n" );
         var cacheDirectory = directory.GetPath( "external-cache" );
 
-        var result = await RunCliAsync(
+        var result = await CliRunner.RunAsync(
             "restore",
             "--config",
             directory.Path,
@@ -96,39 +124,4 @@ public sealed class ProgramTests
             .BeTrue();
     }
 
-    private static async Task<(
-        int ExitCode,
-        string StandardOutput,
-        string StandardError
-        )> RunCliAsync( params string[] arguments )
-    {
-        var stationCliAssembly = typeof( StationConsole ).Assembly.Location;
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "dotnet",
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = FindRepositoryRoot(),
-        };
-        startInfo.ArgumentList.Add( stationCliAssembly );
-        foreach ( var argument in arguments )
-            startInfo.ArgumentList.Add( argument );
-
-        using var process = Process.Start( startInfo )!;
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-        return (process.ExitCode, await stdoutTask, await stderrTask);
-    }
-
-    private static string FindRepositoryRoot()
-    {
-        AbsolutePath? directory = AppContext.BaseDirectory.AsAbsolutePath();
-        while ( directory is { } current && !(current / "Station.slnx").ExistsFile() )
-            directory = current.Parent;
-
-        return directory?.Value
-               ?? throw new InvalidOperationException( "Could not locate the repository root." );
-    }
 }
