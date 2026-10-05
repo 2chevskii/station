@@ -1,6 +1,6 @@
 using Station.Abstractions.Modules;
 
-namespace Station.Cli.Output;
+namespace Station.Output;
 
 internal static class TaskReportStatus
 {

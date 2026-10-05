@@ -19,7 +19,7 @@ The test suites require .NET 10, Git and PowerShell 7 (`pwsh`) on `PATH`. Packag
 dotnet build Station.slnx -v minimal
 dotnet test --project tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
 dotnet test --project tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
+dotnet src/Station/bin/Debug/net10.0/Station.dll --help
 ```
 
 ## Documentation site

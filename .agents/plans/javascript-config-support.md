@@ -837,9 +837,9 @@ Not required to land initial JavaScript config support, but enabled by this arch
 
 - `dotnet build Station.slnx -v minimal`
 - `dotnet test tests/Station.Tests/Station.Tests.csproj -v minimal`
-- `dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help`
+- `dotnet src/Station/bin/Debug/net10.0/Station.dll --help`
 - if explain output changes materially:
-  - `dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config examples/workstation`
+  - `dotnet src/Station/bin/Debug/net10.0/Station.dll explain --config examples/workstation`
 
 ## Error Handling Expectations
 

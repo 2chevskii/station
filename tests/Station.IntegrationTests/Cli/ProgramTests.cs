@@ -53,6 +53,18 @@ public sealed class ProgramTests
     }
 
     [Fact]
+    public async Task List_help_shows_nested_commands_and_shared_options()
+    {
+        var result = await CliRunner.RunAsync( "list", "--help" );
+
+        result.ExitCode.Should().Be( 0 );
+        result.StandardOutput.Should().ContainAll(
+            "roles", "modules", "--config", "--set", "--plugin-cache-dir", "--output"
+        );
+        result.StandardError.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Explain_command_renders_plan_for_example_config()
     {
         var configRoot = (CliRunner.FindRepositoryRoot().AsAbsolutePath() / "examples" / "workstation").Value;

@@ -2,7 +2,7 @@
 
 Modules are public, non-abstract classes derived from `ConfigModule` in `Station.Abstractions`. Mark the class with `[Module]`, expose one public constructor that accepts `ModuleContext`, and mark writable parameter properties with `[Parameter]`. The attribute provides the module's short name; property names become camelCase unless a parameter name is specified explicitly.
 
-Additional constructor parameters are resolved from the services registered by `Station.Cli`. Each task receives a new module instance and its own `ModuleContext`. Register custom dependencies in the application's DI composition; loading a plugin manifest does not register services.
+Additional constructor parameters are resolved from the services registered by `Station`. Each task receives a new module instance and its own `ModuleContext`. Register custom dependencies in the application's DI composition; loading a plugin manifest does not register services.
 
 Modules that launch commands can inject `IProcessRunner` from `Station.Abstractions.Processes`. Pass the task's cancellation token to `RunAsync` so command cleanup uses Station's shared process runner. Propagate `OperationCanceledException` when the task token is cancelled.
 

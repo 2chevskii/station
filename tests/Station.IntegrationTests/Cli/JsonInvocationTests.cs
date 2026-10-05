@@ -5,9 +5,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Station.Abstractions.Modules;
-using Station.Cli.Commands;
 using Station.Core.Execution.Modules;
-using Station.IntegrationTests.Infrastructure;
 using Station.Testing;
 using Station.Utilities.Privileges;
 
@@ -22,18 +20,17 @@ public sealed class JsonInvocationTests
         using var directory = CreateConfiguration( "tests.noisy" );
         using var output = new StringWriter();
         using var error = new StringWriter();
-        using var services = IntegrationServices.Create( registrations =>
+        Action<IServiceCollection> configureServices = registrations =>
         {
-            registrations.AddKeyedSingleton<TextWriter>( "stdout", output );
-            registrations.AddKeyedSingleton<TextWriter>( "stderr", error );
             registrations.AddSingleton<IPrivilegeDetector, FailingPrivilegeDetector>();
             registrations.AddSingleton( new ModuleRegistration( "tests", typeof( NoisyModule ) ) );
-        } );
+        };
         var originalOutput = Console.Out;
         var originalError = Console.Error;
 
-        var exitCode = await services.GetRequiredService<StationCommandLine>().RunAsync(
-            ["check", "--config", directory.Path, "--output", "json"]
+        var exitCode = await Station.Program.RunAsync(
+            ["check", "--config", directory.Path, "--output", "json"],
+            configureServices, output, error
         );
 
         exitCode.Should().Be( 1 );
@@ -51,17 +48,16 @@ public sealed class JsonInvocationTests
         using var directory = CreateConfiguration( "tests.noisy" );
         using var output = new StringWriter();
         using var error = new StringWriter();
-        using var services = IntegrationServices.Create( registrations =>
+        Action<IServiceCollection> configureServices = registrations =>
         {
-            registrations.AddKeyedSingleton<TextWriter>( "stdout", output );
-            registrations.AddKeyedSingleton<TextWriter>( "stderr", error );
             registrations.AddSingleton( new ModuleRegistration( "tests", typeof( NoisyModule ) ) );
-        } );
+        };
         var originalOutput = Console.Out;
         var originalError = Console.Error;
 
-        var exitCode = await services.GetRequiredService<StationCommandLine>().RunAsync(
-            ["check", "--config", directory.Path, "--output", "json"]
+        var exitCode = await Station.Program.RunAsync(
+            ["check", "--config", directory.Path, "--output", "json"],
+            configureServices, output, error
         );
 
         exitCode.Should().Be( 0 );
@@ -83,21 +79,19 @@ public sealed class JsonInvocationTests
         using var error = new StringWriter();
         using var cancellation = new CancellationTokenSource();
         var probe = new CancellationProbe();
-        using var services = IntegrationServices.Create( registrations =>
+        Action<IServiceCollection> configureServices = registrations =>
         {
-            registrations.AddKeyedSingleton<TextWriter>( "stdout", output );
-            registrations.AddKeyedSingleton<TextWriter>( "stderr", error );
             registrations.AddSingleton( probe );
             registrations.AddSingleton( new ModuleRegistration( "tests", typeof( WaitingModule ) ) );
-        } );
+        };
         if ( cancelBeforeStart )
             cancellation.Cancel();
 
         var originalOutput = Console.Out;
         var originalError = Console.Error;
-        var invocation = services.GetRequiredService<StationCommandLine>().RunAsync(
+        var invocation = Station.Program.RunAsync(
             ["apply", "--config", directory.Path, "--output", "json"],
-            cancellation.Token
+            configureServices, output, error, cancellation.Token
         );
 
         try
@@ -133,6 +127,37 @@ public sealed class JsonInvocationTests
         directory.WriteFile( "roles/empty/role.yaml", "[]" );
         directory.WriteFile( "station.yaml", $"roles: [empty]\ntasks:\n  - {module}: {{}}\n" );
         return directory;
+    }
+
+    [Fact]
+    public async Task Application_creates_one_service_instance_and_awaits_async_disposal()
+    {
+        using var directory = CreateConfiguration( "tests.noisy" );
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var detector = new AsyncLifetimePrivilegeDetector();
+        var instanceCount = 0;
+
+        var exitCode = await Station.Program.RunAsync(
+            ["check", "--config", directory.Path, "--output", "json"],
+            registrations =>
+            {
+                registrations.AddSingleton<IPrivilegeDetector>( _ =>
+                {
+                    instanceCount++;
+                    return detector;
+                } );
+                registrations.AddSingleton( new ModuleRegistration( "tests", typeof( NoisyModule ) ) );
+            },
+            output,
+            error
+        );
+
+        exitCode.Should().Be( 0 );
+        instanceCount.Should().Be( 1 );
+        detector.Disposed.Should().BeTrue();
+        using var json = JsonDocument.Parse( output.ToString() );
+        json.RootElement.GetProperty( "succeeded" ).GetBoolean().Should().BeTrue();
     }
 
     [Module( "noisy" )]
@@ -173,5 +198,18 @@ public sealed class JsonInvocationTests
     private sealed class FailingPrivilegeDetector : IPrivilegeDetector
     {
         public bool IsElevated() => throw new InvalidOperationException( "privilege lookup failed" );
+    }
+
+    private sealed class AsyncLifetimePrivilegeDetector : IPrivilegeDetector, IAsyncDisposable
+    {
+        public bool Disposed { get; private set; }
+
+        public bool IsElevated() => false;
+
+        public async ValueTask DisposeAsync()
+        {
+            await Task.Yield();
+            Disposed = true;
+        }
     }
 }

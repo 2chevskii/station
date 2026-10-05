@@ -15,13 +15,13 @@ Station targets .NET 10. Its projects separate contracts, configuration loading,
 | `Station.Plugins` | Provider-specific restore and caching. |
 | `Station.Utilities` | Shared process and privilege utilities. |
 | `Station.Modules.*` | Built-in modules. |
-| `Station.Cli` | Command-line entry point and output. |
+| `Station` | Command-line entry point and output. |
 
 The core task model is Ansible-like: optional name, one module key and a nested parameter object. YAML is a serialization format; the in-memory .NET model is the source of truth.
 
 ## Dependency injection
 
-`Station.Cli` composes services through `StationServices.AddStation` and creates and disposes the container in `Program.cs`. Core and plugin services receive their dependencies through constructors. `AddStationCore` and `AddStationPlugins` register their respective internal services without creating a container.
+`StationServices.AddStation` registers application dependencies. `Program.cs` creates the `IServiceCollection`, configures Spectre and runs the application. `TypeRegistrar.Build` creates one container with `ValidateOnBuild` and `ValidateScopes`; the registrar asynchronously disposes it after execution. Spectre registers command classes automatically. `AddStationCore` and `AddStationPlugins` register their respective internal services without creating a container.
 
 Configuration loaders, plugin providers, the template engine, process runner, privilege detector, HTTP client and time provider are shared services. Modules are created for each task through `ActivatorUtilities`, with a fresh `ModuleContext` and any additional constructor dependencies resolved from DI. Integration tests use the CLI registrations and can replace individual dependencies before building the container.
 
@@ -49,7 +49,9 @@ File replacement uses [`File.Replace`](https://learn.microsoft.com/dotnet/api/sy
 
 ## CLI output architecture
 
-`Program.cs` builds the container and invokes `StationCommandLine`. Command registration, shared option validation and invocation handling live under `Station.Cli/Commands`. `StationConsole` and `JsonCommandOutput` implement `ICommandOutput` for text and JSON rendering.
+`Program.cs` owns the startup sequence. `StationCommands.Configure` declares the command tree and the `list` branch. Commands under `Station/Commands` inherit from `Spectre.Console.Cli`'s `AsyncCommand<StationSettings>` through `StationCommand`. Shared options use `[CommandOption]`, `[Description]` and `[DefaultValue]` attributes in `StationSettings`.
+
+`CommandOutputSession` registers output services, buffers help, formats errors and selects text or JSON output. `ConsoleRedirection` restores console writers after completion, failure or cancellation. `CommandArguments` preserves global option placement, multi-value `--set` syntax and rejection of repeated scalar options. Spectre handles parsing, help and validation. `StationConsole` and `JsonCommandOutput` implement `ICommandOutput` for text and JSON rendering.
 
 The JSON writer projects engine results into an explicit versioned contract and buffers a complete document before writing it to stdout. It does not serialize plugin manifests or other engine internals. The CLI handles one invocation per process and temporarily routes managed console writes to stderr for JSON commands, restoring both writers on completion, failure or cancellation. The [CLI reference](./cli.md#json-results) defines the public format.
 
@@ -89,8 +91,8 @@ dotnet test --root-directory artifacts/linux-check/bin/Station.IntegrationTests/
 For a CLI smoke test:
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config examples/workstation
+dotnet src/Station/bin/Debug/net10.0/Station.dll --help
+dotnet src/Station/bin/Debug/net10.0/Station.dll explain --config examples/workstation
 ```
 
 ## Publishing
@@ -98,7 +100,7 @@ dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config exampl
 To produce a self-contained Windows executable:
 
 ```powershell
-dotnet publish src/Station.Cli/Station.Cli.csproj `
+dotnet publish src/Station/Station.csproj `
   -c Release `
   -r win-x64 `
   --self-contained true `
@@ -106,7 +108,7 @@ dotnet publish src/Station.Cli/Station.Cli.csproj `
   -p:UseAppHost=true
 ```
 
-The output is `Station.Cli.exe` under `src/Station.Cli/bin/Release/net10.0/win-x64/publish/`.
+The output is `Station.exe` under `src/Station/bin/Release/net10.0/win-x64/publish/`.
 
 ## Documentation site
 

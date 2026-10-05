@@ -16,9 +16,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Spectre.Console"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection"/>
-        <PackageReference Include="System.CommandLine"/>
+        <PackageReference Include="Spectre.Console.Cli"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="TruePath"/>

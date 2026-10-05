@@ -1,25 +1,26 @@
 <Project>
-    <PropertyGroup>
-        <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
-        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    </PropertyGroup>
-    <ItemGroup>
-        <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12"/>
-        <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12"/>
-        <PackageVersion Include="Parlot" Version="1.5.2"/>
-        <PackageVersion Include="Jint" Version="4.16.4"/>
-        <PackageVersion Include="FluentAssertions" Version="8.11.0"/>
-        <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2"/>
-        <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1"/>
-        <PackageVersion Include="NuGet.Versioning" Version="7.9.0"/>
-        <PackageVersion Include="Scriban" Version="7.5.0"/>
-        <PackageVersion Include="SharpCompress" Version="0.50.4"/>
-        <PackageVersion Include="SharpYaml" Version="3.14.0"/>
-        <PackageVersion Include="Spectre.Console" Version="0.57.3-alpha.0.19"/>
-        <PackageVersion Include="Spectre.Console.Testing" Version="0.57.3-alpha.0.19"/>
-        <PackageVersion Include="System.CommandLine" Version="3.0.0-rc.1.26425.128"/>
-        <PackageVersion Include="TruePath" Version="1.12.0"/>
-        <PackageVersion Include="TruePath.SystemIo" Version="1.12.0"/>
-        <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1"/>
-    </ItemGroup>
+  <PropertyGroup>
+    <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="JetBrains.Annotations" Version="2026.2.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageVersion Include="Parlot" Version="1.5.2" />
+    <PackageVersion Include="Jint" Version="4.16.4" />
+    <PackageVersion Include="FluentAssertions" Version="8.11.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
+    <PackageVersion Include="NuGet.Versioning" Version="7.9.0" />
+    <PackageVersion Include="Scriban" Version="7.5.0" />
+    <PackageVersion Include="SharpCompress" Version="0.50.4" />
+    <PackageVersion Include="SharpYaml" Version="3.14.0" />
+    <PackageVersion Include="Spectre.Console" Version="0.57.3-alpha.0.19" />
+    <PackageVersion Include="Spectre.Console.Testing" Version="0.57.3-alpha.0.19" />
+    <PackageVersion Include="Spectre.Console.Cli" Version="0.57.2" />
+    <PackageVersion Include="TruePath" Version="1.12.0" />
+    <PackageVersion Include="TruePath.SystemIo" Version="1.12.0" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="4.0.1" />
+  </ItemGroup>
 </Project>

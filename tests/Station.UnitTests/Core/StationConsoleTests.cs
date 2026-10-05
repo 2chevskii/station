@@ -4,7 +4,7 @@ using Spectre.Console.Testing;
 
 using Station.Abstractions.Execution;
 using Station.Abstractions.Modules;
-using Station.Cli;
+using Station;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;

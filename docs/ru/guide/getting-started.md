@@ -11,7 +11,7 @@ dotnet build Station.slnx -v minimal
 Ниже команды вызывают собранный CLI напрямую. Сборка отдельного исполняемого файла описана в разделе [Публикация](./development.md#публикация).
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
+dotnet src/Station/bin/Debug/net10.0/Station.dll --help
 ```
 
 ## Создайте корень конфигурации
@@ -53,10 +53,10 @@ tasks:
 Из корня репозитория замените `my-station` на путь к своей конфигурации:
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config my-station
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll validate --config my-station
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll check --config my-station
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll apply --config my-station
+dotnet src/Station/bin/Debug/net10.0/Station.dll explain --config my-station
+dotnet src/Station/bin/Debug/net10.0/Station.dll validate --config my-station
+dotnet src/Station/bin/Debug/net10.0/Station.dll check --config my-station
+dotnet src/Station/bin/Debug/net10.0/Station.dll apply --config my-station
 ```
 
 `explain` показывает статический план. `validate` связывает параметры и проверяет задачи. `check` вычисляет ожидаемые изменения без записи файла. `apply` записывает его. Повторный `apply` сообщает, что изменения не нужны, если содержимое уже совпадает.

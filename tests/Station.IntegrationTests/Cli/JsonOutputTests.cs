@@ -208,6 +208,10 @@ public sealed class JsonOutputTests
     [InlineData( "--set", "key=value", "--set" )]
     [InlineData( "--set", "--set", "key=value" )]
     [InlineData( "--config" )]
+    [InlineData( "--config", "." )]
+    [InlineData( "--output", "json" )]
+    [InlineData( "--output=json" )]
+    [InlineData( "--plugin-cache-dir", "cache", "--plugin-cache-dir", "cache" )]
     public async Task Invalid_arguments_return_JSON_without_executing( params string[] invalidArguments )
     {
         using var directory = CreateConfiguration();

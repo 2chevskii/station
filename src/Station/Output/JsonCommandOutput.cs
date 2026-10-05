@@ -8,7 +8,7 @@ using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;
 
-namespace Station.Cli.Output;
+namespace Station.Output;
 
 public sealed class JsonCommandOutput(
     [FromKeyedServices( "stdout" )] TextWriter standardOutput,

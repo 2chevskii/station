@@ -19,7 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Station.Testing\Station.Testing.csproj"/>
-        <ProjectReference Include="..\..\src\Station.Cli\Station.Cli.csproj"/>
+        <ProjectReference Include="..\..\src\Station\Station.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="TruePath"/>

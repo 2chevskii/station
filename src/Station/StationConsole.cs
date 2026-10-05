@@ -2,13 +2,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Spectre.Console;
 
-using Station.Cli.Output;
+using Station.Output;
 using Station.Core.Execution.Inventory;
 using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;
 
-namespace Station.Cli;
+namespace Station;
 
 public sealed class StationConsole : ICommandOutput
 {

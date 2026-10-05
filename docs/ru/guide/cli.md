@@ -1,6 +1,6 @@
 # Командная строка
 
-Ниже `station` — условное обозначение CLI. Опубликованный файл Windows называется `Station.Cli.exe`; при разработке из корня репозитория используйте `dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll`.
+Ниже `station` — условное обозначение CLI. Опубликованный файл Windows называется `Station.exe`; при разработке из корня репозитория используйте `dotnet src/Station/bin/Debug/net10.0/Station.dll`.
 
 ```text
 station restore       --config <каталог> [параметры]

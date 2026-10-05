@@ -62,7 +62,7 @@
                 Path="src/Station.Configuration.Abstractions/Station.Configuration.Abstractions.csproj"/>
         <Project Path="src/Station.Configuration.Yaml/Station.Configuration.Yaml.csproj"/>
         <Project Path="src/Station.Configuration.JavaScript/Station.Configuration.JavaScript.csproj"/>
-        <Project Path="src/Station.Cli/Station.Cli.csproj"/>
+        <Project Path="src/Station/Station.csproj"/>
         <Project Path="src/Station.Core/Station.Core.csproj"/>
         <Project Path="src/Station.Plugins.Abstractions/Station.Plugins.Abstractions.csproj"/>
         <Project Path="src/Station.Plugins/Station.Plugins.csproj"/>

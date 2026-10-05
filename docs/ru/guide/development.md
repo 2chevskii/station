@@ -15,13 +15,13 @@ Station использует .NET 10. Проекты разделяют конт
 | `Station.Plugins` | Восстановление через отдельных поставщиков и кеширование. |
 | `Station.Utilities` | Общие средства запуска процессов и проверки прав. |
 | `Station.Modules.*` | Встроенные модули. |
-| `Station.Cli` | Точка входа CLI и вывод. |
+| `Station` | Точка входа CLI и вывод. |
 
 Модель задачи похожа на Ansible: необязательное имя, один ключ модуля и вложенный объект параметров. YAML — формат сериализации; источником истины служит модель объектов .NET в памяти.
 
 ## Внедрение зависимостей
 
-`Station.Cli` регистрирует сервисы через `StationServices.AddStation`, создаёт и освобождает контейнер в `Program.cs`. Сервисы Core и плагинов получают зависимости через конструкторы. `AddStationCore` и `AddStationPlugins` регистрируют внутренние сервисы своих проектов.
+`StationServices.AddStation` регистрирует зависимости приложения. `Program.cs` создаёт `IServiceCollection`, настраивает Spectre и запускает приложение. `TypeRegistrar.Build` создаёт единственный контейнер с `ValidateOnBuild` и `ValidateScopes`; после выполнения адаптер асинхронно освобождает его. Spectre автоматически регистрирует классы команд. `AddStationCore` и `AddStationPlugins` регистрируют внутренние сервисы своих проектов без создания контейнера.
 
 Загрузчики конфигурации, провайдеры плагинов, шаблонизатор, средство запуска процессов, проверка прав, HTTP-клиент и источник времени используются совместно. Для каждой задачи `ActivatorUtilities` создаёт отдельный модуль с новым `ModuleContext`, получая остальные зависимости конструктора из DI. Интеграционные тесты используют регистрации CLI и могут подменять отдельные зависимости перед созданием контейнера.
 
@@ -49,7 +49,9 @@ Station использует .NET 10. Проекты разделяют конт
 
 ## Архитектура вывода CLI
 
-`Program.cs` создаёт контейнер и вызывает `StationCommandLine`. Регистрация команд, проверка общих параметров и обработка вызова находятся в `Station.Cli/Commands`. `StationConsole` и `JsonCommandOutput` реализуют `ICommandOutput` для текстового и JSON-вывода.
+`Program.cs` задаёт последовательность запуска. `StationCommands.Configure` описывает дерево команд и группу `list`. Команды в `Station/Commands` наследуют `AsyncCommand<StationSettings>` из `Spectre.Console.Cli` через `StationCommand`. Общие параметры объявлены атрибутами `[CommandOption]`, `[Description]` и `[DefaultValue]` в `StationSettings`.
+
+`CommandOutputSession` регистрирует сервисы вывода, буферизует справку, оформляет ошибки и выбирает текстовый или JSON-вывод. `ConsoleRedirection` восстанавливает консольные потоки после завершения, ошибки или отмены. `CommandArguments` сохраняет возможность указать общие параметры перед командой, несколько значений после `--set` и запрет повторения одиночных параметров. Spectre отвечает за разбор аргументов, справку и валидацию. `StationConsole` и `JsonCommandOutput` реализуют `ICommandOutput` для текстового и JSON-вывода.
 
 JSON-запись преобразует результаты движка в явный контракт с версией и буферизует полный документ до записи в stdout. Внутренние манифесты плагинов и другие детали движка не сериализуются. CLI обрабатывает один вызов на процесс и временно направляет управляемые консольные записи в stderr для JSON-команд, восстанавливая оба потока при завершении, ошибке и отмене. Публичный формат описан в [справке CLI](./cli.md#json-результаты).
 
@@ -89,8 +91,8 @@ dotnet test --root-directory artifacts/linux-check/bin/Station.IntegrationTests/
 Проверка CLI:
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config examples/workstation
+dotnet src/Station/bin/Debug/net10.0/Station.dll --help
+dotnet src/Station/bin/Debug/net10.0/Station.dll explain --config examples/workstation
 ```
 
 ## Публикация
@@ -98,7 +100,7 @@ dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config exampl
 Сборка автономного исполняемого файла для Windows:
 
 ```powershell
-dotnet publish src/Station.Cli/Station.Cli.csproj `
+dotnet publish src/Station/Station.csproj `
   -c Release `
   -r win-x64 `
   --self-contained true `
@@ -106,7 +108,7 @@ dotnet publish src/Station.Cli/Station.Cli.csproj `
   -p:UseAppHost=true
 ```
 
-Результат — `Station.Cli.exe` в каталоге `src/Station.Cli/bin/Release/net10.0/win-x64/publish/`.
+Результат — `Station.exe` в каталоге `src/Station/bin/Release/net10.0/win-x64/publish/`.
 
 ## Сайт документации
 

@@ -30,7 +30,7 @@ in .NET.
 - `Station.Modules.*`
   Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on
   `Station.Core`.
-- `Station.Cli`
+- `Station`
   Thin command-line frontend.
 
 ## Important project rules
@@ -143,13 +143,13 @@ dotnet test --project tests/Station.IntegrationTests/Station.IntegrationTests.cs
 If CLI behavior changed, also smoke-test:
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll --help
+dotnet src/Station/bin/Debug/net10.0/Station.dll --help
 ```
 
 If `explain` behavior changed, also smoke-test:
 
 ```powershell
-dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config examples/workstation
+dotnet src/Station/bin/Debug/net10.0/Station.dll explain --config examples/workstation
 ```
 
 ## Example root

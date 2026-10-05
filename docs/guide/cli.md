@@ -1,6 +1,6 @@
 # CLI reference
 
-The commands below use `station` as shorthand for the CLI. The published Windows file is `Station.Cli.exe`; during development, use `dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll` from the repository root.
+The commands below use `station` as shorthand for the CLI. The published Windows file is `Station.exe`; during development, use `dotnet src/Station/bin/Debug/net10.0/Station.dll` from the repository root.
 
 ```text
 station restore       --config <directory> [options]

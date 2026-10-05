@@ -3,7 +3,7 @@ using Station.Core.Execution.Planning;
 using Station.Core.Execution.Running;
 using Station.Core.Plugins.Restoration;
 
-namespace Station.Cli.Output;
+namespace Station.Output;
 
 public interface ICommandOutput
 {

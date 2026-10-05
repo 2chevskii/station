@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using Station.Cli;
+using Station;
 
 namespace Station.IntegrationTests.Infrastructure;
 

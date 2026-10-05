@@ -63,8 +63,8 @@ jobs:
       - name: CLI Smoke Tests
         shell: pwsh
         run: |
-          dotnet src/Station.Cli/bin/Release/net10.0/Station.Cli.dll --help
-          dotnet src/Station.Cli/bin/Release/net10.0/Station.Cli.dll explain --config examples/workstation
+          dotnet src/Station/bin/Release/net10.0/Station.dll --help
+          dotnet src/Station/bin/Release/net10.0/Station.dll explain --config examples/workstation
 
       - name: CTRF Reports
         shell: pwsh

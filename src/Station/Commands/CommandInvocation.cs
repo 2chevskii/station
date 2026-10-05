@@ -1,4 +1,4 @@
-namespace Station.Cli.Commands;
+namespace Station.Commands;
 
 internal sealed record CommandInvocation(
     string ConfigRoot,
