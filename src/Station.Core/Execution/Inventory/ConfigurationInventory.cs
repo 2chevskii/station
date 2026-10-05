@@ -62,6 +62,7 @@ internal sealed class ConfigurationInventory(
         CancellationToken cancellationToken
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var (root, requirements, variables) = configLoader.LoadPluginRequirements(
@@ -84,6 +85,7 @@ internal sealed class ConfigurationInventory(
                 return new InventoryResult( false, restore.Message, restore.Diagnostics, [] );
 
             var components = build( root, restore.RestoredPlugins );
+            cancellationToken.ThrowIfCancellationRequested();
             return new InventoryResult(
                 true,
                 $"Found {components.Count} available {kind}.",

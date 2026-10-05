@@ -26,6 +26,7 @@ internal sealed class PluginRestorer
         string? cacheRootOverride = null
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if ( requirements.Count == 0 )
             return new PluginRestoreResult( true, "No plugin requirements.", [], [], [] );
 
@@ -36,6 +37,7 @@ internal sealed class PluginRestorer
         foreach ( var requirement in requirements )
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var restored = await sourceRestorer.RestoreAsync(
                     configRoot,
                     requirement,
@@ -43,6 +45,7 @@ internal sealed class PluginRestorer
                     cancellationToken,
                     cacheRootOverride
                 );
+                cancellationToken.ThrowIfCancellationRequested();
                 var manifest = pluginManifestLoader.Load( restored.PluginRoot );
                 manifests.Add( manifest );
                 records.Add(

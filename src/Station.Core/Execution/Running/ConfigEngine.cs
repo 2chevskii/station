@@ -75,6 +75,7 @@ public sealed class ConfigEngine
         string? pluginCacheDirectory = null
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var configuration = configLoader.Load( configRoot, cliVariables );
@@ -106,6 +107,7 @@ public sealed class ConfigEngine
         string? pluginCacheDirectory = null
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if ( mode == ExecutionMode.Restore )
             throw new InvalidOperationException( "Use RestoreAsync for restore operations." );
 
@@ -153,6 +155,7 @@ public sealed class ConfigEngine
         string? pluginCacheDirectory = null
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         PreparedExecution prepared;
 
         try
@@ -193,6 +196,7 @@ public sealed class ConfigEngine
         CancellationToken cancellationToken
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var configuration = configLoader.Load( configRoot, cliVariables );
         var cacheRoot = cacheDirectoryResolver.Resolve(
             configuration.ConfigRoot,
@@ -206,6 +210,7 @@ public sealed class ConfigEngine
             cancellationToken,
             cacheRoot
         );
+        cancellationToken.ThrowIfCancellationRequested();
 
         if ( !restoreResult.Succeeded )
             return new PreparedExecution( configuration, restoreResult, null, null );
@@ -223,6 +228,7 @@ public sealed class ConfigEngine
             .RequestedRoles.Select( roleCatalog.Resolve )
             .SelectMany( role => configLoader.LoadRoleTasks( role, configuration.RootVariables ) );
         var tasks = configuration.RootTasks.Concat( roleTasks ).ToArray();
+        cancellationToken.ThrowIfCancellationRequested();
 
         return new PreparedExecution( configuration, restoreResult, moduleCatalog, tasks );
     }
