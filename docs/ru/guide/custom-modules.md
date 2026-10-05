@@ -4,6 +4,8 @@
 
 Дополнительные параметры конструктора разрешаются через сервисы, зарегистрированные в `Station.Cli`. Каждая задача получает новый экземпляр модуля и свой `ModuleContext`. Пользовательские зависимости регистрируются при настройке DI приложения; загрузка манифеста плагина не регистрирует сервисы.
 
+Модули, запускающие команды, могут получать `IProcessRunner` из `Station.Abstractions.Processes` через конструктор. Передавайте токен отмены задачи в `RunAsync`, чтобы общий исполнитель Station завершал процессы при отмене. Передавайте `OperationCanceledException` вызывающему коду, если токен задачи отменён.
+
 ```csharp
 using System.IO;
 using System.Threading;
@@ -28,6 +30,7 @@ public sealed class EnsureDirectoryModule : ConfigModule
     public override ValueTask<ModuleInspectionResult> InspectAsync(
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!System.IO.Path.IsPathFullyQualified(Path))
         {
             return ValueTask.FromResult(
@@ -41,6 +44,7 @@ public sealed class EnsureDirectoryModule : ConfigModule
     public override ValueTask<ModuleResult> ExecuteAsync(
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (Directory.Exists(Path))
         {
             return ValueTask.FromResult(

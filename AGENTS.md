@@ -136,8 +136,8 @@ Before closing substantive changes, prefer to run:
 
 ```powershell
 dotnet build Station.slnx -v minimal
-dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
-dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal
+dotnet test --project tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
+dotnet test --project tests/Station.IntegrationTests/Station.IntegrationTests.csproj -v minimal
 ```
 
 If CLI behavior changed, also smoke-test:
@@ -154,5 +154,5 @@ dotnet src/Station.Cli/bin/Debug/net10.0/Station.Cli.dll explain --config exampl
 
 ## Example root
 
-Use [examples/workstation](C:\Users\dvchevskii\source\experiments\config-tool\examples\workstation)
+Use [examples/workstation](examples/workstation)
 as the canonical example of the current target config structure.

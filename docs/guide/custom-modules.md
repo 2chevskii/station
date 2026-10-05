@@ -4,6 +4,8 @@ Modules are public, non-abstract classes derived from `ConfigModule` in `Station
 
 Additional constructor parameters are resolved from the services registered by `Station.Cli`. Each task receives a new module instance and its own `ModuleContext`. Register custom dependencies in the application's DI composition; loading a plugin manifest does not register services.
 
+Modules that launch commands can inject `IProcessRunner` from `Station.Abstractions.Processes`. Pass the task's cancellation token to `RunAsync` so command cleanup uses Station's shared process runner. Propagate `OperationCanceledException` when the task token is cancelled.
+
 ```csharp
 using System.IO;
 using System.Threading;
@@ -28,6 +30,7 @@ public sealed class EnsureDirectoryModule : ConfigModule
     public override ValueTask<ModuleInspectionResult> InspectAsync(
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!System.IO.Path.IsPathFullyQualified(Path))
         {
             return ValueTask.FromResult(
@@ -41,6 +44,7 @@ public sealed class EnsureDirectoryModule : ConfigModule
     public override ValueTask<ModuleResult> ExecuteAsync(
         CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (Directory.Exists(Path))
         {
             return ValueTask.FromResult(

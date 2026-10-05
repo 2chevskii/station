@@ -13,6 +13,8 @@ The [workstation example](examples/workstation) shows roles, variable files, tem
 
 ## Build and verify
 
+The test suites require .NET 10, Git and PowerShell 7 (`pwsh`) on `PATH`. Package-manager tests use isolated temporary command fixtures.
+
 ```powershell
 dotnet build Station.slnx -v minimal
 dotnet test --project tests/Station.UnitTests/Station.UnitTests.csproj -v minimal
