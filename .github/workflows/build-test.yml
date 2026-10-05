@@ -13,7 +13,11 @@ permissions:
 
 jobs:
   build-test:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-24.04]
 
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +37,13 @@ jobs:
           $resultsRoot = Join-Path $root 'artifacts/test-results/unit'
           New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
           $coveragePath = Join-Path $resultsRoot 'coverage.xml'
-          dotnet test tests/Station.UnitTests/Station.UnitTests.csproj -c Release --no-build -v minimal -- `
+          dotnet test --project tests/Station.UnitTests/Station.UnitTests.csproj -c Release --no-build -v minimal `
             --coverage `
             --coverage-output-format cobertura `
             --coverage-output $coveragePath `
+            --results-directory $resultsRoot `
             --report-trx `
             --report-trx-filename results.trx
-          Copy-Item tests/Station.UnitTests/bin/Release/net10.0/TestResults/results.trx (Join-Path $resultsRoot 'results.trx') -Force
 
       - name: Integration Tests
         shell: pwsh
@@ -48,13 +52,13 @@ jobs:
           $resultsRoot = Join-Path $root 'artifacts/test-results/integration'
           New-Item -ItemType Directory -Force -Path $resultsRoot | Out-Null
           $coveragePath = Join-Path $resultsRoot 'coverage.xml'
-          dotnet test tests/Station.IntegrationTests/Station.IntegrationTests.csproj -c Release --no-build -v minimal -- `
+          dotnet test --project tests/Station.IntegrationTests/Station.IntegrationTests.csproj -c Release --no-build -v minimal `
             --coverage `
             --coverage-output-format cobertura `
             --coverage-output $coveragePath `
+            --results-directory $resultsRoot `
             --report-trx `
             --report-trx-filename results.trx
-          Copy-Item tests/Station.IntegrationTests/bin/Release/net10.0/TestResults/results.trx (Join-Path $resultsRoot 'results.trx') -Force
 
       - name: CLI Smoke Tests
         shell: pwsh
@@ -102,7 +106,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: station-test-artifacts
+          name: station-test-artifacts-${{ runner.os }}
           path: |
             artifacts/test-results/**
             artifacts/coverage-report/**
