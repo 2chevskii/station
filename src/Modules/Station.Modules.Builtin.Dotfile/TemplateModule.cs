@@ -2,10 +2,8 @@ using System.Text;
 
 using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Modules;
 
-using TruePath;
 using TruePath.SystemIo;
 
 namespace Station.Modules.Builtin.Dotfile;
@@ -31,6 +29,7 @@ public sealed class TemplateModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             _ = Context.Artifacts.GetRequiredTemplate( TemplateName );
@@ -39,7 +38,9 @@ public sealed class TemplateModule : ConfigModule
                 : PrivilegeRequirement.User;
             return ValueTask.FromResult( ModuleInspectionResult.Success( privilege ) );
         }
-        catch ( ConfigurationException exception )
+        catch ( Exception exception ) when (
+            exception is ConfigurationException or IOException or UnauthorizedAccessException
+        )
         {
             return ValueTask.FromResult(
                 ModuleInspectionResult.Failure( new ModuleDiagnostic( exception.Message ) )
@@ -49,13 +50,15 @@ public sealed class TemplateModule : ConfigModule
 
     public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
             var template = Context.Artifacts.GetRequiredTemplate( TemplateName );
-            var destinationPath = HostFilePaths.Resolve( Destination );
+            var destinationPath = HostFilePaths.ResolveDestination( Destination );
+            var targetPath = HostFilePaths.ResolveTarget( destinationPath );
             var desiredBytes = Utf8WithoutBom.GetBytes( template.GetRenderedText() );
-            var existingBytes = destinationPath.ExistsFile()
-                ? await destinationPath.ReadAllBytesAsync( cancellationToken )
+            var existingBytes = targetPath.ExistsFile()
+                ? await targetPath.ReadAllBytesAsync( cancellationToken )
                 : null;
             var changed = existingBytes is null || !existingBytes.SequenceEqual( desiredBytes );
 
@@ -71,33 +74,20 @@ public sealed class TemplateModule : ConfigModule
                     $"Template '{destinationPath}' is already in the desired state."
                 );
 
-            await WriteBytesAsync( destinationPath, desiredBytes, cancellationToken );
+            await AtomicFileWriter.WriteAsync(
+                destinationPath,
+                desiredBytes,
+                Backup,
+                Context.TimeProvider,
+                cancellationToken
+            );
             return ModuleResult.ChangedResult( $"Template '{destinationPath}' was updated." );
         }
-        catch ( ConfigurationException exception )
+        catch ( Exception exception ) when (
+            exception is ConfigurationException or IOException or UnauthorizedAccessException
+        )
         {
             return ModuleResult.Failure( exception.Message );
         }
-    }
-
-    private async Task WriteBytesAsync(
-        AbsolutePath destinationPath,
-        byte[] desiredBytes,
-        CancellationToken cancellationToken
-    )
-    {
-        if ( destinationPath.Parent is { } parentDirectory )
-            parentDirectory.CreateDirectory();
-
-        if ( destinationPath.ExistsFile() && Backup )
-        {
-            var timestamp = Context.TimeProvider.GetUtcNow().ToString( "yyyyMMddHHmmss" );
-            destinationPath.Copy(
-                $"{destinationPath}.bak.{timestamp}".AsAbsolutePath(),
-                true
-            );
-        }
-
-        await destinationPath.WriteAllBytesAsync( desiredBytes, cancellationToken );
     }
 }
