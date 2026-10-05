@@ -1,21 +1,22 @@
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Modules;
-
-using TruePath;
+using Station.Abstractions.Processes;
 
 namespace Station.Modules.Builtin.Apt;
 
 [Module( "apt", "Installs packages through apt locally or inside a WSL distribution." )]
 public sealed class AptModule : ConfigModule
 {
-    public AptModule( ModuleContext context )
+    private readonly IProcessRunner processRunner;
+
+    public AptModule( ModuleContext context, IProcessRunner processRunner )
         : base( context )
     {
+        this.processRunner = processRunner;
     }
 
     [Parameter( "name", Required = true )] public string PackageName { get; set; } = string.Empty;
@@ -36,29 +37,38 @@ public sealed class AptModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ModuleInspectionResult.Failure( new ModuleDiagnostic( parameterError ) );
+
         if ( OperatingSystem.IsWindows() )
         {
-            if ( !CommandLocator.Exists( WslCommand ) )
+            if ( !processRunner.CommandExists( WslCommand ) )
                 return ModuleInspectionResult.Failure(
                     new ModuleDiagnostic( $"'{WslCommand}' is not available on PATH." )
                 );
 
-            if ( string.IsNullOrWhiteSpace( Distribution ) )
-                return ModuleInspectionResult.Failure(
-                    new ModuleDiagnostic( "apt on Windows requires a 'distribution' parameter." )
-                );
-
-            var distrosResult = await RunAsync(
-                WslCommand,
-                ["-l", "-q"],
-                AbsolutePath.CurrentWorkingDirectory.Value,
+            var distrosResult = await processRunner.RunAsync(
+                new ProcessCommand(
+                    WslCommand,
+                    ["-l", "-q"],
+                    StandardOutputEncoding: Encoding.Unicode,
+                    StandardErrorEncoding: Encoding.Unicode
+                ),
                 cancellationToken
             );
+            if ( distrosResult.ExitCode != 0 )
+                return ModuleInspectionResult.Failure(
+                    new ModuleDiagnostic(
+                        $"Could not list WSL distributions: {SelectProcessError( distrosResult )}"
+                    )
+                );
+
             if (
-                distrosResult.ExitCode != 0
-                || !distrosResult
+                !distrosResult
                     .StandardOutput.Split(
-                        Environment.NewLine,
+                        ['\r', '\n'],
                         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
                     )
                     .Contains( Distribution, StringComparer.OrdinalIgnoreCase )
@@ -67,7 +77,7 @@ public sealed class AptModule : ConfigModule
                     new ModuleDiagnostic( $"WSL distribution '{Distribution}' was not found." )
                 );
         }
-        else if ( !CommandLocator.Exists( AptGetCommand ) )
+        else if ( !processRunner.CommandExists( AptGetCommand ) )
         {
             return ModuleInspectionResult.Failure(
                 new ModuleDiagnostic( $"'{AptGetCommand}' is not available on PATH." )
@@ -79,15 +89,34 @@ public sealed class AptModule : ConfigModule
 
     public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
-        var state = NormalizeState( State );
-        var installed = await GetInstalledStateAsync( PackageName, Distribution, cancellationToken );
-        var shouldExist = state == "present";
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ModuleResult.Failure( parameterError );
+
+        DpkgPackageState installed;
+        try
+        {
+            installed = await GetInstalledStateAsync(
+                PackageName,
+                Distribution,
+                cancellationToken
+            );
+        }
+        catch ( ConfigurationException exception )
+        {
+            return ModuleResult.Failure( exception.Message );
+        }
+
+        var shouldExist = State.Trim().Equals( "present", StringComparison.OrdinalIgnoreCase );
         var needsVersionChange =
             shouldExist
             && !string.IsNullOrWhiteSpace( Version )
-            && !string.Equals( installed.Version, Version, StringComparison.OrdinalIgnoreCase );
+            && !string.Equals( installed.Version, Version, StringComparison.Ordinal );
 
-        var changed = shouldExist != installed.IsInstalled || needsVersionChange;
+        var changed = shouldExist
+            ? !installed.IsInstalled || needsVersionChange
+            : installed.IsPresent;
         if ( Context.Mode == ExecutionMode.Check )
             return changed
                 ? ModuleResult.ChangedResult( $"apt package '{PackageName}' would change." )
@@ -114,30 +143,30 @@ public sealed class AptModule : ConfigModule
         return ModuleResult.ChangedResult( $"apt package '{PackageName}' was updated." );
     }
 
-    private async Task<(bool IsInstalled, string? Version)> GetInstalledStateAsync(
+    private async Task<DpkgPackageState> GetInstalledStateAsync(
         string packageName,
         string? distribution,
         CancellationToken cancellationToken
     )
     {
         var result = await RunAptCommandAsync(
-            ["dpkg-query", "-W", "-f=${Version}", packageName],
+            ["dpkg-query", "-W", "-f=${db:Status-Status}\t${Version}\n", "--", packageName],
             distribution,
             cancellationToken
         );
 
-        if ( result.ExitCode != 0 )
-            return (false, null);
+        if ( result.ExitCode == 1 )
+            return DpkgPackageState.Missing;
 
-        var version = result.StandardOutput.Trim();
-        return (!string.IsNullOrWhiteSpace( version ), version);
+        if ( result.ExitCode != 0 )
+            throw new ConfigurationException(
+                $"Could not query apt package '{packageName}': {SelectProcessError( result )}"
+            );
+
+        return DpkgPackageState.Parse( result.StandardOutput );
     }
 
-    private async Task<(
-        int ExitCode,
-        string StandardOutput,
-        string StandardError
-        )> RunAptCommandAsync(
+    private Task<ProcessResult> RunAptCommandAsync(
         IReadOnlyList<string> command,
         string? distribution,
         CancellationToken cancellationToken
@@ -145,20 +174,16 @@ public sealed class AptModule : ConfigModule
     {
         if ( OperatingSystem.IsWindows() )
         {
-            var arguments = new List<string> { "-d", distribution!, "--" };
+            var arguments = new List<string> { "-d", distribution!, "--exec" };
             arguments.AddRange( command );
-            return await RunAsync(
-                WslCommand,
-                arguments,
-                AbsolutePath.CurrentWorkingDirectory.Value,
+            return processRunner.RunAsync(
+                new ProcessCommand( WslCommand, arguments ),
                 cancellationToken
             );
         }
 
-        return await RunAsync(
-            command[0],
-            command.Skip( 1 ).ToArray(),
-            AbsolutePath.CurrentWorkingDirectory.Value,
+        return processRunner.RunAsync(
+            new ProcessCommand( command[0], command.Skip( 1 ).ToArray() ),
             cancellationToken
         );
     }
@@ -172,57 +197,33 @@ public sealed class AptModule : ConfigModule
         arguments.Add( AptGetCommand );
         arguments.Add( action );
         arguments.Add( "-y" );
+        arguments.Add( "--" );
         arguments.Add( packageName );
         return arguments;
     }
 
-    private static string NormalizeState( string? state ) =>
-        string.IsNullOrWhiteSpace( state ) ? "present" : state.Trim().ToLowerInvariant();
+    private string? ValidateParameters()
+    {
+        if ( State?.Trim().ToLowerInvariant() is not ("present" or "absent") )
+            return "Parameter 'state' must be 'present' or 'absent'.";
 
-    private static string SelectProcessError(
-        (int ExitCode, string StandardOutput, string StandardError) result
-    ) =>
+        if ( string.IsNullOrWhiteSpace( PackageName ) || !Regex.IsMatch(
+            PackageName,
+            @"\A[a-z0-9][a-z0-9+.-]*(?::[a-z0-9][a-z0-9-]*)?\z",
+            RegexOptions.CultureInvariant
+        ) )
+            return "Parameter 'name' must be a Debian package name, optionally name:architecture.";
+
+        if ( OperatingSystem.IsWindows() && string.IsNullOrWhiteSpace( Distribution ) )
+            return "apt on Windows requires a 'distribution' parameter.";
+
+        return null;
+    }
+
+    private static string SelectProcessError( ProcessResult result ) =>
         !string.IsNullOrWhiteSpace( result.StandardError )
             ? result.StandardError.Trim()
             : !string.IsNullOrWhiteSpace( result.StandardOutput )
                 ? result.StandardOutput.Trim()
                 : "apt failed.";
-
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
-        string fileName,
-        IReadOnlyList<string> arguments,
-        string workingDirectory,
-        CancellationToken cancellationToken
-    )
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = workingDirectory,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        foreach ( var argument in arguments )
-            startInfo.ArgumentList.Add( argument );
-
-        using var process = new Process();
-        process.StartInfo = startInfo;
-        try
-        {
-            process.Start();
-        }
-        catch ( Exception exception ) when ( exception is InvalidOperationException or Win32Exception )
-        {
-            return (-1, string.Empty, exception.Message);
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync( cancellationToken );
-        var stderrTask = process.StandardError.ReadToEndAsync( cancellationToken );
-        await Task.WhenAll( stdoutTask, stderrTask, process.WaitForExitAsync( cancellationToken ) );
-        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
-    }
 }

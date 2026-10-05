@@ -1,21 +1,20 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
-
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Modules;
-
-using TruePath;
+using Station.Abstractions.Processes;
 
 namespace Station.Modules.Builtin.Winget;
 
 [Module( "winget", "Installs packages through winget." )]
 public sealed class WingetModule : ConfigModule
 {
-    public WingetModule( ModuleContext context )
+    private const int NoApplicationsFound = unchecked((int)0x8A150014);
+    private readonly IProcessRunner processRunner;
+
+    public WingetModule( ModuleContext context, IProcessRunner processRunner )
         : base( context )
     {
+        this.processRunner = processRunner;
     }
 
     [Parameter( "id", Required = true )] public string PackageId { get; set; } = string.Empty;
@@ -32,14 +31,21 @@ public sealed class WingetModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
-        if ( !CommandLocator.Exists( Command ) )
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ValueTask.FromResult(
+                ModuleInspectionResult.Failure( new ModuleDiagnostic( parameterError ) )
+            );
+
+        if ( !processRunner.CommandExists( Command ) )
             return ValueTask.FromResult(
                 ModuleInspectionResult.Failure(
                     new ModuleDiagnostic( $"'{Command}' is not available on PATH." )
                 )
             );
 
-        var privilege = string.Equals( Scope, "machine", StringComparison.OrdinalIgnoreCase )
+        var privilege = string.Equals( Scope?.Trim(), "machine", StringComparison.OrdinalIgnoreCase )
             ? PrivilegeRequirement.Administrator
             : PrivilegeRequirement.User;
 
@@ -48,13 +54,26 @@ public sealed class WingetModule : ConfigModule
 
     public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
-        var state = NormalizeState( State );
-        var installed = await GetInstalledStateAsync( PackageId, Version, cancellationToken );
-        var shouldExist = state == "present";
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ModuleResult.Failure( parameterError );
+
+        (bool IsInstalled, string? Version) installed;
+        try
+        {
+            installed = await GetInstalledStateAsync( PackageId, cancellationToken );
+        }
+        catch ( ConfigurationException exception )
+        {
+            return ModuleResult.Failure( exception.Message );
+        }
+
+        var shouldExist = State.Trim().Equals( "present", StringComparison.OrdinalIgnoreCase );
         var needsVersionChange =
             shouldExist
             && !string.IsNullOrWhiteSpace( Version )
-            && !string.Equals( installed.Version, Version, StringComparison.OrdinalIgnoreCase );
+            && !string.Equals( installed.Version, Version, StringComparison.Ordinal );
 
         var changed = shouldExist != installed.IsInstalled || needsVersionChange;
         if ( Context.Mode == ExecutionMode.Check )
@@ -70,10 +89,13 @@ public sealed class WingetModule : ConfigModule
             );
 
         var arguments =
-            state == "present"
-                ? CreateInstallArguments( PackageId, Version, Scope )
+            shouldExist
+                ? CreateInstallArguments( PackageId, Version )
                 : CreateUninstallArguments( PackageId );
-        var result = await RunAsync( Command, arguments, cancellationToken );
+        var result = await processRunner.RunAsync(
+            new ProcessCommand( Command, arguments ),
+            cancellationToken
+        );
         if ( result.ExitCode != 0 )
             return ModuleResult.Failure( SelectProcessError( result ) );
 
@@ -82,45 +104,52 @@ public sealed class WingetModule : ConfigModule
 
     private async Task<(bool IsInstalled, string? Version)> GetInstalledStateAsync(
         string packageId,
-        string? version,
         CancellationToken cancellationToken
     )
     {
-        var result = await RunAsync(
-            Command,
-            [
-                "list",
-                "--id",
-                packageId,
-                "--exact",
-                "--disable-interactivity",
-                "--accept-source-agreements",
-            ],
+        var arguments = new List<string>
+        {
+            "list",
+            "--id",
+            packageId,
+            "--exact",
+            "--disable-interactivity",
+            "--accept-source-agreements",
+        };
+        AddScope( arguments );
+        var result = await processRunner.RunAsync(
+            new ProcessCommand( Command, arguments ),
             cancellationToken
         );
 
-        if ( result.ExitCode != 0 )
+        if ( result.ExitCode == NoApplicationsFound )
             return (false, null);
 
-        var installed = result.StandardOutput.Contains(
-            packageId,
-            StringComparison.OrdinalIgnoreCase
-        );
-        var installedVersion =
-            string.IsNullOrWhiteSpace( version )
-            || !result.StandardOutput.Contains( version, StringComparison.OrdinalIgnoreCase )
-                ? null
-                : version;
-        return (installed, installedVersion);
+        if ( result.ExitCode != 0 )
+            throw new ConfigurationException(
+                $"Could not query winget package '{packageId}': {SelectProcessError( result )}"
+            );
+
+        return (true, WingetListReader.ReadInstalledVersion( result.StandardOutput, packageId ));
     }
 
-    private static string NormalizeState( string? state ) =>
-        string.IsNullOrWhiteSpace( state ) ? "present" : state.Trim().ToLowerInvariant();
+    private string? ValidateParameters()
+    {
+        if ( State?.Trim().ToLowerInvariant() is not ("present" or "absent") )
+            return "Parameter 'state' must be 'present' or 'absent'.";
 
-    private static IReadOnlyList<string> CreateInstallArguments(
+        if ( string.IsNullOrWhiteSpace( PackageId ) )
+            return "Parameter 'id' must be a non-empty package identifier.";
+
+        if ( Scope is not null && Scope.Trim().ToLowerInvariant() is not ("user" or "machine") )
+            return "Parameter 'scope' must be 'user' or 'machine'.";
+
+        return null;
+    }
+
+    private IReadOnlyList<string> CreateInstallArguments(
         string id,
-        string? version,
-        string? scope
+        string? version
     )
     {
         var arguments = new List<string>
@@ -140,61 +169,33 @@ public sealed class WingetModule : ConfigModule
             arguments.Add( version );
         }
 
-        if ( !string.IsNullOrWhiteSpace( scope ) )
-        {
-            arguments.Add( "--scope" );
-            arguments.Add( scope );
-        }
-
+        AddScope( arguments );
         return arguments;
     }
 
-    private static IReadOnlyList<string> CreateUninstallArguments( string id ) =>
-        ["uninstall", "--id", id, "--exact", "--disable-interactivity"];
+    private IReadOnlyList<string> CreateUninstallArguments( string id )
+    {
+        var arguments = new List<string>
+        {
+            "uninstall", "--id", id, "--exact", "--disable-interactivity",
+        };
+        AddScope( arguments );
+        return arguments;
+    }
 
-    private static string SelectProcessError(
-        (int ExitCode, string StandardOutput, string StandardError) result
-    ) =>
+    private void AddScope( List<string> arguments )
+    {
+        if ( Scope is null )
+            return;
+
+        arguments.Add( "--scope" );
+        arguments.Add( Scope.Trim().ToLowerInvariant() );
+    }
+
+    private static string SelectProcessError( ProcessResult result ) =>
         !string.IsNullOrWhiteSpace( result.StandardError )
             ? result.StandardError.Trim()
             : !string.IsNullOrWhiteSpace( result.StandardOutput )
                 ? result.StandardOutput.Trim()
                 : "winget failed.";
-
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
-        string fileName,
-        IReadOnlyList<string> arguments,
-        CancellationToken cancellationToken
-    )
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = AbsolutePath.CurrentWorkingDirectory.Value,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        foreach ( var argument in arguments )
-            startInfo.ArgumentList.Add( argument );
-
-        using var process = new Process();
-        process.StartInfo = startInfo;
-        try
-        {
-            process.Start();
-        }
-        catch ( Exception exception ) when ( exception is InvalidOperationException or Win32Exception )
-        {
-            return (-1, string.Empty, exception.Message);
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync( cancellationToken );
-        var stderrTask = process.StandardError.ReadToEndAsync( cancellationToken );
-        await Task.WhenAll( stdoutTask, stderrTask, process.WaitForExitAsync( cancellationToken ) );
-        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
-    }
 }

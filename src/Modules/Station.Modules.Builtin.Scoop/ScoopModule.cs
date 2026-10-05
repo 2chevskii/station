@@ -1,21 +1,21 @@
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
+using System.Text.RegularExpressions;
 
+using Station.Abstractions.Configuration;
 using Station.Abstractions.Execution;
-using Station.Abstractions.FileSystem;
 using Station.Abstractions.Modules;
-
-using TruePath;
+using Station.Abstractions.Processes;
 
 namespace Station.Modules.Builtin.Scoop;
 
 [Module( "scoop", "Installs packages through Scoop." )]
 public sealed class ScoopModule : ConfigModule
 {
-    public ScoopModule( ModuleContext context )
+    private readonly IProcessRunner processRunner;
+
+    public ScoopModule( ModuleContext context, IProcessRunner processRunner )
         : base( context )
     {
+        this.processRunner = processRunner;
     }
 
     [Parameter( "name", Required = true )] public string PackageName { get; set; } = string.Empty;
@@ -30,7 +30,14 @@ public sealed class ScoopModule : ConfigModule
         CancellationToken cancellationToken
     )
     {
-        if ( !CommandLocator.Exists( Command ) )
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ValueTask.FromResult(
+                ModuleInspectionResult.Failure( new ModuleDiagnostic( parameterError ) )
+            );
+
+        if ( !processRunner.CommandExists( Command ) )
             return ValueTask.FromResult(
                 ModuleInspectionResult.Failure(
                     new ModuleDiagnostic( $"'{Command}' is not available on PATH." )
@@ -44,12 +51,36 @@ public sealed class ScoopModule : ConfigModule
 
     public override async ValueTask<ModuleResult> ExecuteAsync( CancellationToken cancellationToken )
     {
-        var state = NormalizeState( State );
-        var listResult = await RunAsync( Command, ["list"], cancellationToken );
-        var installed =
-            listResult.ExitCode == 0
-            && listResult.StandardOutput.Contains( PackageName, StringComparison.OrdinalIgnoreCase );
-        var shouldExist = state == "present";
+        cancellationToken.ThrowIfCancellationRequested();
+        var parameterError = ValidateParameters();
+        if ( parameterError is not null )
+            return ModuleResult.Failure( parameterError );
+
+        var exportResult = await processRunner.RunAsync(
+            new ProcessCommand( Command, ["export"] ),
+            cancellationToken
+        );
+        if ( exportResult.ExitCode != 0 )
+            return ModuleResult.Failure(
+                $"Could not query Scoop packages: {SelectProcessError( exportResult )}"
+            );
+
+        var appName = PackageName[(PackageName.LastIndexOf( '/' ) + 1)..];
+        bool installed;
+        try
+        {
+            installed = ScoopExportReader.IsInstalled(
+                exportResult.StandardOutput,
+                appName,
+                IsGlobal
+            );
+        }
+        catch ( ConfigurationException exception )
+        {
+            return ModuleResult.Failure( exception.Message );
+        }
+
+        var shouldExist = State.Trim().Equals( "present", StringComparison.OrdinalIgnoreCase );
         var changed = shouldExist != installed;
 
         if ( Context.Mode == ExecutionMode.Check )
@@ -68,61 +99,37 @@ public sealed class ScoopModule : ConfigModule
         if ( IsGlobal )
             arguments.Add( "--global" );
 
-        arguments.Add( PackageName );
+        arguments.Add( shouldExist ? PackageName : appName );
 
-        var result = await RunAsync( Command, arguments, cancellationToken );
+        var result = await processRunner.RunAsync(
+            new ProcessCommand( Command, arguments ),
+            cancellationToken
+        );
         if ( result.ExitCode != 0 )
             return ModuleResult.Failure( SelectProcessError( result ) );
 
         return ModuleResult.ChangedResult( $"scoop package '{PackageName}' was updated." );
     }
 
-    private static string NormalizeState( string? state ) =>
-        string.IsNullOrWhiteSpace( state ) ? "present" : state.Trim().ToLowerInvariant();
+    private string? ValidateParameters()
+    {
+        if ( State?.Trim().ToLowerInvariant() is not ("present" or "absent") )
+            return "Parameter 'state' must be 'present' or 'absent'.";
 
-    private static string SelectProcessError(
-        (int ExitCode, string StandardOutput, string StandardError) result
-    ) =>
+        if ( string.IsNullOrWhiteSpace( PackageName ) || !Regex.IsMatch(
+            PackageName,
+            @"\A(?:[A-Za-z0-9][A-Za-z0-9_.-]*/)?[A-Za-z0-9][A-Za-z0-9_.-]*\z",
+            RegexOptions.CultureInvariant
+        ) )
+            return "Parameter 'name' must be a Scoop package name or bucket/name.";
+
+        return null;
+    }
+
+    private static string SelectProcessError( ProcessResult result ) =>
         !string.IsNullOrWhiteSpace( result.StandardError )
             ? result.StandardError.Trim()
             : !string.IsNullOrWhiteSpace( result.StandardOutput )
                 ? result.StandardOutput.Trim()
                 : "scoop failed.";
-
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunAsync(
-        string fileName,
-        IReadOnlyList<string> arguments,
-        CancellationToken cancellationToken
-    )
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            WorkingDirectory = AbsolutePath.CurrentWorkingDirectory.Value,
-            StandardOutputEncoding = Encoding.UTF8,
-            StandardErrorEncoding = Encoding.UTF8,
-        };
-
-        foreach ( var argument in arguments )
-            startInfo.ArgumentList.Add( argument );
-
-        using var process = new Process();
-        process.StartInfo = startInfo;
-        try
-        {
-            process.Start();
-        }
-        catch ( Exception exception ) when ( exception is InvalidOperationException or Win32Exception )
-        {
-            return (-1, string.Empty, exception.Message);
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync( cancellationToken );
-        var stderrTask = process.StandardError.ReadToEndAsync( cancellationToken );
-        await Task.WhenAll( stdoutTask, stderrTask, process.WaitForExitAsync( cancellationToken ) );
-        return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
-    }
 }
