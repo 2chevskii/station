@@ -1,4 +1,4 @@
-namespace Station.Utilities.Processes;
+namespace Station.Abstractions.Processes;
 
 public interface IProcessRunner
 {
