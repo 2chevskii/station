@@ -27,6 +27,8 @@ in .NET.
   YAML document loading and Scriban template rendering.
 - `Station.Configuration.JavaScript`
   JavaScript document loading and runtime.
+- `Station.Configuration.Lua`
+  Lua document loading and NLua runtime.
 - `Station.Modules.*`
   Concrete builtin modules. These projects must depend on `Station.Abstractions` only, not on
   `Station.Core`.
@@ -72,14 +74,16 @@ Root config currently supports:
 
 Role layout currently supports:
 
-- `defaults.yaml`
+- one of `defaults.yaml`, `defaults.js`, or `defaults.lua`
 - `role.yaml` as a task array or an object with required `tasks` and optional `description` and
   `defaults`
+- `role.js` or `role.lua` registering tasks with `task(...)` as alternatives to `role.yaml`
 - `files/`
 - `templates/`
 
 Root layout also supports:
 
+- `vars/` with `.yaml`, `.js`, or `.lua` variable documents
 - `files/`
 - `templates/`
 
@@ -99,6 +103,7 @@ modules/<ModuleName>/<ModuleName>.dll
 
 Plugin manifests may also export modules as `<relative assembly path>:<fully qualified type name>`,
 including multiple types from one DLL. The module name comes from `[Module]`.
+Exported roles may use `role.js` or `role.lua` in place of `role.yaml`.
 
 ## Plugin restore
 

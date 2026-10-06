@@ -64,4 +64,4 @@ For example, `template: git/config` may resolve `templates/git/config.scriban`. 
 
 ## File formats
 
-The root manifest is `station.yaml`. Variable files in `vars/` may be `.yaml` or `.js`. A role uses either `role.yaml` or `role.js`, and optionally either `defaults.yaml` or `defaults.js`. Station rejects both formats for the same role artifact, and root variable files with the same base name across formats are ambiguous. See [Roles and tasks](./roles-and-tasks.md) and [JavaScript roles](./javascript-roles.md).
+The root manifest is `station.yaml`. Variable files in `vars/` may be `.yaml`, `.js` or `.lua`. A role uses one of `role.yaml`, `role.js` or `role.lua`, and optionally one of `defaults.yaml`, `defaults.js` or `defaults.lua`. Station rejects multiple formats for the same role artifact, and root variable files with the same base name across formats are ambiguous. See [Roles and tasks](./roles-and-tasks.md), [JavaScript roles](./javascript-roles.md) and [Lua roles](./lua-roles.md).

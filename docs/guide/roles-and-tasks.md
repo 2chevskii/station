@@ -26,7 +26,7 @@ tasks:
       destination: "{{ git_config_path }}"
 ```
 
-The separate `defaults.yaml` or `defaults.js` is optional. Inline YAML defaults override matching values from that file; root variables override both. `role.js` is a separate format described in [JavaScript roles](./javascript-roles.md).
+The separate `defaults.yaml`, `defaults.js` or `defaults.lua` is optional. Inline YAML defaults override matching values from that file; root variables override both. The scripting formats are described in [JavaScript roles](./javascript-roles.md) and [Lua roles](./lua-roles.md).
 
 ## Task contract
 

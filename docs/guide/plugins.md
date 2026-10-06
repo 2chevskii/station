@@ -48,7 +48,7 @@ modules:
   - assemblies/Example.Plugin.dll:Example.Plugin.SetupModule
 ```
 
-An exported role lives at `roles/workstation/role.yaml` or `role.js`. Each module entry names an assembly path relative to the plugin root and an optional fully qualified public `ConfigModule` type. Explicit type names allow multiple modules in one assembly. A legacy short entry such as `cleanup` expects `modules/cleanup/cleanup.dll` with exactly one public module type. The module's short name comes from its `[Module]` attribute. Only manifest-listed roles and modules are exported.
+An exported role lives at `roles/workstation/role.yaml`, `role.js` or `role.lua`. Each module entry names an assembly path relative to the plugin root and an optional fully qualified public `ConfigModule` type. Explicit type names allow multiple modules in one assembly. A legacy short entry such as `cleanup` expects `modules/cleanup/cleanup.dll` with exactly one public module type. The module's short name comes from its `[Module]` attribute. Only manifest-listed roles and modules are exported.
 
 The example exports `example.tools.workstation` as a role and modules under `example.tools.*`. Use full names when a short name is ambiguous. Role and module names are resolved independently.
 

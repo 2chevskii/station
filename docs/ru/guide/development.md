@@ -10,6 +10,7 @@ Station использует .NET 10. Проекты разделяют конт
 | `Station.Configuration.Abstractions` | Контракты документов конфигурации и значений. |
 | `Station.Configuration.Yaml` | Загрузка YAML и подстановка Scriban. |
 | `Station.Configuration.JavaScript` | Загрузка переменных и ролей через Jint. |
+| `Station.Configuration.Lua` | Загрузка переменных и ролей через NLua. |
 | `Station.Core` | Обнаружение, связывание, планирование и выполнение задач. |
 | `Station.Plugins.Abstractions` | Контракты требований и манифестов плагинов. |
 | `Station.Plugins` | Восстановление через отдельных поставщиков и кеширование. |

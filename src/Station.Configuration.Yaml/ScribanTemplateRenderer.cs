@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 
 using Scriban;
 using Scriban.Parsing;
-using Scriban.Runtime;
 
 using Station.Abstractions.Artifacts;
 using Station.Abstractions.Configuration;
@@ -20,20 +19,25 @@ public sealed class ScribanTemplateRenderer : ITemplateEngine
 
     public string Render( string template, VariableSet variables, string? sourceName = null )
     {
-        var compiledTemplate = cache.GetOrAdd( template, ParseTemplate );
-        var context = new TemplateContext();
-        context.PushGlobal( ScriptObject.From( variables.ToObjectGraph( this, sourceName ) ) );
-        context.StrictVariables = true;
+        var scope = new ScribanVariableScope( variables, RenderTemplate );
+        return RenderTemplate( template, scope );
 
-        try
+        string RenderTemplate( string templateText, ScribanVariableScope variableScope )
         {
-            return compiledTemplate.Render( context );
-        }
-        catch ( Exception exception )
-        {
-            throw new ConfigurationException(
-                $"Failed to render template{FormatSourceName( sourceName )}: {exception.Message}"
-            );
+            var compiledTemplate = cache.GetOrAdd( templateText, ParseTemplate );
+            var context = new TemplateContext { StrictVariables = true };
+            context.PushGlobal( variableScope.Globals );
+
+            try
+            {
+                return compiledTemplate.Render( context );
+            }
+            catch ( Exception exception )
+            {
+                throw new ConfigurationException(
+                    $"Failed to render template{FormatSourceName( sourceName )}: {exception.Message}"
+                );
+            }
         }
 
         Template ParseTemplate( string templateText )

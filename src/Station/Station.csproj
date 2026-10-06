@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
+        <ProjectReference Include="..\Station.Configuration.Lua\Station.Configuration.Lua.csproj"/>
         <ProjectReference
                 Include="..\Station.Core\Station.Core.csproj"
                 SkipGetTargetFrameworkProperties="true"

@@ -88,7 +88,7 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
             0 => null,
             1 => candidates[0],
             var _ => throw new ConfigurationException(
-                $"Role '{roleFullName}' contains both 'defaults.yaml' and 'defaults.js'."
+                $"Role '{roleFullName}' contains ambiguous defaults files: {DescribeCandidates( candidates )}."
             ),
         };
     }
@@ -112,14 +112,20 @@ internal sealed class ConfigArtifactResolver : IConfigArtifactResolver
         return candidates.Count switch
         {
             0 => throw new ConfigurationException(
-                $"Role '{roleFullName}' is missing 'role.yaml' or 'role.js'."
+                $"Role '{roleFullName}' is missing a supported role file (role.yaml, role.js, or role.lua)."
             ),
             1 => candidates[0],
             var _ => throw new ConfigurationException(
-                $"Role '{roleFullName}' contains both 'role.yaml' and 'role.js'."
+                $"Role '{roleFullName}' contains ambiguous role files: {DescribeCandidates( candidates )}."
             ),
         };
     }
+
+    private static string DescribeCandidates( IEnumerable<ResolvedConfigArtifact> candidates ) =>
+        string.Join(
+            ", ",
+            candidates.Select( artifact => $"'{Path.GetFileName( artifact.FullPath )}'" )
+        );
 
     private static List<ResolvedConfigArtifact> ResolveCandidates(
         DiscoveredDirectory roleDirectory,

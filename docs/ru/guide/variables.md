@@ -6,9 +6,9 @@
 
 Для задачи внутри роли поздние источники переопределяют ранние:
 
-1. `defaults.yaml` или `defaults.js` роли.
+1. `defaults.yaml`, `defaults.js` или `defaults.lua` роли.
 2. Встроенное поле `defaults` в объектной форме `role.yaml`.
-3. Корневые файлы `vars/*.yaml` и `vars/*.js` в порядке имён без учёта регистра.
+3. Корневые файлы `vars/*.yaml`, `vars/*.js` и `vars/*.lua` в порядке имён без учёта регистра.
 4. Поле `vars` в `station.yaml`.
 5. Переменные окружения с префиксом `CONFIG_TOOL_VAR_`.
 6. Повторяемые параметры CLI `--set key=value`.

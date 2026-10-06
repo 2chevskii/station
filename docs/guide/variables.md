@@ -6,9 +6,9 @@ Variables are typed objects in Station's configuration model. YAML mappings, lis
 
 For a task inside a role, later sources override earlier ones:
 
-1. The role's `defaults.yaml` or `defaults.js`.
+1. The role's `defaults.yaml`, `defaults.js` or `defaults.lua`.
 2. Inline `defaults` in an object-form `role.yaml`.
-3. Root `vars/*.yaml` and `vars/*.js`, in case-insensitive filename order.
+3. Root `vars/*.yaml`, `vars/*.js` and `vars/*.lua`, in case-insensitive filename order.
 4. `vars` in `station.yaml`.
 5. Environment variables beginning with `CONFIG_TOOL_VAR_`.
 6. Repeated CLI `--set key=value` values.

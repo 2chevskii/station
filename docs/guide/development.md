@@ -10,6 +10,7 @@ Station targets .NET 10. Its projects separate contracts, configuration loading,
 | `Station.Configuration.Abstractions` | Configuration document contracts and values. |
 | `Station.Configuration.Yaml` | YAML loading and Scriban rendering. |
 | `Station.Configuration.JavaScript` | Jint-based variable and role loading. |
+| `Station.Configuration.Lua` | NLua-based variable and role loading. |
 | `Station.Core` | Discovery, binding, planning and task execution. |
 | `Station.Plugins.Abstractions` | Plugin manifest and requirement contracts. |
 | `Station.Plugins` | Provider-specific restore and caching. |

@@ -4,9 +4,9 @@ Start with `station explain --config <directory>` to inspect names, parameters a
 
 ## Configuration cannot be loaded
 
-Check that `--config` points to an existing directory containing `station.yaml`, and that its `roles` field is a nonempty list. Every selected role needs a `role.yaml` or `role.js` in its role directory. A task needs exactly one module key whose value is a parameter object.
+Check that `--config` points to an existing directory containing `station.yaml`, and that its `roles` field is a nonempty list. Every selected role needs a `role.yaml`, `role.js` or `role.lua` in its role directory. A task needs exactly one module key whose value is a parameter object.
 
-If Station reports ambiguous variable files or role files, remove the duplicate format: do not keep both `role.yaml` and `role.js`, both `defaults.yaml` and `defaults.js`, or `vars/example.yaml` and `vars/example.js`.
+If Station reports ambiguous variable files or role files, remove the duplicate format: keep one `role.*` and one `defaults.*` file per role, and one file per basename in `vars/`, across YAML, JavaScript and Lua.
 
 ## A role or module name is ambiguous
 

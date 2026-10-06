@@ -64,4 +64,4 @@ tasks:
 
 ## Форматы файлов
 
-Корневой манифест — `station.yaml`. Файлы в `vars/` могут иметь расширение `.yaml` или `.js`. Роль использует либо `role.yaml`, либо `role.js` и при необходимости либо `defaults.yaml`, либо `defaults.js`. Station отклоняет два формата одного артефакта роли и корневые файлы переменных с одинаковым базовым именем. См. [Роли и задачи](./roles-and-tasks.md) и [Роли на JavaScript](./javascript-roles.md).
+Корневой манифест — `station.yaml`. Файлы в `vars/` могут иметь расширение `.yaml`, `.js` или `.lua`. Роль использует один из файлов `role.yaml`, `role.js` или `role.lua` и при необходимости один из файлов `defaults.yaml`, `defaults.js` или `defaults.lua`. Station отклоняет несколько форматов одного артефакта роли и корневые файлы переменных с одинаковым базовым именем. См. [Роли и задачи](./roles-and-tasks.md), [Роли на JavaScript](./javascript-roles.md) и [Роли на Lua](./lua-roles.md).
