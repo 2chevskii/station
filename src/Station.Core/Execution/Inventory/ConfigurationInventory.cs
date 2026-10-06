@@ -1,6 +1,5 @@
 using Station.Core.Configuration.Loading;
 using Station.Core.Configuration.Plugins;
-using Station.Core.Configuration.Roles;
 using Station.Core.Execution.Modules;
 using Station.Core.Execution.Roles;
 using Station.Core.Plugins.Restoration;

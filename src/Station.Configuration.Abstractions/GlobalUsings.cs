@@ -1,1 +1,0 @@
-global using Station.Configuration.Abstractions.Documents;

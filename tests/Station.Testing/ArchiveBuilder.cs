@@ -25,7 +25,7 @@ public static class ArchiveBuilder
             archive.Delete();
 
         using var stream = archive.Create();
-        using var writer = new TarWriter( stream, TarEntryFormat.Ustar, false );
+        using var writer = new TarWriter( stream, TarEntryFormat.Ustar );
 
         var sourceRoot = sourceDirectory.AsAbsolutePath();
         foreach ( var directory in sourceRoot.GetDirectories( "*", SearchOption.AllDirectories ) )

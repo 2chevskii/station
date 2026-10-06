@@ -28,7 +28,7 @@ public sealed class JsonInvocationTests
         var originalOutput = Console.Out;
         var originalError = Console.Error;
 
-        var exitCode = await Station.Program.RunAsync(
+        var exitCode = await Program.RunAsync(
             ["check", "--config", directory.Path, "--output", "json"],
             configureServices, output, error
         );
@@ -55,7 +55,7 @@ public sealed class JsonInvocationTests
         var originalOutput = Console.Out;
         var originalError = Console.Error;
 
-        var exitCode = await Station.Program.RunAsync(
+        var exitCode = await Program.RunAsync(
             ["check", "--config", directory.Path, "--output", "json"],
             configureServices, output, error
         );
@@ -89,7 +89,7 @@ public sealed class JsonInvocationTests
 
         var originalOutput = Console.Out;
         var originalError = Console.Error;
-        var invocation = Station.Program.RunAsync(
+        var invocation = Program.RunAsync(
             ["apply", "--config", directory.Path, "--output", "json"],
             configureServices, output, error, cancellation.Token
         );
@@ -138,7 +138,7 @@ public sealed class JsonInvocationTests
         var detector = new AsyncLifetimePrivilegeDetector();
         var instanceCount = 0;
 
-        var exitCode = await Station.Program.RunAsync(
+        var exitCode = await Program.RunAsync(
             ["check", "--config", directory.Path, "--output", "json"],
             registrations =>
             {

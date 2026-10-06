@@ -204,7 +204,7 @@ public sealed class AptModule : ConfigModule
 
     private string? ValidateParameters()
     {
-        if ( State?.Trim().ToLowerInvariant() is not ("present" or "absent") )
+        if ( State.Trim().ToLowerInvariant() is not ("present" or "absent") )
             return "Parameter 'state' must be 'present' or 'absent'.";
 
         if ( string.IsNullOrWhiteSpace( PackageName ) || !Regex.IsMatch(

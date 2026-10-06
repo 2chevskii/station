@@ -31,7 +31,7 @@ internal static class AtomicFileWriter
 
         try
         {
-            using ( var reservation = FilePermissions.CreateNew(
+            await using ( _ = FilePermissions.CreateNew(
                 staged.Value,
                 existed ? target.Value : null
             ) )
@@ -85,7 +85,7 @@ internal static class AtomicFileWriter
     )
     {
         var recovery = target.Parent!.Value / $".station-{Guid.NewGuid():N}.recovery";
-        using ( var reservation = FilePermissions.CreateNew( recovery.Value, target.Value ) )
+        using ( _ = FilePermissions.CreateNew( recovery.Value, target.Value ) )
         {
         }
 

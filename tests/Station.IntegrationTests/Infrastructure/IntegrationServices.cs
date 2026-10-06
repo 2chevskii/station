@@ -1,7 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using Station;
-
 namespace Station.IntegrationTests.Infrastructure;
 
 internal static class IntegrationServices

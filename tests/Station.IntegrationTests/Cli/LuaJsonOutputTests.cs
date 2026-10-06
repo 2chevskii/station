@@ -19,7 +19,7 @@ public sealed class LuaJsonOutputTests
         using var output = new StringWriter();
         using var error = new StringWriter();
 
-        var exitCode = await Station.Program.RunAsync(
+        var exitCode = await Program.RunAsync(
             ["validate", "--config", directory.Path, "--output", "json"],
             null,
             output,
